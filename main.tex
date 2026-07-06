@@ -1,0 +1,116 @@
+\documentclass[11pt]{article}
+
+% ============================================================================
+% CORE PACKAGES
+% ============================================================================
+
+% Encoding & fonts
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+
+% Page layout
+\usepackage[margin=1in]{geometry}
+\usepackage{setspace}
+
+% Math
+\usepackage{amsmath,amssymb,amsfonts}
+\usepackage{mathtools}
+
+% Tables & figures
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage{multirow}
+\usepackage{graphicx}
+\usepackage{float}
+\usepackage{subcaption}
+
+% Colors & styling
+\usepackage[dvipsnames,table]{xcolor}
+\usepackage{tcolorbox}
+
+% Code listings
+\usepackage{listings}
+\lstset{
+  basicstyle=\ttfamily\small,
+  breaklines=true,
+  frame=single,
+  numbers=left,
+  numberstyle=\tiny\color{gray},
+  keywordstyle=\color{blue},
+  commentstyle=\color{green!50!black},
+  stringstyle=\color{red!60!black},
+}
+
+% Algorithms (uncomment if installed: tlmgr install algorithm2e)
+% \usepackage[ruled,vlined]{algorithm2e}
+
+% Drawing
+\usepackage{tikz}
+\usepackage{pgfplots}
+\pgfplotsset{compat=1.18}
+
+% Bibliography
+% BEGIN SYNC: bibliography
+\usepackage[backend=biber,style=numeric,sorting=nyt,maxbibnames=99]{biblatex}
+\addbibresource{bibliography.bib}
+% END SYNC: bibliography
+
+% Hyperlinks (load last among these)
+\usepackage[colorlinks=true,linkcolor=blue!60!black,citecolor=green!50!black,urlcolor=blue!70!black]{hyperref}
+% Smart cross-references (uncomment if installed: tlmgr install cleveref)
+% \usepackage[noabbrev,capitalise]{cleveref}
+
+% ============================================================================
+% CUSTOM COMMANDS
+% ============================================================================
+
+% BEGIN SYNC: metadata
+% Paper metadata
+\newcommand{\papertitle}{Paper Title}
+\newcommand{\paperauthors}{Author One, Author Two}
+% END SYNC: metadata
+
+% Convenience macros
+\newcommand{\tbd}[1]{\textcolor{red}{\textbf{[TBD: #1]}}}
+\newcommand{\note}[1]{\textcolor{orange}{\textbf{[Note: #1]}}}
+\newcommand{\todo}[1]{\textcolor{purple}{\textbf{[TODO: #1]}}}
+
+% BEGIN SYNC: macros
+% END SYNC: macros
+
+% ============================================================================
+% OPTIONAL STYLE PACKAGES
+% ============================================================================
+
+% BEGIN SYNC: styles
+% END SYNC: styles
+
+% ============================================================================
+% DOCUMENT
+% ============================================================================
+
+\begin{document}
+
+% BEGIN SYNC: author-block
+\title{\papertitle}
+\author{\paperauthors}
+\date{\today}
+\maketitle
+% END SYNC: author-block
+
+% BEGIN SYNC: sections
+\input{section/00_abstract}
+\input{section/01_introduction}
+\input{section/02_background}
+\input{section/03_methodology}
+\input{section/04_results}
+\input{section/05_discussion}
+\input{section/06_conclusion}
+\input{section/07_appendix}
+% END SYNC: sections
+
+% --- Bibliography ---
+\printbibliography
+
+\end{document}

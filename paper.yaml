@@ -1,0 +1,70 @@
+# paper.yaml — Agent-readable paper manifest
+# This file is the source of truth for paper structure.
+# The agent reads and updates this file to track the paper's state.
+
+template: article
+
+title: "Paper Title"
+document_class: article
+document_options: "11pt"
+
+authors:
+  - name: "Author One"
+    affiliation: "Institution"
+    email: "author@example.com"
+  - name: "Author Two"
+    affiliation: "Institution"
+    email: "author2@example.com"
+
+# Abstract summary (plain text, used by agent for context)
+abstract_summary: ""
+
+# Ordered list of sections — each maps to section/{slug}.tex
+sections:
+  - slug: "00_abstract"
+    title: "Abstract"
+    status: draft        # draft | in_progress | complete | reviewed
+  - slug: "01_introduction"
+    title: "Introduction"
+    status: draft
+  - slug: "02_background"
+    title: "Background"
+    status: draft
+  - slug: "03_methodology"
+    title: "Methodology"
+    status: draft
+  - slug: "04_results"
+    title: "Results"
+    status: draft
+  - slug: "05_discussion"
+    title: "Discussion"
+    status: draft
+  - slug: "06_conclusion"
+    title: "Conclusion"
+    status: draft
+  - slug: "07_appendix"
+    title: "Appendix"
+    status: draft
+
+# Custom LaTeX macros — rendered as \newcommand{\key}{value} in main.tex
+# Example:
+#   NumSamples: "1{,}000"
+#   NumModels: "5"
+macros: {}
+
+# Optional style packages — add names here and run sync
+styles: []
+
+# Bibliography
+bibliography:
+  backend: biber
+  style: numeric
+  sorting: nyt
+  maxbibnames: 99
+  file: bibliography.bib
+
+# Build configuration
+build:
+  engine: pdflatex
+  output_dir: build
+  shell_escape: true

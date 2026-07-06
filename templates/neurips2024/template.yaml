@@ -1,0 +1,6 @@
+name: "NeurIPS 2024"
+description: "Conference on Neural Information Processing Systems"
+author_format: neurips
+bibliography_system: natbib
+extra_files:
+  - neurips_2024.sty

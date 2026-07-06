@@ -1,0 +1,8 @@
+name: "ACL"
+description: "Association for Computational Linguistics conference"
+author_format: acl
+bibliography_system: natbib
+natbib_style: acl_natbib
+extra_files:
+  - acl.sty
+  - acl_natbib.bst

@@ -1,0 +1,6 @@
+name: "ACM Conference"
+description: "ACM conference proceedings (acmart sigconf)"
+author_format: acm
+bibliography_system: biblatex
+extra_files:
+  - acmart.cls

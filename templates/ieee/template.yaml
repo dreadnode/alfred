@@ -1,0 +1,7 @@
+name: "IEEE Conference"
+description: "IEEE conference proceedings (IEEEtran)"
+author_format: ieee
+bibliography_system: bibtex
+bibtex_style: plain
+extra_files:
+  - IEEEtran.cls
