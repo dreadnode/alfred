@@ -180,6 +180,75 @@ Within reports, cite sources as `[Author YYYY]` inline. Full bibliographic detai
 When referencing specific findings, include the page or section if available:
 `[Author YYYY, Section 3.2]` or `[Author YYYY, Table 2]`
 
+## Peer Review Report
+
+```markdown
+# Peer Review Report
+
+**Paper**: <title from paper.yaml>
+**Authors**: <authors from paper.yaml>
+**Date**: <YYYY-MM-DD>
+**Sections reviewed**: <list of section files>
+
+## Summary
+<3-5 sentence overall assessment — written during finalization, left blank until then>
+
+## Recommendation
+<Accept | Minor Revision | Major Revision | Reject — assigned during finalization, left blank until then>
+
+## Statistics
+
+| Severity | Count |
+|----------|-------|
+| Major    | <N>   |
+| Minor    | <N>   |
+| Nit      | <N>   |
+
+| Type | Count |
+|------|-------|
+| CLR  | <N>   |
+| MTH  | <N>   |
+| RES  | <N>   |
+| CLM  | <N>   |
+| REF  | <N>   |
+| PRS  | <N>   |
+| NOV  | <N>   |
+| SCP  | <N>   |
+| POS  | <N>   |
+
+## Major Issues
+
+### R<N>: <short title>
+**Type**: <code> | **Severity**: Major | **Location**: `<file>:<line>`
+
+<reviewer's note>
+
+---
+
+## Minor Issues
+
+### R<N>: <short title>
+**Type**: <code> | **Severity**: Minor | **Location**: `<file>:<line>`
+
+<reviewer's note>
+
+---
+
+## Nits
+
+### R<N>: <short title>
+**Type**: <code> | **Severity**: Nit | **Location**: `<file>:<line>`
+
+<reviewer's note>
+
+---
+
+## Strengths
+<list of POS-type notes, if any>
+```
+
+Notes are appended incrementally to the appropriate severity section as they arrive. The Summary, Recommendation, and Statistics sections remain blank placeholders until finalization. The file is valid markdown at all times.
+
 ## Adding Discovered Sources to the Paper
 
 After a lit review identifies must-cite or should-cite sources, add them to the paper's bibliography using the existing citation tool:
