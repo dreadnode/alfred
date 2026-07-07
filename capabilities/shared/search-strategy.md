@@ -58,7 +58,7 @@ Do not hardcode domain-specific venues here. Instead, the Searcher should identi
 
 ## Source Priority
 
-Rank sources by quality tier (see EVIDENCE_STANDARDS.md for full definitions):
+Rank sources by quality tier (see capabilities/shared/evidence-standards.md for full definitions):
 
 | Priority | Source Type | Examples |
 |----------|------------|---------|

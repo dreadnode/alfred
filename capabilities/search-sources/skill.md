@@ -17,6 +17,7 @@ Free-text description of the topic or query to search for.
 
 ### Step 1: Read Guidance
 Read:
+- `capabilities/shared/workflow-config.md`
 - `capabilities/shared/search-strategy.md`
 - `capabilities/search-sources/agent.md`
 

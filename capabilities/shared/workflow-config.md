@@ -34,7 +34,7 @@ The orchestrator is responsible for mapping "flagship reasoning" to the correct 
 - **Purpose**: Deep-read a single source and extract structured findings
 - **Tools**: `WebFetch`, `Read`
 - **Input**: A source URL (or local file path) + context about what to look for
-- **Output**: A structured source card (see output-formats.md)
+- **Output**: A structured source card (see capabilities/shared/output-formats.md)
 - **Constraints**: One source per invocation. Extracts facts, does not editorialize. Flags when a source is paywalled or inaccessible.
 
 ### Synthesizer
@@ -42,7 +42,7 @@ The orchestrator is responsible for mapping "flagship reasoning" to the correct 
 - **Tools**: `Write`, `Read`
 - **Input**: Source cards from Analyzer + original user input (topic or claims)
 - **Output**: Structured report file + stdout summary
-- **Constraints**: Must cite every factual assertion back to a specific source card. Must use verdict criteria from evidence-standards.md.
+- **Constraints**: Must cite every factual assertion back to a specific source card. Must use verdict criteria from capabilities/shared/evidence-standards.md.
 
 ## Orchestration Rules
 

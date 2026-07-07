@@ -14,7 +14,7 @@ Each Analyzer invocation produces one source card:
 **Date**: <YYYY-MM or YYYY>
 **URL**: <canonical URL>
 **Source Type**: <peer-reviewed | preprint | tech-report | system-card | blog | news>
-**Quality Tier**: <A-F per EVIDENCE_STANDARDS.md>
+**Quality Tier**: <A-F per capabilities/shared/evidence-standards.md>
 
 ### Summary
 <2-4 sentence summary of the source's main contribution>

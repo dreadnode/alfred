@@ -18,6 +18,7 @@ Standalone deep-read skill for a single source. Fetches the full text, extracts 
 
 ### Step 1: Read Guidance
 Read:
+- `capabilities/shared/workflow-config.md`
 - `capabilities/shared/evidence-standards.md`
 - `capabilities/shared/output-formats.md`
 - `capabilities/analyze-source/agent.md`
