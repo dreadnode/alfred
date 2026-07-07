@@ -15,61 +15,32 @@ The agent workflow: pick a template → define sections in `paper.yaml` → sync
 
 ## Features
 
-### Writing & Building
+### Built-in
 
-| Feature | Command | Description |
-|---------|---------|-------------|
-| Template switching | `python3 scripts/init_template.py neurips2024` | Switch between 6 conference formats |
-| YAML-driven sync | `python3 scripts/sync.py` | Sync paper.yaml → main.tex automatically |
-| PDF build | `bash scripts/build.sh` | Compile LaTeX → `build/main.pdf` |
-| Custom macros | Define in `paper.yaml` under `macros:` | Auto-generates `\newcommand` entries |
-| Style packages | Define in `paper.yaml` under `styles:` | Message boxes, code blocks |
+The agent handles these automatically as part of the writing workflow — just tell it what you want.
 
-### Research & Citations
+- **Conference templates** — 6 formats (NeurIPS, IEEE, ACM, USENIX, ACL, plain article), switch by asking
+- **YAML-driven sync** — paper structure defined in `paper.yaml`, agent syncs to `main.tex` automatically
+- **PDF build** — compiles LaTeX to `build/main.pdf`
+- **Citation management** — searches Semantic Scholar, fetches real BibTeX, adds to `bibliography.bib`
+- **Custom macros & styles** — define in `paper.yaml`, auto-generated on sync
+- **Validation** — checks refs, markers, braces, sync status before building
+- **Statistics** — word count per section, pages, figures, tables, citations
+- **Track changes** — diff PDF with additions/deletions highlighted against any git revision
 
-| Feature | Command | Description |
-|---------|---------|-------------|
-| Citation search | `python3 scripts/cite.py search "query"` | Search Semantic Scholar for papers |
-| Citation add | `python3 scripts/cite.py add arXiv:1706.03762` | Fetch BibTeX and add to bibliography |
-| Literature review | `/lit-review "topic"` | Multi-agent search → analyze → synthesize → report |
-| Source discovery | `/search-sources "query"` | Quick reconnaissance — find relevant papers |
-| Source analysis | `/analyze-source <URL> "context"` | Deep-read a single paper into structured card |
+### Capabilities
 
-### Quality & Validation
+Multi-agent workflows you can kick off by asking the agent. These run specialized subagents for research-heavy tasks.
 
-| Feature | Command | Description |
-|---------|---------|-------------|
-| Claim verification | `/verify-claims section/01_introduction.tex` | Verify paper claims against prior work |
-| Peer review | `/peer-review` | Interactive review session — record notes into structured report |
-| Validation | `bash scripts/validate.sh` | Check refs, markers, braces, sync status |
-| Statistics | `python3 scripts/stats.py` | Word count, pages, figures, tables, citations |
-| Track changes | `python3 scripts/diff.py [rev]` | Diff PDF with additions/deletions highlighted |
+| Capability | What to ask | What it does |
+|------------|-------------|--------------|
+| Literature review | "Do a lit review on X" | Searches for sources, deep-reads each, synthesizes a themed report with must-cite rankings |
+| Claim verification | "Verify the claims in the introduction" | Extracts claims from LaTeX, checks each against prior work, produces per-claim verdicts |
+| Source discovery | "Find papers on X" | Quick search — returns a ranked list of relevant sources |
+| Source analysis | "Analyze this paper: [URL]" | Deep-reads a single source into a structured card with findings and methodology |
+| Peer review | "Start a peer review session" | Interactive — you send notes as you read, agent categorizes and builds a structured feedback report |
 
-## Quick Start
-
-```bash
-# Switch to a conference template
-python3 scripts/init_template.py neurips2024
-
-# Sync paper.yaml → main.tex (after editing paper.yaml)
-python3 scripts/sync.py
-
-# Build the PDF
-bash scripts/build.sh
-
-# Search and add citations from Semantic Scholar
-python3 scripts/cite.py search "transformer attention"
-python3 scripts/cite.py add arXiv:1706.03762
-
-# Paper statistics (word count, pages, figures, tables)
-python3 scripts/stats.py
-
-# Generate track-changes diff PDF against last commit
-python3 scripts/diff.py
-
-# Validate sources
-bash scripts/validate.sh
-```
+Reports are written to `capabilities/reports/`. See `capabilities/README.md` for full details.
 
 ## Conference Templates
 
