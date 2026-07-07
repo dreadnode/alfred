@@ -37,9 +37,9 @@ When starting a new paper:
 
 See `AGENT.md` for detailed instructions on each workflow.
 
-## Literature Review & Claim Verification
+## Capabilities
 
-Multi-agent workflow for finding and synthesizing prior work, or verifying claims against evidence. See `capabilities/README.md` for full details.
+Extended agent capabilities beyond core document authoring. See `capabilities/README.md` for full details.
 
 | Command | Purpose |
 |---------|---------|
@@ -47,5 +47,6 @@ Multi-agent workflow for finding and synthesizing prior work, or verifying claim
 | `/verify-claims section/01_introduction.tex` | Extract claims from LaTeX, verify against evidence |
 | `/search-sources "query"` | Quick source discovery (no deep analysis) |
 | `/analyze-source <URL or path> "context"` | Deep-read a single source into a structured card |
+| `/peer-review` | Interactive review session — record notes into structured feedback report |
 
 Reports are written to `capabilities/reports/`.

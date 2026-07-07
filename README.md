@@ -40,6 +40,7 @@ The agent workflow: pick a template → define sections in `paper.yaml` → sync
 | Feature | Command | Description |
 |---------|---------|-------------|
 | Claim verification | `/verify-claims section/01_introduction.tex` | Verify paper claims against prior work |
+| Peer review | `/peer-review` | Interactive review session — record notes into structured report |
 | Validation | `bash scripts/validate.sh` | Check refs, markers, braces, sync status |
 | Statistics | `python3 scripts/stats.py` | Word count, pages, figures, tables, citations |
 | Track changes | `python3 scripts/diff.py [rev]` | Diff PDF with additions/deletions highlighted |

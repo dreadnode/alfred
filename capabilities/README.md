@@ -11,6 +11,12 @@ Extended AI-agent capabilities beyond core document authoring. Each capability i
 | [search-sources](search-sources/) | `/search-sources "query"` | Find relevant papers, preprints, and reports for a topic |
 | [analyze-source](analyze-source/) | `/analyze-source <URL> "context"` | Deep-read a single source, extract structured findings |
 
+### Interactive
+
+| Capability | Skill | Description |
+|------------|-------|-------------|
+| [peer-review](peer-review/) | `/peer-review` | Interactive review session — record notes, build structured feedback report |
+
 ### Orchestrators
 
 | Capability | Skill | Description |

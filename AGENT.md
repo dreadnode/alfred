@@ -164,9 +164,9 @@ This checks:
 - Brace matching
 - chktex lint (if installed)
 
-## Literature Review & Claim Verification
+## Capabilities
 
-A multi-agent workflow for finding prior work and verifying paper claims. Full documentation in `capabilities/README.md`.
+Extended agent capabilities beyond core document authoring. Full documentation in `capabilities/README.md`.
 
 ### Running a literature review
 
@@ -205,6 +205,19 @@ python3 scripts/cite.py search --add "paper title"
 ```
 
 Then use `\cite{key}` in the relevant section files.
+
+### Peer review
+
+```
+/peer-review
+/peer-review section/03_methodology.tex
+```
+
+Interactive review session. The reviewer reads the paper and sends notes — the agent categorizes each (clarity, methodology, claims, etc.), assigns severity (major/minor/nit), maps it to the relevant file:line, and appends it to a running report at `capabilities/reports/peer-review_<slug>_<date>.md`.
+
+Finalize with `/peer-review done` — the agent writes a summary, counts issues by type/severity, and suggests a recommendation (accept/minor revision/major revision/reject). The reviewer confirms or adjusts before the report is closed.
+
+If a note questions a specific claim, the agent can optionally run `/verify-claims` or `/search-sources` to check it.
 
 ## Error Handling
 
