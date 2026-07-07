@@ -36,3 +36,16 @@ When starting a new paper:
 | `python3 scripts/init_template.py <name>` | Switch conference template |
 
 See `AGENT.md` for detailed instructions on each workflow.
+
+## Literature Review & Claim Verification
+
+Multi-agent workflow for finding and synthesizing prior work, or verifying claims against evidence. See `lit-review-and-claim-verifier/README.md` for full details.
+
+| Command | Purpose |
+|---------|---------|
+| `/lit-review "topic"` | Full literature review: search → analyze → synthesize → report |
+| `/verify-claims section/01_introduction.tex` | Extract claims from LaTeX, verify against evidence |
+| `/search-sources "query"` | Quick source discovery (no deep analysis) |
+| `/analyze-source <URL or path> "context"` | Deep-read a single source into a structured card |
+
+Reports are written to `lit-review-and-claim-verifier/reports/`.

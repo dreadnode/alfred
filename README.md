@@ -50,6 +50,26 @@ python3 scripts/diff.py
 | `acl` | ACL / EMNLP / NAACL | Basic |
 | `acm` | ACM conference (acmart sigconf) | Full |
 
+## Literature Review & Claim Verification
+
+Built-in multi-agent workflow for academic research tasks. Three agents (Searcher → Analyzer → Synthesizer) coordinate to produce structured reports.
+
+```bash
+# Full literature review on a topic
+/lit-review "LLM cheating behavior on cybersecurity benchmarks"
+
+# Verify claims in a paper section against prior work
+/verify-claims section/01_introduction.tex
+
+# Quick source discovery
+/search-sources "reward hacking in LLM agent evaluations"
+
+# Deep-read a single paper
+/analyze-source https://arxiv.org/abs/2506.12345 "cheating detection methods"
+```
+
+Reports are written to `lit-review-and-claim-verifier/reports/`. See `lit-review-and-claim-verifier/README.md` for full details.
+
 ## Structure
 
 | Path | Purpose |
@@ -61,6 +81,7 @@ python3 scripts/diff.py
 | `templates/` | Conference template definitions + bundled .cls/.sty files |
 | `styles/` | Optional style packages (messageboxes, codeblocks) |
 | `scripts/` | Build, sync, cite, stats, diff, validate, template scripts |
+| `lit-review-and-claim-verifier/` | Multi-agent lit review and claim verification workflow |
 | `CLAUDE.md` | Agent instructions (workflow + rules) |
 | `AGENT.md` | Detailed how-to for every operation |
 

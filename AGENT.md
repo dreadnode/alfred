@@ -164,6 +164,48 @@ This checks:
 - Brace matching
 - chktex lint (if installed)
 
+## Literature Review & Claim Verification
+
+A multi-agent workflow for finding prior work and verifying paper claims. Full documentation in `lit-review-and-claim-verifier/README.md`.
+
+### Running a literature review
+
+```
+/lit-review "your research topic"
+```
+
+This launches Searcher → Analyzer → Synthesizer agents to produce a themed review with must-cite/should-cite/nice-to-have rankings. The report is written to `lit-review-and-claim-verifier/reports/` and a summary is printed to stdout.
+
+The skill automatically reads `paper.yaml` and `bibliography.bib` for context — it knows the paper's structure and excludes already-cited works from results.
+
+### Verifying claims
+
+```
+/verify-claims section/01_introduction.tex
+```
+
+Auto-extracts claims from LaTeX, routes each to the appropriate verification strategy (direct source lookup for prior-work claims, adversarial search for superlatives, arithmetic check for comparatives), and produces a per-claim verdict report (Supported / Partially Supported / Unsupported / Contested / Contradicted).
+
+The skill reads `bibliography.bib` to resolve `\cite{key}` references to DOIs/URLs for direct source verification.
+
+### Standalone tools
+
+```
+/search-sources "query"          # Quick source discovery (no deep analysis)
+/analyze-source <URL> "context"  # Deep-read a single source into a structured card
+```
+
+### Adding discovered sources to the paper
+
+After a review identifies must-cite sources, add them to the bibliography:
+
+```bash
+python3 scripts/cite.py add arXiv:1706.03762
+python3 scripts/cite.py search --add "paper title"
+```
+
+Then use `\cite{key}` in the relevant section files.
+
 ## Error Handling
 
 When a build fails:
