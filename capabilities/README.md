@@ -1,6 +1,10 @@
 # Capabilities
 
-Extended AI-agent capabilities beyond core document authoring. Each capability is a prompt-based multi-agent workflow that composes specialized agents.
+Extended AI-agent capabilities beyond core document authoring. Each capability is a prompt-based workflow — some conversational, some multi-agent — triggered by slash commands or natural-language requests.
+
+## Trigger Recognition
+
+Capabilities activate when the user's message matches trigger patterns. The agent should read the corresponding `skill.md` and follow its workflow. See `AGENT.md` § Trigger Recognition for the full trigger table.
 
 ## Available Capabilities
 

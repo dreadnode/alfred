@@ -34,6 +34,7 @@ When starting a new paper:
 | `python3 scripts/stats.py` | Word count, pages, figures, tables |
 | `python3 scripts/diff.py [rev]` | Track-changes PDF → `build/diff.pdf` |
 | `python3 scripts/init_template.py <name>` | Switch conference template |
+| `python3 scripts/reviews.py` | List and summarize peer reviews |
 
 See `AGENT.md` for detailed instructions on each workflow.
 
@@ -47,6 +48,6 @@ Extended agent capabilities beyond core document authoring. See `capabilities/RE
 | `/verify-claims section/01_introduction.tex` | Extract claims from LaTeX, verify against evidence |
 | `/search-sources "query"` | Quick source discovery (no deep analysis) |
 | `/analyze-source <URL or path> "context"` | Deep-read a single source into a structured card |
-| `/peer-review` | Interactive review session — record notes into structured feedback report |
+| `/peer-review` | Interactive review session — record notes into structured review record |
 
-Reports are written to `capabilities/reports/`.
+Reports are written to `capabilities/reports/`. Peer review records are saved to `reviews/` and tracked in git.

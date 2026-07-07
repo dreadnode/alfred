@@ -180,41 +180,42 @@ Within reports, cite sources as `[Author YYYY]` inline. Full bibliographic detai
 When referencing specific findings, include the page or section if available:
 `[Author YYYY, Section 3.2]` or `[Author YYYY, Table 2]`
 
-## Peer Review Report
+## Peer Review Record
 
 ```markdown
-# Peer Review Report
+---
+paper: <title from paper.yaml>
+authors: <authors from paper.yaml>
+reviewer: <reviewer name>
+date: <YYYY-MM-DD HH:MM UTC>
+sections_reviewed:
+  - <section file 1>
+  - <section file 2>
+recommendation:     # filled during finalization
+issues:
+  major: 0          # updated during finalization
+  minor: 0
+  nit: 0
+  positive: 0
+types:
+  CLR: 0            # updated during finalization
+  MTH: 0
+  RES: 0
+  CLM: 0
+  REF: 0
+  PRS: 0
+  NOV: 0
+  SCP: 0
+  POS: 0
+---
 
-**Paper**: <title from paper.yaml>
-**Authors**: <authors from paper.yaml>
-**Date**: <YYYY-MM-DD>
-**Sections reviewed**: <list of section files>
+# Peer Review Record
 
 ## Summary
 <3-5 sentence overall assessment — written during finalization, left blank until then>
 
 ## Recommendation
-<Accept | Minor Revision | Major Revision | Reject — assigned during finalization, left blank until then>
-
-## Statistics
-
-| Severity | Count |
-|----------|-------|
-| Major    | <N>   |
-| Minor    | <N>   |
-| Nit      | <N>   |
-
-| Type | Count |
-|------|-------|
-| CLR  | <N>   |
-| MTH  | <N>   |
-| RES  | <N>   |
-| CLM  | <N>   |
-| REF  | <N>   |
-| PRS  | <N>   |
-| NOV  | <N>   |
-| SCP  | <N>   |
-| POS  | <N>   |
+<Accept | Minor Revision | Major Revision | Reject — with 1-2 sentence justification. Written during finalization, left blank until then. The short verdict (e.g., "Major Revision") is also stored in the frontmatter `recommendation` field — keep them in sync.>
 
 ## Major Issues
 
@@ -223,16 +224,12 @@ When referencing specific findings, include the page or section if available:
 
 <reviewer's note>
 
----
-
 ## Minor Issues
 
 ### R<N>: <short title>
 **Type**: <code> | **Severity**: Minor | **Location**: `<file>:<line>`
 
 <reviewer's note>
-
----
 
 ## Nits
 
@@ -241,13 +238,19 @@ When referencing specific findings, include the page or section if available:
 
 <reviewer's note>
 
----
-
 ## Strengths
-<list of POS-type notes, if any>
+
+### R<N>: <short title>
+**Location**: `<file>:<line>`
+
+<reviewer's note>
 ```
 
-Notes are appended incrementally to the appropriate severity section as they arrive. The Summary, Recommendation, and Statistics sections remain blank placeholders until finalization. The file is valid markdown at all times.
+Notes are appended incrementally to the appropriate severity section as they arrive. The YAML frontmatter fields (`recommendation`, `issues`, `types`) are zeroed at creation and updated during finalization. The file is valid markdown at all times.
+
+The frontmatter `recommendation` field must use one of the four exact values: `Accept`, `Minor Revision`, `Major Revision`, `Reject`. The body Recommendation section contains the same value plus a justification sentence.
+
+Review records are saved to `reviews/` (not `capabilities/reports/`). Use `python3 scripts/reviews.py` to list and summarize all reviews.
 
 ## Adding Discovered Sources to the Paper
 

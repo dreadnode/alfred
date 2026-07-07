@@ -14,6 +14,7 @@ This repository is a template for AI-agent-driven LaTeX document creation. Follo
 ├── figures/                # Images and generated figures
 ├── styles/                 # Optional .sty packages (messageboxes, codeblocks)
 ├── scripts/                # Build, sync, validation, and template scripts
+├── reviews/                # Peer review records (tracked in git)
 ├── .latexmkrc              # Build engine configuration
 └── build/                  # Output directory (gitignored)
 ```
@@ -168,17 +169,36 @@ This checks:
 
 Extended agent capabilities beyond core document authoring. Full documentation in `capabilities/README.md`.
 
-### Running a literature review
+### Trigger Recognition
+
+These capabilities can be invoked explicitly (e.g., `/lit-review "topic"`) or recognized from natural-language requests. When the user's message matches a trigger pattern below, activate the corresponding capability by reading its `skill.md` and following the documented workflow.
+
+| Capability | Trigger Patterns | Skill Definition |
+|------------|-----------------|------------------|
+| **lit-review** | `/lit-review`, "literature review", "find related work", "survey papers on", "what papers exist about" | `capabilities/lit-review/skill.md` |
+| **verify-claims** | `/verify-claims`, "verify claims", "check claims", "fact-check", "are these claims supported" | `capabilities/verify-claims/skill.md` |
+| **search-sources** | `/search-sources`, "search for sources", "find papers about", "search for papers" | `capabilities/search-sources/skill.md` |
+| **analyze-source** | `/analyze-source`, "analyze this source", "summarize this paper", "read this paper" | `capabilities/analyze-source/skill.md` |
+| **peer-review** | `/peer-review`, "peer review", "review this paper", "start a review session", "review my paper", "give feedback on the paper" | `capabilities/peer-review/skill.md` |
+
+When a trigger is matched:
+1. Read the corresponding `skill.md` for the full workflow
+2. Read any guidance documents listed in the skill (e.g., shared config, output formats)
+3. Follow the session lifecycle defined in the skill
+
+If ambiguous (e.g., "review" could mean peer-review or code review), ask the user to clarify.
+
+### Literature review
 
 ```
 /lit-review "your research topic"
 ```
 
-This launches Searcher → Analyzer → Synthesizer agents to produce a themed review with must-cite/should-cite/nice-to-have rankings. The report is written to `capabilities/reports/` and a summary is printed to stdout.
+Launches Searcher → Analyzer → Synthesizer agents to produce a themed review with must-cite/should-cite/nice-to-have rankings. The report is written to `capabilities/reports/` and a summary is printed to stdout.
 
 The skill automatically reads `paper.yaml` and `bibliography.bib` for context — it knows the paper's structure and excludes already-cited works from results.
 
-### Verifying claims
+### Claim verification
 
 ```
 /verify-claims section/01_introduction.tex
@@ -188,7 +208,7 @@ Auto-extracts claims from LaTeX, routes each to the appropriate verification str
 
 The skill reads `bibliography.bib` to resolve `\cite{key}` references to DOIs/URLs for direct source verification.
 
-### Standalone tools
+### Source discovery and analysis
 
 ```
 /search-sources "query"          # Quick source discovery (no deep analysis)
@@ -210,14 +230,17 @@ Then use `\cite{key}` in the relevant section files.
 
 ```
 /peer-review
-/peer-review section/03_methodology.tex
+/peer-review --reviewer "Alice Chen"
+/peer-review --reviewer "Alice Chen" section/03_methodology.tex
 ```
 
-Interactive review session. The reviewer reads the paper and sends notes — the agent categorizes each (clarity, methodology, claims, etc.), assigns severity (major/minor/nit), maps it to the relevant file:line, and appends it to a running report at `capabilities/reports/peer-review_<slug>_<date>.md`.
+Interactive review session. The reviewer reads the paper and sends notes — the agent categorizes each (clarity, methodology, claims, etc.), assigns severity (major/minor/nit), maps it to the relevant file:line, and appends it to a running review record.
 
-Finalize with `/peer-review done` — the agent writes a summary, counts issues by type/severity, and suggests a recommendation (accept/minor revision/major revision/reject). The reviewer confirms or adjusts before the report is closed.
+Review records are saved to `reviews/<paper-slug>-<reviewer-slug>-<timestamp>.md` and committed to the repo, so all reviews are tracked over time. The agent asks for the reviewer's name if not provided via `--reviewer`.
 
-If a note questions a specific claim, the agent can optionally run `/verify-claims` or `/search-sources` to check it.
+Finalize with "done with review" or `/peer-review done` — the agent writes a summary, counts issues by type/severity, and suggests a recommendation (accept/minor revision/major revision/reject). The reviewer confirms or adjusts before the report is closed.
+
+If a note questions a specific claim, the agent can optionally run verify-claims or search-sources to check it.
 
 ## Error Handling
 
