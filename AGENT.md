@@ -166,7 +166,7 @@ This checks:
 
 ## Literature Review & Claim Verification
 
-A multi-agent workflow for finding prior work and verifying paper claims. Full documentation in `lit-review-and-claim-verifier/README.md`.
+A multi-agent workflow for finding prior work and verifying paper claims. Full documentation in `capabilities/README.md`.
 
 ### Running a literature review
 
@@ -174,7 +174,7 @@ A multi-agent workflow for finding prior work and verifying paper claims. Full d
 /lit-review "your research topic"
 ```
 
-This launches Searcher → Analyzer → Synthesizer agents to produce a themed review with must-cite/should-cite/nice-to-have rankings. The report is written to `lit-review-and-claim-verifier/reports/` and a summary is printed to stdout.
+This launches Searcher → Analyzer → Synthesizer agents to produce a themed review with must-cite/should-cite/nice-to-have rankings. The report is written to `capabilities/reports/` and a summary is printed to stdout.
 
 The skill automatically reads `paper.yaml` and `bibliography.bib` for context — it knows the paper's structure and excludes already-cited works from results.
 

@@ -25,13 +25,13 @@ Use Read to load the target file(s). If a section filter was provided, extract o
 
 ### Step 2: Read Guidance Docs
 Read the following files to load workflow configuration:
-- `lit-review-and-claim-verifier/WORKFLOW_CONFIG.md`
-- `lit-review-and-claim-verifier/SEARCH_STRATEGY.md`
-- `lit-review-and-claim-verifier/EVIDENCE_STANDARDS.md`
-- `lit-review-and-claim-verifier/OUTPUT_FORMATS.md`
-- `lit-review-and-claim-verifier/agents/searcher.md`
-- `lit-review-and-claim-verifier/agents/analyzer.md`
-- `lit-review-and-claim-verifier/agents/synthesizer.md`
+- `capabilities/shared/workflow-config.md`
+- `capabilities/shared/search-strategy.md`
+- `capabilities/shared/evidence-standards.md`
+- `capabilities/shared/output-formats.md`
+- `capabilities/search-sources/agent.md`
+- `capabilities/analyze-source/agent.md`
+- `capabilities/shared/synthesizer.md`
 
 ### Step 3: Auto-Extract Claims
 Parse the file content and extract verifiable claims. Use these heuristics:
@@ -104,22 +104,22 @@ Launch agents appropriate to each claim type (see Step 4):
 If the claim set is large (>10 externally verifiable claims), split into parallel batches.
 
 ### Step 6: Run Analyzers (Parallel)
-For each unique source returned by the Searcher(s), launch an Agent using a flagship reasoning model (see WORKFLOW_CONFIG.md):
-- Include the full Analyzer agent instructions from `lit-review-and-claim-verifier/agents/analyzer.md`
+For each unique source returned by the Searcher(s), launch an Agent using a flagship reasoning model (see capabilities/shared/workflow-config.md):
+- Include the full Analyzer agent instructions from `capabilities/analyze-source/agent.md`
 - Set analysis context to the specific claims this source is relevant to
 - Request a source card focused on findings relevant to those claims
 
 Launch in parallel, up to 5 at a time.
 
 ### Step 7: Run Synthesizer
-Launch a single Agent using a flagship reasoning model (see WORKFLOW_CONFIG.md):
-- Include the full Synthesizer agent instructions from `lit-review-and-claim-verifier/agents/synthesizer.md`
-- Include the OUTPUT_FORMATS.md template for Claim Verification Report
-- Include EVIDENCE_STANDARDS.md for verdict criteria
+Launch a single Agent using a flagship reasoning model (see capabilities/shared/workflow-config.md):
+- Include the full Synthesizer agent instructions from `capabilities/shared/synthesizer.md`
+- Include the output-formats.md template for Claim Verification Report
+- Include evidence-standards.md for verdict criteria
 - Pass all source cards
 - Pass the extracted claims list with file:line references
 - Set mode to "claim verification"
-- Request: "Verify each claim against the evidence. Assign verdicts per EVIDENCE_STANDARDS.md. Write the report to `lit-review-and-claim-verifier/reports/claim-verification_<slug>_<YYYY-MM-DD>.md` and print a summary to stdout."
+- Request: "Verify each claim against the evidence. Assign verdicts per evidence-standards.md. Write the report to `capabilities/reports/claim-verification_<slug>_<YYYY-MM-DD>.md` and print a summary to stdout."
 
 ### Step 8: Output
 Print the Synthesizer's stdout summary to the user, including:
@@ -134,4 +134,4 @@ Print the Synthesizer's stdout summary to the user, including:
 - If a source is inaccessible, skip it and proceed
 
 ## Model Requirement
-ALL agent invocations in this skill MUST use a flagship reasoning model. See WORKFLOW_CONFIG.md for platform-specific model mapping.
+ALL agent invocations in this skill MUST use a flagship reasoning model. See capabilities/shared/workflow-config.md for platform-specific model mapping.

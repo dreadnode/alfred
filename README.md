@@ -13,6 +13,37 @@ The repo is structured so any coding agent (Claude Code, Cursor, GPT, etc.) can 
 
 The agent workflow: pick a template → define sections in `paper.yaml` → sync → write content → add citations → build → check stats → iterate.
 
+## Features
+
+### Writing & Building
+
+| Feature | Command | Description |
+|---------|---------|-------------|
+| Template switching | `python3 scripts/init_template.py neurips2024` | Switch between 6 conference formats |
+| YAML-driven sync | `python3 scripts/sync.py` | Sync paper.yaml → main.tex automatically |
+| PDF build | `bash scripts/build.sh` | Compile LaTeX → `build/main.pdf` |
+| Custom macros | Define in `paper.yaml` under `macros:` | Auto-generates `\newcommand` entries |
+| Style packages | Define in `paper.yaml` under `styles:` | Message boxes, code blocks |
+
+### Research & Citations
+
+| Feature | Command | Description |
+|---------|---------|-------------|
+| Citation search | `python3 scripts/cite.py search "query"` | Search Semantic Scholar for papers |
+| Citation add | `python3 scripts/cite.py add arXiv:1706.03762` | Fetch BibTeX and add to bibliography |
+| Literature review | `/lit-review "topic"` | Multi-agent search → analyze → synthesize → report |
+| Source discovery | `/search-sources "query"` | Quick reconnaissance — find relevant papers |
+| Source analysis | `/analyze-source <URL> "context"` | Deep-read a single paper into structured card |
+
+### Quality & Validation
+
+| Feature | Command | Description |
+|---------|---------|-------------|
+| Claim verification | `/verify-claims section/01_introduction.tex` | Verify paper claims against prior work |
+| Validation | `bash scripts/validate.sh` | Check refs, markers, braces, sync status |
+| Statistics | `python3 scripts/stats.py` | Word count, pages, figures, tables, citations |
+| Track changes | `python3 scripts/diff.py [rev]` | Diff PDF with additions/deletions highlighted |
+
 ## Quick Start
 
 ```bash
@@ -23,7 +54,7 @@ python3 scripts/init_template.py neurips2024
 python3 scripts/sync.py
 
 # Build the PDF
-./scripts/build.sh
+bash scripts/build.sh
 
 # Search and add citations from Semantic Scholar
 python3 scripts/cite.py search "transformer attention"
@@ -36,7 +67,7 @@ python3 scripts/stats.py
 python3 scripts/diff.py
 
 # Validate sources
-./scripts/validate.sh
+bash scripts/validate.sh
 ```
 
 ## Conference Templates
@@ -50,26 +81,6 @@ python3 scripts/diff.py
 | `acl` | ACL / EMNLP / NAACL | Basic |
 | `acm` | ACM conference (acmart sigconf) | Full |
 
-## Literature Review & Claim Verification
-
-Built-in multi-agent workflow for academic research tasks. Three agents (Searcher → Analyzer → Synthesizer) coordinate to produce structured reports.
-
-```bash
-# Full literature review on a topic
-/lit-review "LLM cheating behavior on cybersecurity benchmarks"
-
-# Verify claims in a paper section against prior work
-/verify-claims section/01_introduction.tex
-
-# Quick source discovery
-/search-sources "reward hacking in LLM agent evaluations"
-
-# Deep-read a single paper
-/analyze-source https://arxiv.org/abs/2506.12345 "cheating detection methods"
-```
-
-Reports are written to `lit-review-and-claim-verifier/reports/`. See `lit-review-and-claim-verifier/README.md` for full details.
-
 ## Structure
 
 | Path | Purpose |
@@ -81,7 +92,7 @@ Reports are written to `lit-review-and-claim-verifier/reports/`. See `lit-review
 | `templates/` | Conference template definitions + bundled .cls/.sty files |
 | `styles/` | Optional style packages (messageboxes, codeblocks) |
 | `scripts/` | Build, sync, cite, stats, diff, validate, template scripts |
-| `lit-review-and-claim-verifier/` | Multi-agent lit review and claim verification workflow |
+| `capabilities/` | Multi-agent research workflows (lit review, claim verification, etc.) |
 | `CLAUDE.md` | Agent instructions (workflow + rules) |
 | `AGENT.md` | Detailed how-to for every operation |
 

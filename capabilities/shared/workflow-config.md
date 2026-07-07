@@ -34,7 +34,7 @@ The orchestrator is responsible for mapping "flagship reasoning" to the correct 
 - **Purpose**: Deep-read a single source and extract structured findings
 - **Tools**: `WebFetch`, `Read`
 - **Input**: A source URL (or local file path) + context about what to look for
-- **Output**: A structured source card (see OUTPUT_FORMATS.md)
+- **Output**: A structured source card (see output-formats.md)
 - **Constraints**: One source per invocation. Extracts facts, does not editorialize. Flags when a source is paywalled or inaccessible.
 
 ### Synthesizer
@@ -42,7 +42,7 @@ The orchestrator is responsible for mapping "flagship reasoning" to the correct 
 - **Tools**: `Write`, `Read`
 - **Input**: Source cards from Analyzer + original user input (topic or claims)
 - **Output**: Structured report file + stdout summary
-- **Constraints**: Must cite every factual assertion back to a specific source card. Must use verdict criteria from EVIDENCE_STANDARDS.md.
+- **Constraints**: Must cite every factual assertion back to a specific source card. Must use verdict criteria from evidence-standards.md.
 
 ## Orchestration Rules
 
@@ -51,25 +51,27 @@ The orchestrator is responsible for mapping "flagship reasoning" to the correct 
 3. **Synthesizer runs last.** It needs all source cards before producing the report.
 4. **Max sources per run**: 15 (to keep analysis tractable). Searcher should return top 15 ranked by relevance.
 5. **Timeout**: If a source is inaccessible after WebFetch, skip it and note it in the report as "inaccessible."
-6. **Report output**: Write to `lit-review-and-claim-verifier/reports/<mode>_<slug>_<YYYY-MM-DD>.md`. Print a 10-20 line summary to stdout after writing.
+6. **Report output**: Write to `capabilities/reports/<mode>_<slug>_<YYYY-MM-DD>.md`. Print a 10-20 line summary to stdout after writing.
 
 ## Directory Structure
 
 ```
-lit-review-and-claim-verifier/
-  WORKFLOW_CONFIG.md          # This file
-  SEARCH_STRATEGY.md          # How to find sources
-  EVIDENCE_STANDARDS.md       # How to grade evidence
-  OUTPUT_FORMATS.md           # Report and source card templates
-  README.md                   # Usage examples
-  skills/
-    lit-review.md             # Orchestrator: full literature review
-    verify-claims.md          # Orchestrator: claim verification
-    search-sources.md         # Standalone: source discovery
-    analyze-source.md         # Standalone: deep-read one source
-  agents/
-    searcher.md               # Searcher agent definition
-    analyzer.md               # Analyzer agent definition
-    synthesizer.md            # Synthesizer agent definition
-  reports/                    # Output directory for generated reports
+capabilities/
+  shared/
+    workflow-config.md          # This file
+    search-strategy.md          # How to find sources
+    evidence-standards.md       # How to grade evidence
+    output-formats.md           # Report and source card templates
+    synthesizer.md              # Shared synthesis agent
+  search-sources/
+    agent.md                    # Searcher agent definition
+    skill.md                    # /search-sources orchestration
+  analyze-source/
+    agent.md                    # Analyzer agent definition
+    skill.md                    # /analyze-source orchestration
+  lit-review/
+    skill.md                    # /lit-review orchestration
+  verify-claims/
+    skill.md                    # /verify-claims orchestration
+  reports/                      # Output directory for generated reports
 ```

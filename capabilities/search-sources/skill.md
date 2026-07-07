@@ -17,13 +17,13 @@ Free-text description of the topic or query to search for.
 
 ### Step 1: Read Guidance
 Read:
-- `lit-review-and-claim-verifier/SEARCH_STRATEGY.md`
-- `lit-review-and-claim-verifier/agents/searcher.md`
+- `capabilities/shared/search-strategy.md`
+- `capabilities/search-sources/agent.md`
 
 ### Step 2: Run Searcher
 Launch a single agent using a flagship reasoning model:
 - Include the full Searcher agent instructions
-- Include SEARCH_STRATEGY.md guidance
+- Include search-strategy.md guidance
 - Pass the user's topic/query
 - Request: "Find up to 15 relevant sources. Return the ranked source list."
 
@@ -31,4 +31,4 @@ Launch a single agent using a flagship reasoning model:
 Print the Searcher's ranked source list directly to stdout. Format as a numbered list with title, authors, date, URL, type, and relevance score for each source.
 
 ## Model Requirement
-Agent invocation MUST use a flagship reasoning model. See WORKFLOW_CONFIG.md for platform-specific model mapping.
+Agent invocation MUST use a flagship reasoning model. See capabilities/shared/workflow-config.md for platform-specific model mapping.

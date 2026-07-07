@@ -18,15 +18,15 @@ Standalone deep-read skill for a single source. Fetches the full text, extracts 
 
 ### Step 1: Read Guidance
 Read:
-- `lit-review-and-claim-verifier/EVIDENCE_STANDARDS.md`
-- `lit-review-and-claim-verifier/OUTPUT_FORMATS.md`
-- `lit-review-and-claim-verifier/agents/analyzer.md`
+- `capabilities/shared/evidence-standards.md`
+- `capabilities/shared/output-formats.md`
+- `capabilities/analyze-source/agent.md`
 
 ### Step 2: Run Analyzer
 Launch a single agent using a flagship reasoning model:
 - Include the full Analyzer agent instructions
-- Include EVIDENCE_STANDARDS.md for quality grading
-- Include OUTPUT_FORMATS.md source card schema
+- Include evidence-standards.md for quality grading
+- Include output-formats.md source card schema
 - Pass the source URL/path and any context
 - Request: "Deep-read this source and produce a structured source card."
 
@@ -34,4 +34,4 @@ Launch a single agent using a flagship reasoning model:
 Print the full source card to stdout.
 
 ## Model Requirement
-Agent invocation MUST use a flagship reasoning model. See WORKFLOW_CONFIG.md for platform-specific model mapping.
+Agent invocation MUST use a flagship reasoning model. See capabilities/shared/workflow-config.md for platform-specific model mapping.

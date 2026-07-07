@@ -31,20 +31,20 @@ Read project context to inform the review:
 
 ### Step 2: Read Guidance Docs
 Read the following files to load workflow configuration:
-- `lit-review-and-claim-verifier/WORKFLOW_CONFIG.md`
-- `lit-review-and-claim-verifier/SEARCH_STRATEGY.md`
-- `lit-review-and-claim-verifier/EVIDENCE_STANDARDS.md`
-- `lit-review-and-claim-verifier/OUTPUT_FORMATS.md`
-- `lit-review-and-claim-verifier/agents/searcher.md`
-- `lit-review-and-claim-verifier/agents/analyzer.md`
-- `lit-review-and-claim-verifier/agents/synthesizer.md`
+- `capabilities/shared/workflow-config.md`
+- `capabilities/shared/search-strategy.md`
+- `capabilities/shared/evidence-standards.md`
+- `capabilities/shared/output-formats.md`
+- `capabilities/search-sources/agent.md`
+- `capabilities/analyze-source/agent.md`
+- `capabilities/shared/synthesizer.md`
 
 ### Step 3: Run Searchers (Parallel by Subtopic)
 If the topic spans multiple distinct subtopics (e.g., a paper with 4 related work subsections), launch one Searcher agent per subtopic in parallel. This produces better coverage than a single broad search.
 
 For each Searcher:
-- Include the full Searcher agent instructions from `lit-review-and-claim-verifier/agents/searcher.md`
-- Include relevant sections of SEARCH_STRATEGY.md in the prompt
+- Include the full Searcher agent instructions from `capabilities/search-sources/agent.md`
+- Include relevant sections of search-strategy.md in the prompt
 - Pass the subtopic description as input
 - Pass the list of existing citations with instruction: "Do NOT return these — they are already cited"
 - Request: "Find up to 15 relevant sources for this subtopic"
@@ -54,12 +54,12 @@ Collect all ranked source lists from the Searchers' responses.
 ### Step 3.5: Deduplicate Across Searchers
 If multiple Searchers were used, merge their results and deduplicate:
 - Same paper found by multiple searchers: keep one entry, note which subtopics it's relevant to
-- Apply SEARCH_STRATEGY.md deduplication rules (same paper at different URLs, updated versions, summaries of primary sources)
+- Apply search-strategy.md deduplication rules (same paper at different URLs, updated versions, summaries of primary sources)
 - Cap at 15 unique sources for analysis
 
 ### Step 4: Run Analyzers (Parallel)
 For each source in the deduplicated list from Step 3.5, launch an agent using a flagship reasoning model:
-- Include the full Analyzer agent instructions from `lit-review-and-claim-verifier/agents/analyzer.md`
+- Include the full Analyzer agent instructions from `capabilities/analyze-source/agent.md`
 - Include the source metadata (title, URL, type) from the Searcher
 - Set analysis context to the original topic
 - Request: "Deep-read this source and produce a source card"
@@ -82,15 +82,15 @@ For sources likely to be cited, launch verification agents (one per source, in p
 This step catches errors that propagate into the final report if left unchecked. Priority: verify any source where the Analyzer reports specific quantitative findings, surprising claims, or findings that will be quoted in the paper. Skip verification for sources that are clearly nice-to-have or will not be cited.
 
 ### Step 6: Run Synthesizer
-Launch a single agent using a flagship reasoning model (see WORKFLOW_CONFIG.md):
-- Include the full Synthesizer agent instructions from `lit-review-and-claim-verifier/agents/synthesizer.md`
-- Include the OUTPUT_FORMATS.md template for Literature Review Report
-- Include EVIDENCE_STANDARDS.md for quality assessment
+Launch a single agent using a flagship reasoning model (see capabilities/shared/workflow-config.md):
+- Include the full Synthesizer agent instructions from `capabilities/shared/synthesizer.md`
+- Include the output-formats.md template for Literature Review Report
+- Include evidence-standards.md for quality assessment
 - Pass all source cards as input
 - Pass the original topic description
 - Set mode to "literature review"
 - If the review is for a specific paper, pass the paper's thesis and existing citations so the Synthesizer can assess contradiction, duplication, and cross-section placement
-- Request: "Synthesize these source cards into a themed literature review. Assign priority tiers (must-cite / should-cite / nice-to-have). Flag any sources that contradict the paper's thesis or duplicate its contribution. Recommend cross-section placement. Write the report to `lit-review-and-claim-verifier/reports/lit-review_<slug>_<YYYY-MM-DD>.md` and print a summary to stdout."
+- Request: "Synthesize these source cards into a themed literature review. Assign priority tiers (must-cite / should-cite / nice-to-have). Flag any sources that contradict the paper's thesis or duplicate its contribution. Recommend cross-section placement. Write the report to `capabilities/reports/lit-review_<slug>_<YYYY-MM-DD>.md` and print a summary to stdout."
 
 ### Step 7: Output
 Print the Synthesizer's stdout summary to the user. Report the file path of the written report.
@@ -101,4 +101,4 @@ Print the Synthesizer's stdout summary to the user. Report the file path of the 
 - If any agent fails, report the failure and continue with remaining agents
 
 ## Model Requirement
-ALL agent invocations in this skill MUST use a flagship reasoning model. See WORKFLOW_CONFIG.md for platform-specific model mapping.
+ALL agent invocations in this skill MUST use a flagship reasoning model. See capabilities/shared/workflow-config.md for platform-specific model mapping.
