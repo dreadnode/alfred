@@ -2,42 +2,6 @@
 
 A scaffold for AI-agent-driven LaTeX document authoring. Clone the repo, point an AI coding agent at it, give it a topic — it writes the paper.
 
-## How It Works
-
-The repo is structured so any coding agent (Claude Code, Cursor, GPT, etc.) can immediately understand and operate it:
-
-- **`paper.yaml`** is the source of truth — title, authors, sections, macros, template. The agent edits this file to define the paper structure.
-- **`scripts/sync.py`** reads `paper.yaml` and updates `main.tex` automatically — the agent never hand-edits LaTeX boilerplate.
-- **`section/*.tex`** files are where the agent writes actual content, one section at a time.
-- **`CLAUDE.md`** and **`AGENT.md`** tell the agent exactly how to use every tool, in what order, and what rules to follow.
-
-The agent workflow: pick a template → define sections in `paper.yaml` → sync → write content → add citations → build → check stats → iterate.
-
-## Starting a Paper
-
-1. **Tell the agent what to write**: Describe your topic, and optionally specify a conference format (e.g., "NeurIPS", "IEEE", "ACM"). The agent sets up the template, defines sections, and starts writing.
-2. **Iterate section by section**: Ask the agent to draft, revise, or expand specific sections. It writes LaTeX content, adds citations from Semantic Scholar, and keeps everything in sync.
-3. **Build and review**: Ask the agent to build the PDF. It compiles to `build/main.pdf` and reports any errors.
-4. **Check progress**: Ask for stats — the agent reports word counts, page count, figures, tables, and citation counts.
-5. **Validate before submitting**: Ask the agent to validate — it checks for broken references, unmatched braces, and sync issues.
-
-The agent handles all the underlying scripts, file management, and LaTeX boilerplate. You just describe what you want.
-
----
-
-## Conducting a Peer Review
-
-The peer review capability runs as an interactive session — you read the paper and send feedback incrementally, and the agent categorizes each note, maps it to a location, and builds a structured review record.
-
-1. **Start a session**: Say `/peer-review` or "start a peer review session". The agent will read the paper and ask for your name. You can also review external PDFs by providing a path.
-2. **Send notes as you read**: Write feedback in natural language. The agent assigns a type (clarity, methodology, claims, etc.), severity (major/minor/nit), and maps it to the relevant section and line. You can also note strengths.
-3. **Edit previous notes**: Say "change R3 to major" or "delete R5" to adjust earlier feedback.
-4. **Finalize**: Say "done with review" or `/peer-review done`. The agent writes a summary, counts issues by type and severity, and proposes a recommendation (Accept / Minor Revision / Major Revision / Reject) for your confirmation.
-
-Review records are saved to `reviews/` with YAML frontmatter for machine-readable metadata. Run `python3 scripts/reviews.py` to list and summarize past reviews.
-
----
-
 ## Features
 
 ### Built-in
@@ -66,6 +30,31 @@ Multi-agent workflows you can kick off by asking the agent. These run specialize
 | Peer review | "Start a peer review session" | Interactive — you send notes as you read, agent categorizes and builds a structured feedback report |
 
 Reports are written to `capabilities/reports/`. See `capabilities/README.md` for full details.
+
+## Starting a Paper
+
+1. **Tell the agent what to write**: Describe your topic, and optionally specify a conference format (e.g., "NeurIPS", "IEEE", "ACM"). The agent sets up the template, defines sections, and starts writing.
+2. **Iterate section by section**: Ask the agent to draft, revise, or expand specific sections. It writes LaTeX content, adds citations from Semantic Scholar, and keeps everything in sync.
+3. **Build and review**: Ask the agent to build the PDF. It compiles to `build/main.pdf` and reports any errors.
+4. **Check progress**: Ask for stats — the agent reports word counts, page count, figures, tables, and citation counts.
+5. **Validate before submitting**: Ask the agent to validate — it checks for broken references, unmatched braces, and sync issues.
+
+The agent handles all the underlying scripts, file management, and LaTeX boilerplate. You just describe what you want.
+
+---
+
+## Conducting a Peer Review
+
+The peer review capability runs as an interactive session — you read the paper and send feedback incrementally, and the agent categorizes each note, maps it to a location, and builds a structured review record.
+
+1. **Start a session**: Say `/peer-review` or "start a peer review session". The agent will read the paper and ask for your name. You can also review external PDFs by providing a path.
+2. **Send notes as you read**: Write feedback in natural language. The agent assigns a type (clarity, methodology, claims, etc.), severity (major/minor/nit), and maps it to the relevant section and line. You can also note strengths.
+3. **Edit previous notes**: Say "change R3 to major" or "delete R5" to adjust earlier feedback.
+4. **Finalize**: Say "done with review" or `/peer-review done`. The agent writes a summary, counts issues by type and severity, and proposes a recommendation (Accept / Minor Revision / Major Revision / Reject) for your confirmation.
+
+Review records are saved to `reviews/` with YAML frontmatter for machine-readable metadata. Run `python3 scripts/reviews.py` to list and summarize past reviews.
+
+---
 
 ## Conference Templates
 
