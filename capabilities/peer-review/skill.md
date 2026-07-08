@@ -9,11 +9,12 @@ Interactive peer-review session. The reviewer reads the paper and sends notes in
 /peer-review --reviewer "Alice Chen"               # Start session with reviewer name
 /peer-review section/03_methodology.tex            # Focus on one section
 /peer-review --reviewer "Alice Chen" section/03_methodology.tex  # Both
+/peer-review /path/to/paper.pdf                    # Review an external PDF
 ```
 
 ## Arguments
 - **--reviewer "Name"**: Reviewer's name for the review record. If omitted, the agent asks during initialization.
-- **Optional**: File path to focus on a specific section. Default: read all `section/*.tex` files.
+- **Optional**: File path to focus on a specific section, or a path to an external PDF. Default: read all `section/*.tex` files.
 
 ## Model Requirement
 The agent handling the peer-review session MUST use a flagship reasoning model. Accurate categorization and context-aware mapping of reviewer feedback to paper locations requires deep reasoning. See `capabilities/shared/workflow-config.md` for platform-specific model mapping.
@@ -27,10 +28,21 @@ Before starting a session, read:
 ## Session Lifecycle
 
 ### 1. Initialize
-Read the paper to build context:
+Read the paper to build context. There are two modes depending on the input:
+
+**Local project mode** (default — no external path provided):
 - Read `paper.yaml` for title, authors, abstract summary, section structure
 - Read all `section/*.tex` files (or the specified section)
 - Read `bibliography.bib` for citation context
+
+**External PDF mode** (a `.pdf` path is provided):
+- Read the PDF page by page using the Read tool (which supports PDF natively)
+- Extract the title, authors, and section structure from the PDF content
+- Locations are referenced as page numbers (`p1`, `p3`) instead of `file:line`
+- The section index maps section names to page ranges instead of `.tex` files
+- Verify-claims and search-sources integration remains available, but `bibliography.bib` lookups are replaced by extracting citation info directly from the PDF text
+
+In both modes:
 - **Ask for the reviewer's name** if not provided as an argument. This is required for the review record filename.
 - Create the review record at `reviews/<paper-slug>-<reviewer-slug>-<YYYYMMDD-HHMM>.md` (timestamp in UTC) with the header populated. Generate each slug independently as follows:
   1. Lowercase the string
@@ -43,15 +55,26 @@ Read the paper to build context:
   Apply these steps separately to the paper title and reviewer name, then join with a hyphen.
   Example: paper "Every Model Cheats: A Study", reviewer "Alice Chen" → `every-model-cheats-a-study-alice-chen-20260707-1430.md`
 
-During initialization, build a **section index** — a mapping of section names/topics to file paths and line ranges. This is used to resolve vague reviewer references like "in the results" to specific files. Example:
+During initialization, build a **section index** — a mapping of section names/topics to file paths and line ranges (or page ranges in PDF mode). This is used to resolve vague reviewer references like "in the results" to specific locations.
+
+Local project example:
 ```
 "abstract"      → section/00_abstract.tex
 "introduction"  → section/01_introduction.tex
-"background"    → section/02_background.tex
 "methodology"   → section/03_methodology.tex
 "results"       → section/04_results.tex
 "discussion"    → section/05_discussion.tex
 "conclusion"    → section/06_conclusion.tex
+```
+
+PDF example:
+```
+"abstract"      → p1
+"introduction"  → p1-2
+"methodology"   → p3-5
+"results"       → p5-7
+"discussion"    → p8-9
+"conclusion"    → p11
 ```
 
 Print a short confirmation:
@@ -71,9 +94,9 @@ The reviewer sends notes in natural language. For each note:
 - Identify the **feedback type** (see Feedback Types below)
 - Identify the **severity**: major (blocks acceptance), minor (should fix), or nit (optional polish)
 - Identify the **target** using these rules, in order:
-  1. **Explicit reference**: The reviewer says "line 34 in methodology" or "section 3.2" → use that file:line directly
-  2. **Section mention**: The reviewer says "in the results" or "the introduction claims..." → resolve via the section index to the file path, then search that file for the relevant passage to get a line number
-  3. **Quote or paraphrase**: The reviewer quotes text from the paper → grep section files for the quote to find file:line
+  1. **Explicit reference**: The reviewer says "line 34 in methodology" or "section 3.2" → use that file:line directly. In PDF mode, "page 3" or "p3" → use that page number.
+  2. **Section mention**: The reviewer says "in the results" or "the introduction claims..." → resolve via the section index to the file path (or page range in PDF mode), then search for the relevant passage to get a line number (or confirm the page).
+  3. **Quote or paraphrase**: The reviewer quotes text from the paper → grep section files for the quote to find file:line. In PDF mode, match against the text read from each page.
   4. **Context from prior notes**: If the reviewer's last few notes were about a specific section, assume this note is about the same section unless they indicate otherwise
   5. **Cannot determine**: If none of the above resolves a target, ask the reviewer: "Which section does this note apply to?"
 
@@ -84,14 +107,15 @@ The reviewer sends notes in natural language. For each note:
 **Record to the report:**
 - Append the note to the appropriate severity section (Major Issues / Minor Issues / Nits / Strengths) in the review record
 - Assign a sequential ID (R1, R2, R3, ...)
-- Include the original note text, category, severity, and file:line reference
+- Include the original note text, category, severity, and file:line reference (or page number in PDF mode)
 - The Summary section remains blank until finalization — the rest of the file is valid markdown at all times
 - The YAML frontmatter fields (`recommendation`, `issues`, `types`) stay zeroed until finalization
 
 **Acknowledge briefly:**
 After recording, confirm with one line:
 ```
-R<N> recorded — <type>, <severity> → <section file>:<line>
+R<N> recorded — <type>, <severity> → <section file>:<line>    # local project mode
+R<N> recorded — <type>, <severity> → p<N>                     # PDF mode
 ```
 Do not summarize the note back or add commentary unless the reviewer asks.
 
@@ -119,8 +143,8 @@ When the reviewer says `/peer-review done`, "done with review", or "finalize the
 
 **Optional — verify flagged claims:**
 If any CLM or REF-type notes question the accuracy of specific claims, offer to verify them. To do this:
-1. Extract the specific claim text from the section file at the note's file:line location
-2. Read `bibliography.bib` to resolve any `\cite{key}` references in that passage to DOIs/URLs
+1. Extract the specific claim text from the paper at the note's location (file:line in local mode, or the relevant page in PDF mode)
+2. Resolve cited sources — via `bibliography.bib` in local mode, or by extracting author/title/year from the PDF's reference list
 3. Run `/verify-claims` targeting just that passage, or launch a single Analyzer agent (from `capabilities/analyze-source/agent.md`) to fetch and check the cited source directly
 4. Append the verification result to the note in the review record as a sub-section: "**Verification**: <result>"
 
@@ -161,7 +185,7 @@ See `capabilities/shared/output-formats.md` for the full template.
 
 ## Integration with Other Capabilities
 
-- **verify-claims**: When a reviewer flags a claim as suspect (CLM or REF type), extract the claim text from the paper at the note's file:line, resolve cited sources via `bibliography.bib`, and run verification. See Step 3 (Finalize) for the detailed workflow.
+- **verify-claims**: When a reviewer flags a claim as suspect (CLM or REF type), extract the claim text from the paper at the note's location, resolve cited sources (via `bibliography.bib` or the PDF's reference list), and run verification. See Step 3 (Finalize) for the detailed workflow.
 - **search-sources**: When a reviewer says "there's prior work they missed on X," run `/search-sources` with the topic. Append results to the note.
 - **analyze-source**: If the reviewer provides a URL to a paper they think is missing, run `/analyze-source` to produce a source card and add it as evidence to the note.
 
