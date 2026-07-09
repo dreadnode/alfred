@@ -1,15 +1,55 @@
 """Dreadnode agent factory for agentic-latex paper editing."""
 
 import os
+import typing as t
+from contextlib import AsyncExitStack, asynccontextmanager
+from copy import deepcopy
 
+import rigging as rg
 import yaml
+from contextlib import aclosing
 
 from dreadnode.agent import TaskAgent
+from dreadnode.agent.agent import CommitBehavior
+from dreadnode.agent.events import AgentEvent
 from dreadnode.agent.hooks.summarize import summarize_when_long
+from dreadnode.agent.thread import Thread
 from dreadnode.agent.tools.execute import command
 from dreadnode.agent.tools.fs import Filesystem
 
 from .tools import make_latex_tools, web_fetch, web_search
+
+
+class LocalTaskAgent(TaskAgent):
+    """``TaskAgent`` subclass that bypasses dreadnode platform telemetry.
+
+    Overrides ``stream()`` to call ``_stream()`` directly instead of going
+    through ``_stream_traced()``, which imports ``dreadnode.task_and_run``
+    and tries to connect to ``platform.dreadnode.io``.
+
+    All agent functionality (tool calling, hooks, stop conditions) is
+    preserved — only the telemetry wrapper is removed.
+    """
+
+    @asynccontextmanager
+    async def stream(
+        self,
+        user_input: str,
+        *,
+        thread: Thread | None = None,
+        commit: CommitBehavior = "always",
+    ) -> t.AsyncIterator[t.AsyncGenerator[AgentEvent, None]]:
+        """Stream agent events without platform telemetry."""
+        thread = thread or self.thread
+        messages = [*deepcopy(thread.messages), rg.Message("user", str(user_input))]
+
+        async with AsyncExitStack() as stack:
+            for tool_container in self.tools:
+                if hasattr(tool_container, "__aenter__") and hasattr(tool_container, "__aexit__"):
+                    await stack.enter_async_context(tool_container)
+
+            async with aclosing(self._stream(thread, messages, commit=commit)) as event_stream:
+                yield event_stream
 
 
 def _load_paper_context(paper_dir: str) -> str:
@@ -175,7 +215,7 @@ Natural-language triggers also work:
 {paper_context}
 """
 
-    return TaskAgent(
+    return LocalTaskAgent(
         name="latex-agent",
         description="An agent that helps write and edit LaTeX academic papers",
         model=model,
