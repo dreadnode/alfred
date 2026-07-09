@@ -55,11 +55,6 @@ def main() -> None:
         help="Don't open browser automatically",
     )
     parser.add_argument(
-        "--search-api-key-env",
-        default=None,
-        help="Environment variable name for web search API key (Tavily). Optional.",
-    )
-    parser.add_argument(
         "--dev",
         action="store_true",
         help="Run in dev mode (frontend dev server on port 3000)",
@@ -98,7 +93,6 @@ def main() -> None:
         paper_dir=paper_dir,
         model=args.model,
         api_key_env=args.api_key_env,
-        search_api_key_env=args.search_api_key_env,
     )
 
     if not args.dev and frontend_dist.is_dir():

@@ -5,4 +5,5 @@ watchfiles>=0.20.0
 dreadnode>=1.17.0
 rigging>=3.0.0
 aiohttp>=3.9.0
+duckduckgo-search>=7.0.0
 pyyaml>=6.0

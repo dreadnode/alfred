@@ -95,7 +95,7 @@ Opens at `http://localhost:8420`. The agent has access to all scripts, file edit
 Features:
 - **Cancel** — press Esc or click CANCEL to stop the agent mid-run
 - **Session recovery** — reconnects automatically after network drops, restores chat history
-- **Web search** — add `--search-api-key-env TAVILY_API_KEY` for web search in capabilities
+- **Web search** — built-in via DuckDuckGo, no API key needed
 - **Any LLM** — works with any model supported by [rigging](https://rigging.dreadnode.io) (Anthropic, OpenAI, Gemini, local models, etc.)
 
 See `CLAUDE.md` for detailed setup and project structure.
@@ -107,4 +107,3 @@ See `CLAUDE.md` for detailed setup and project structure.
 - Python 3 with PyYAML (`pip install pyyaml`)
 - Node.js 18+ (for web UI frontend)
 - Optional: `latexdiff` for diff PDFs (`brew install latexdiff`)
-- Optional: [Tavily API key](https://tavily.com) for web search in capabilities

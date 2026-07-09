@@ -1,13 +1,14 @@
 """Web tools — fetch pages and search the web."""
 
+import asyncio
 import html as html_mod
-import os
 import re
 import typing as t
 
 import aiohttp
+from duckduckgo_search import DDGS
 
-from dreadnode.agent.tools import AnyTool, tool
+from dreadnode.agent.tools import tool
 
 _MAX_RESPONSE_BYTES: int = 2 * 1024 * 1024  # 2 MB cap on response body
 _USER_AGENT: str = "agentic-latex/0.1 (research-agent; +https://github.com)"
@@ -72,63 +73,27 @@ async def web_fetch(
     return text
 
 
-def make_web_search(search_api_key_env: str | None) -> AnyTool:
-    """Create a web search tool that closes over the API key env var.
+@tool(catch=True)
+async def web_search(
+    query: t.Annotated[str, "Search query"],
+    max_results: t.Annotated[int, "Maximum number of results"] = 10,
+) -> str:
+    """Search the web and return a list of results with titles, URLs, and snippets.
 
-    Args:
-        search_api_key_env: Name of the env-var holding the Tavily API key,
-            or ``None`` if web search is not configured.
-
-    Returns:
-        A ``web_search`` tool object.
+    Uses DuckDuckGo. No API key required.
     """
-    api_key: str = ""
-    if search_api_key_env:
-        api_key = os.environ.get(search_api_key_env, "")
+    results = await asyncio.to_thread(
+        lambda: DDGS().text(query, max_results=max_results)
+    )
 
-    @tool(catch=True)
-    async def web_search(
-        query: t.Annotated[str, "Search query"],
-        max_results: t.Annotated[int, "Maximum number of results"] = 10,
-    ) -> str:
-        """Search the web and return a list of results with titles, URLs, and snippets.
+    if not results:
+        return f"No results found for: {query}"
 
-        Uses the Tavily search API. If no API key is configured, returns a message
-        suggesting ``search_citations`` for academic papers instead.
-        """
-        if not api_key:
-            return (
-                "Web search is not configured (no search API key provided). "
-                "Use search_citations for academic paper search via Semantic Scholar, "
-                "or use web_fetch if you already have a URL."
-            )
+    lines: list[str] = []
+    for i, r in enumerate(results, 1):
+        title = r.get("title", "Untitled")
+        url = r.get("href", "")
+        snippet = r.get("body", "")[:200]
+        lines.append(f"{i}. {title}\n   {url}\n   {snippet}")
 
-        async with aiohttp.ClientSession() as session:
-            payload = {
-                "api_key": api_key,
-                "query": query,
-                "max_results": max_results,
-                "include_answer": False,
-            }
-            async with session.post(
-                "https://api.tavily.com/search",
-                json=payload,
-                timeout=aiohttp.ClientTimeout(total=30),
-            ) as resp:
-                resp.raise_for_status()
-                data = await resp.json()
-
-        results: list[dict[str, t.Any]] = data.get("results", [])
-        if not results:
-            return f"No results found for: {query}"
-
-        lines: list[str] = []
-        for i, r in enumerate(results, 1):
-            title = r.get("title", "Untitled")
-            result_url = r.get("url", "")
-            snippet = r.get("content", "")[:200]
-            lines.append(f"{i}. {title}\n   {result_url}\n   {snippet}")
-
-        return "\n\n".join(lines)
-
-    return web_search
+    return "\n\n".join(lines)

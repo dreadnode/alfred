@@ -62,9 +62,6 @@ Local web interface with a terminal-style chat (left pane) and live PDF viewer (
 # Quick start (builds frontend automatically if needed)
 bash scripts/launch-ui.sh --model claude-sonnet-4-20250514 --api-key-env ANTHROPIC_API_KEY
 
-# With web search (Tavily)
-bash scripts/launch-ui.sh --model claude-sonnet-4-20250514 --api-key-env ANTHROPIC_API_KEY --search-api-key-env TAVILY_API_KEY
-
 # For a paper in another directory
 bash scripts/launch-ui.sh --paper /path/to/paper --model gpt-4o --api-key-env OPENAI_API_KEY
 

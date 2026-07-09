@@ -9,7 +9,7 @@ from dreadnode.agent.hooks.summarize import summarize_when_long
 from dreadnode.agent.tools.execute import command
 from dreadnode.agent.tools.fs import Filesystem
 
-from .tools import make_latex_tools, make_web_search, web_fetch
+from .tools import make_latex_tools, web_fetch, web_search
 
 
 def _load_paper_context(paper_dir: str) -> str:
@@ -73,7 +73,6 @@ def create_agent(
     model: str,
     paper_dir: str,
     api_key_env: str | None = None,
-    search_api_key_env: str | None = None,
 ) -> TaskAgent:
     """Create and configure a LaTeX editing agent.
 
@@ -82,8 +81,6 @@ def create_agent(
         paper_dir: Absolute path to the paper working directory.
         api_key_env: Name of the environment variable holding the LLM API key.
             If provided, the variable must be set and non-empty.
-        search_api_key_env: Name of the env-var holding the Tavily web search
-            API key. If ``None`` or unset, ``web_search`` returns a fallback message.
 
     Returns:
         A configured ``TaskAgent`` with filesystem, shell, web, and LaTeX tools.
@@ -96,7 +93,6 @@ def create_agent(
 
     fs = Filesystem(path=paper_dir, variant="write")
     latex_tools = make_latex_tools(paper_dir)
-    search_tool = make_web_search(search_api_key_env)
     paper_context = _load_paper_context(paper_dir)
 
     instructions = f"""\
@@ -180,9 +176,6 @@ Natural-language triggers also work:
 - "check claims in..." or "verify claims..." → verify-claims
 - "review my paper..." or "give feedback on..." → peer-review
 
-If web_search is unavailable (no API key), use search_citations for academic sources
-and web_fetch for known URLs.
-
 {paper_context}
 """
 
@@ -192,6 +185,6 @@ and web_fetch for known URLs.
         model=model,
         instructions=instructions,
         max_steps=50,
-        tools=[command, fs, web_fetch, search_tool, *latex_tools],
+        tools=[command, fs, web_fetch, web_search, *latex_tools],
         hooks=[summarize_when_long(max_tokens=100_000, min_messages_to_keep=6)],
     )

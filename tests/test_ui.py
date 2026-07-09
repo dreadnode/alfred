@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import asyncio
-import json
 import os
 import sys
 import time
@@ -284,16 +283,13 @@ class TestCreateAgent:
         assert "summarize_when_long" in hook_names
         assert "retry_with_feedback" in hook_names
 
-    def test_web_search_no_key_returns_fallback(self, agent_dir: str) -> None:
-        """web_search should return fallback message when no API key is configured."""
+    def test_web_search_present_and_no_key_required(self, agent_dir: str) -> None:
+        """web_search should be available without any API key configuration."""
         agent = create_agent("test-model", agent_dir)
         search_tool = next(t for t in agent.all_tools if t.name == "web_search")
-        tc = MagicMock()
-        tc.id = "test"
-        tc.name = "web_search"
-        tc.function.arguments = json.dumps({"query": "test"})
-        msg, _stop = asyncio.run(search_tool.handle_tool_call(tc))
-        assert "not configured" in msg.content.lower()
+        params = (search_tool.api_definition.function.parameters or {}).get("properties", {})
+        assert "query" in params
+        assert "api_key" not in params
 
 
 # ---------------------------------------------------------------------------
