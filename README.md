@@ -107,3 +107,19 @@ See `CLAUDE.md` for detailed setup and project structure.
 - Python 3 with PyYAML (`pip install pyyaml`)
 - Node.js 18+ (for web UI frontend)
 - Optional: `latexdiff` for diff PDFs (`brew install latexdiff`)
+
+## Comparison
+
+|  | **agentic-latex** | **OpenAI Prism** | **lmms-lab-writer** | **Underleaf** | **PaperDebugger** |
+|---|---|---|---|---|---|
+| **Approach** | Agent-first — you talk, it writes | Editor with inline AI | Editor with AI agents | Overleaf extension | Overleaf extension |
+| **Autonomy** | Full — writes sections, builds, searches, cites | Inline edits, suggestions | AI-assisted editing | Copilot suggestions | Multi-agent patches |
+| **LLM support** | Any (Claude, GPT, Gemini, Mistral, local, OpenRouter) | GPT only | Configurable | Locked to their API | Configurable |
+| **Runs locally** | Yes — nothing leaves your machine | No (cloud) | Yes | No (cloud) | No (cloud) |
+| **Research workflows** | Lit review, claim verification, peer review, source analysis | No | No | Citation search, summarization | Literature retrieval |
+| **PDF preview** | Live auto-reload | Yes | Yes | Via Overleaf | Via Overleaf |
+| **Conference templates** | 6 built-in (NeurIPS, IEEE, ACM, USENIX, ACL, article) | Yes | Auto-detect | Via Overleaf | Via Overleaf |
+| **Web search** | Built-in (DuckDuckGo) | Via ChatGPT | No | No | No |
+| **PDF/image to LaTeX** | No | No | No | Yes | No |
+| **Cost** | Free (bring your own API key) | Free | Free | Freemium (usage limits) | Free |
+| **Requires Overleaf** | No | No | No | Yes | Yes |
