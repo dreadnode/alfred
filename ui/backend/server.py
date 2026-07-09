@@ -99,25 +99,47 @@ def configure(
 # PDF file watcher
 # ---------------------------------------------------------------------------
 
+_PDF_DEBOUNCE: float = 1.5  # seconds to wait after last write before notifying
+
+
 async def _watch_pdf() -> None:
-    """Watch ``build/main.pdf`` for changes and notify connected WebSocket clients."""
+    """Watch ``build/main.pdf`` for changes and notify connected WebSocket clients.
+
+    Debounces notifications: waits ``_PDF_DEBOUNCE`` seconds after the last
+    detected change before notifying, so the frontend doesn't load a
+    partially-written PDF during multi-pass ``latexmk`` builds.
+    """
     watch_dir = os.path.join(_paper_dir, "build")
+    pdf_path = os.path.join(watch_dir, "main.pdf")
 
     if not os.path.isdir(watch_dir):
         os.makedirs(watch_dir, exist_ok=True)
 
+    pending: asyncio.Task[None] | None = None
+
+    async def _notify() -> None:
+        """Wait for the debounce period, then notify all PDF clients."""
+        await asyncio.sleep(_PDF_DEBOUNCE)
+        # Verify the file exists and has content (not a truncated mid-write)
+        if not os.path.isfile(pdf_path) or os.path.getsize(pdf_path) == 0:
+            return
+        msg = json.dumps({"type": "pdf_updated", "timestamp": time.time()})
+        disconnected: set[WebSocket] = set()
+        for ws in _pdf_clients:
+            try:
+                await ws.send_text(msg)
+            except Exception:
+                disconnected.add(ws)
+        _pdf_clients -= disconnected
+
     async for changes in awatch(watch_dir):
-        for _change_type, changed_path in changes:
-            if not changed_path.endswith("main.pdf"):
-                continue
-            msg = json.dumps({"type": "pdf_updated", "timestamp": time.time()})
-            disconnected: set[WebSocket] = set()
-            for ws in _pdf_clients:
-                try:
-                    await ws.send_text(msg)
-                except Exception:
-                    disconnected.add(ws)
-            _pdf_clients -= disconnected
+        pdf_changed = any(path.endswith("main.pdf") for _, path in changes)
+        if not pdf_changed:
+            continue
+        # Reset the debounce timer on each change
+        if pending and not pending.done():
+            pending.cancel()
+        pending = asyncio.create_task(_notify())
 
 
 @asynccontextmanager
