@@ -82,9 +82,29 @@ Review records are saved to `reviews/` with YAML frontmatter for machine-readabl
 | `CLAUDE.md` | Agent instructions (workflow + rules) |
 | `AGENT.md` | Detailed how-to for every operation |
 
+## Web UI
+
+A local web interface for interactive paper editing. Terminal-style chat on the left, live PDF preview on the right.
+
+```bash
+bash scripts/launch-ui.sh --model claude-sonnet-4-20250514 --api-key-env ANTHROPIC_API_KEY
+```
+
+Opens at `http://localhost:8420`. The agent has access to all scripts, file editing, web search, and capabilities — same as the CLI workflow, but with a visual PDF preview that auto-updates on every build.
+
+Features:
+- **Cancel** — press Esc or click CANCEL to stop the agent mid-run
+- **Session recovery** — reconnects automatically after network drops, restores chat history
+- **Web search** — add `--search-api-key-env TAVILY_API_KEY` for web search in capabilities
+- **Any LLM** — works with any model supported by [rigging](https://rigging.dreadnode.io) (Anthropic, OpenAI, Gemini, local models, etc.)
+
+See `CLAUDE.md` for detailed setup and project structure.
+
 ## Requirements
 
 - TeX Live (basic install works for most templates)
 - `latexmk` and `biber` (included in basic TeX Live)
 - Python 3 with PyYAML (`pip install pyyaml`)
+- Node.js 18+ (for web UI frontend)
 - Optional: `latexdiff` for diff PDFs (`brew install latexdiff`)
+- Optional: [Tavily API key](https://tavily.com) for web search in capabilities

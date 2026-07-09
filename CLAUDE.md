@@ -51,3 +51,51 @@ Extended agent capabilities beyond core document authoring. See `capabilities/RE
 | `/peer-review` | Interactive review session — record notes into structured review record |
 
 Reports are written to `capabilities/reports/`. Peer review records are saved to `reviews/` and tracked in git.
+
+## Web UI
+
+Local web interface with a terminal-style chat (left pane) and live PDF viewer (right pane). Uses dreadnode SDK's `TaskAgent` with rigging for LLM integration.
+
+### Launching
+
+```bash
+# Quick start (builds frontend automatically if needed)
+bash scripts/launch-ui.sh --model claude-sonnet-4-20250514 --api-key-env ANTHROPIC_API_KEY
+
+# With web search (Tavily)
+bash scripts/launch-ui.sh --model claude-sonnet-4-20250514 --api-key-env ANTHROPIC_API_KEY --search-api-key-env TAVILY_API_KEY
+
+# For a paper in another directory
+bash scripts/launch-ui.sh --paper /path/to/paper --model gpt-4o --api-key-env OPENAI_API_KEY
+
+# Dev mode (frontend hot-reload on port 3000)
+ui/backend/.venv/bin/python3 scripts/ui.py --model claude-sonnet-4-20250514 --api-key-env ANTHROPIC_API_KEY --dev
+# Then in another terminal: npm run dev --prefix ui/frontend
+```
+
+### Structure
+
+```
+ui/
+├── backend/
+│   ├── agent.py           # Agent factory, instructions, paper.yaml context
+│   ├── server.py          # FastAPI + WebSocket + PDF watcher + sessions
+│   ├── tools/
+│   │   ├── subprocess.py  # Async subprocess runner with cancellation
+│   │   ├── web.py         # web_fetch + web_search (Tavily)
+│   │   └── latex.py       # 10 LaTeX script tools (closure over paper_dir)
+│   └── requirements.txt
+├── frontend/              # React + Vite + TypeScript
+│   └── src/
+│       ├── App.tsx                    # Split-pane layout with resizer
+│       ├── components/TerminalChat.tsx # Terminal chat with session recovery
+│       ├── components/PdfViewer.tsx    # pdf.js viewer with auto-reload
+│       └── hooks/useWebSocket.ts      # WebSocket hook with reconnect
+└── .gitignore
+```
+
+### Running tests
+
+```bash
+ui/backend/.venv/bin/python3 -m pytest tests/test_ui.py -v
+```
