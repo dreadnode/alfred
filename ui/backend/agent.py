@@ -5,6 +5,7 @@ import os
 import yaml
 
 from dreadnode.agent import TaskAgent
+from dreadnode.agent.hooks.summarize import summarize_when_long
 from dreadnode.agent.tools.execute import command
 from dreadnode.agent.tools.fs import Filesystem
 
@@ -192,4 +193,5 @@ and web_fetch for known URLs.
         instructions=instructions,
         max_steps=50,
         tools=[command, fs, web_fetch, search_tool, *latex_tools],
+        hooks=[summarize_when_long(max_tokens=100_000, min_messages_to_keep=6)],
     )
