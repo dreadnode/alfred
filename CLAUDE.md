@@ -79,7 +79,7 @@ ui/
 │   ├── server.py          # FastAPI + WebSocket + PDF watcher + sessions
 │   ├── tools/
 │   │   ├── subprocess.py  # Async subprocess runner with cancellation
-│   │   ├── web.py         # web_fetch + web_search (Tavily)
+│   │   ├── web.py         # web_fetch + web_search (DuckDuckGo)
 │   │   └── latex.py       # 10 LaTeX script tools (closure over paper_dir)
 │   └── requirements.txt
 ├── frontend/              # React + Vite + TypeScript
