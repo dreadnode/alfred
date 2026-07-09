@@ -6,7 +6,9 @@ import json
 import os
 import time
 import typing as t
+import uuid
 from contextlib import asynccontextmanager
+from dataclasses import dataclass, field
 
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.responses import FileResponse, JSONResponse
@@ -29,6 +31,9 @@ from dreadnode.agent.reactions import Fail, Finish, RetryWithFeedback
 
 from .agent import create_agent
 
+if t.TYPE_CHECKING:
+    from dreadnode.agent import TaskAgent
+
 # ---------------------------------------------------------------------------
 # Module-level configuration (set once via ``configure()`` before server start)
 # ---------------------------------------------------------------------------
@@ -40,6 +45,30 @@ _search_api_key_env: str | None = None
 
 # WebSocket clients subscribed to PDF change notifications.
 _pdf_clients: set[WebSocket] = set()
+
+_SESSION_TTL: float = 3600.0  # 1 hour — sessions idle longer than this are pruned
+
+
+@dataclass
+class _Session:
+    """In-memory chat session: holds the agent and its event history."""
+
+    session_id: str
+    agent: "TaskAgent"
+    history: list[dict[str, t.Any]] = field(default_factory=list)
+    last_active: float = field(default_factory=time.time)
+
+
+# Active sessions keyed by session ID.  Kept alive across WebSocket reconnects.
+_sessions: dict[str, _Session] = {}
+
+
+def _prune_sessions() -> None:
+    """Remove sessions that have been idle longer than ``_SESSION_TTL``."""
+    now = time.time()
+    expired = [sid for sid, s in _sessions.items() if now - s.last_active > _SESSION_TTL]
+    for sid in expired:
+        del _sessions[sid]
 
 
 def configure(
@@ -232,41 +261,75 @@ def _format_event(event: AgentEvent) -> dict[str, t.Any] | None:
 
 @app.websocket("/ws/chat")
 async def ws_chat(websocket: WebSocket) -> None:
-    """Per-connection chat session: creates an agent and streams events back.
+    """Per-connection chat session with reconnect support.
 
-    The agent runs in a separate ``asyncio.Task``.  The message loop races
-    ``websocket.receive_text()`` against the agent task so it can handle
-    ``{"type": "cancel"}`` messages while the agent is working.
+    On first connect the server creates a new session (agent + event history)
+    and sends ``session_start`` with the session ID.  On reconnect the client
+    sends ``{"type": "resume", "session_id": "..."}`` and the server replays
+    the stored event history, then reattaches to the existing agent.
+
+    The agent runs in a separate ``asyncio.Task`` so the message loop can
+    receive ``cancel`` messages concurrently.
     """
     await websocket.accept()
 
-    agent = create_agent(_model, _paper_dir, _api_key_env, _search_api_key_env)
+    session: _Session | None = None
     agent_task: asyncio.Task[None] | None = None
+
+    def _get_or_create_session(session_id: str | None) -> _Session:
+        """Look up an existing session or create a new one.
+
+        Prunes expired sessions on each call and updates ``last_active``.
+        """
+        _prune_sessions()
+        if session_id and session_id in _sessions:
+            _sessions[session_id].last_active = time.time()
+            return _sessions[session_id]
+        new_id = str(uuid.uuid4())
+        new_session = _Session(
+            session_id=new_id,
+            agent=create_agent(_model, _paper_dir, _api_key_env, _search_api_key_env),
+        )
+        _sessions[new_id] = new_session
+        return new_session
+
+    async def _send_event(event_dict: dict[str, t.Any]) -> None:
+        """Send a formatted event to the client and record it in session history."""
+        if session:
+            session.history.append(event_dict)
+        await websocket.send_text(json.dumps(event_dict))
 
     async def _run_agent(user_input: str) -> None:
         """Stream agent events to the WebSocket. Runs inside a cancellable task."""
+        assert session is not None
+        session.last_active = time.time()
+        user_event: dict[str, t.Any] = {"type": "user_message", "content": user_input}
+        session.history.append(user_event)
         try:
-            async with agent.stream(user_input) as events:
+            async with session.agent.stream(user_input) as events:
                 async for event in events:
                     formatted = _format_event(event)
                     if formatted:
-                        await websocket.send_text(json.dumps(formatted))
+                        await _send_event(formatted)
         except asyncio.CancelledError:
-            await websocket.send_text(json.dumps({
-                "type": "agent_end",
-                "stop_reason": "cancelled",
-                "failed": True,
-                "steps": 0,
-                "usage": {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0},
-            }))
+            try:
+                await _send_event({
+                    "type": "agent_end",
+                    "stop_reason": "cancelled",
+                    "failed": True,
+                    "steps": 0,
+                    "usage": {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0},
+                })
+            except WebSocketDisconnect:
+                pass  # Client already gone — event is still recorded in history
         except WebSocketDisconnect:
             raise
         except Exception as exc:
             try:
-                await websocket.send_text(json.dumps({
+                await _send_event({
                     "type": "error",
                     "message": f"Agent error: {exc}",
-                }))
+                })
             except WebSocketDisconnect:
                 raise
 
@@ -275,21 +338,15 @@ async def ws_chat(websocket: WebSocket) -> None:
         nonlocal agent_task
         if agent_task and not agent_task.done():
             agent_task.cancel()
-            with contextlib.suppress(asyncio.CancelledError):
+            with contextlib.suppress(asyncio.CancelledError, WebSocketDisconnect):
                 await agent_task
         agent_task = None
 
     async def _recv_message() -> str:
-        """Receive a WebSocket message, racing against the agent task if active.
-
-        While the agent is running, this waits for whichever completes first:
-        the next WebSocket message or the agent task finishing.  If the agent
-        finishes first, loops back to a plain receive.
-        """
+        """Receive a WebSocket message, racing against the agent task if active."""
         nonlocal agent_task
         while True:
             if not agent_task or agent_task.done():
-                # No agent running — if the previous task raised, propagate
                 if agent_task and agent_task.done() and not agent_task.cancelled():
                     exc = agent_task.exception()
                     if exc:
@@ -297,7 +354,6 @@ async def ws_chat(websocket: WebSocket) -> None:
                 agent_task = None
                 return await websocket.receive_text()
 
-            # Agent running — race recv vs agent completion
             recv_task: asyncio.Task[str] = asyncio.create_task(websocket.receive_text())
             done, _ = await asyncio.wait(
                 [agent_task, recv_task],
@@ -307,12 +363,44 @@ async def ws_chat(websocket: WebSocket) -> None:
             if recv_task in done:
                 return recv_task.result()
 
-            # Agent finished first — cancel the pending recv and loop
             recv_task.cancel()
             with contextlib.suppress(asyncio.CancelledError):
                 await recv_task
 
     try:
+        # --- First message: expect resume or treat as new session ---
+        first_data: str = await websocket.receive_text()
+        try:
+            first_msg: dict[str, t.Any] = json.loads(first_data)
+        except json.JSONDecodeError:
+            first_msg = {}
+
+        requested_id: str | None = None
+        if first_msg.get("type") == "resume":
+            requested_id = first_msg.get("session_id")
+
+        session = _get_or_create_session(requested_id)
+        is_resumed = requested_id is not None and requested_id == session.session_id
+
+        # Tell the client which session they're on
+        await websocket.send_text(json.dumps({
+            "type": "session_start",
+            "session_id": session.session_id,
+            "resumed": is_resumed,
+        }))
+
+        # Replay history on resume
+        if is_resumed and session.history:
+            await websocket.send_text(json.dumps({
+                "type": "history",
+                "events": session.history,
+            }))
+
+        # If the first message was a regular user message (not resume), process it
+        if first_msg.get("type") != "resume" and first_msg.get("content", "").strip():
+            agent_task = asyncio.create_task(_run_agent(first_msg["content"]))
+
+        # --- Main message loop ---
         while True:
             data: str = await _recv_message()
 
@@ -327,22 +415,20 @@ async def ws_chat(websocket: WebSocket) -> None:
 
             msg_type: str = msg.get("type", "message")
 
-            # --- Cancel ---
             if msg_type == "cancel":
                 await _cancel_agent()
                 continue
 
-            # --- User message ---
             user_input: str = msg.get("content", "")
             if not user_input.strip():
                 continue
 
-            # Cancel any prior run before starting a new one
             await _cancel_agent()
             agent_task = asyncio.create_task(_run_agent(user_input))
 
     except WebSocketDisconnect:
         await _cancel_agent()
+        # Session stays in _sessions for reconnect — NOT deleted here
 
 
 # ---------------------------------------------------------------------------

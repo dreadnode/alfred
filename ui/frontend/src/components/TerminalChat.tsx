@@ -128,77 +128,133 @@ export default function TerminalChat() {
   const [input, setInput] = useState('')
   const [isProcessing, setIsProcessing] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
+  const sessionIdRef = useRef<string | null>(null)
 
-  // Process each incoming WebSocket message via callback (no dropped messages)
+  // Convert a server event to a ChatMessage (without setting state)
+  const eventToMessage = useCallback((event: Record<string, unknown>): ChatMessage | null => {
+    const type = event.type as string
+
+    switch (type) {
+      case 'user_message':
+        return { id: nextId(), type: 'user', content: event.content as string, timestamp: Date.now() }
+
+      case 'agent_start':
+        return { id: nextId(), type: 'status', content: `Agent started (${event.agent})`, timestamp: Date.now() }
+
+      case 'step_start':
+        return { id: nextId(), type: 'status', content: `--- step ${event.step} ---`, timestamp: Date.now() }
+
+      case 'generation':
+        if (event.content) {
+          return { id: nextId(), type: 'assistant', content: event.content as string, timestamp: Date.now(), meta: event.usage as Record<string, unknown> | undefined }
+        }
+        return null
+
+      case 'tool_start': {
+        let argsStr = ''
+        try {
+          const args = JSON.parse(event.args as string)
+          argsStr = Object.entries(args)
+            .map(([k, v]) => `${k}=${JSON.stringify(v)}`)
+            .join(', ')
+        } catch {
+          argsStr = (event.args as string) || ''
+        }
+        if (argsStr.length > 200) argsStr = argsStr.slice(0, 200) + '...'
+        return { id: nextId(), type: 'tool_start', content: `${event.tool}(${argsStr})`, timestamp: Date.now() }
+      }
+
+      case 'tool_end': {
+        const result = (event.result as string) || ''
+        const truncated = result.length > 500 ? result.slice(0, 500) + '...' : result
+        return { id: nextId(), type: 'tool_end', content: truncated, timestamp: Date.now(), meta: { tool: event.tool, stop: event.stop } }
+      }
+
+      case 'error':
+        return { id: nextId(), type: 'error', content: event.message as string, timestamp: Date.now() }
+
+      case 'stalled':
+        return { id: nextId(), type: 'status', content: 'Agent stalled — no tool calls made.', timestamp: Date.now() }
+
+      case 'reacted':
+        return { id: nextId(), type: 'status', content: event.content as string, timestamp: Date.now() }
+
+      case 'agent_end':
+        return {
+          id: nextId(), type: 'status', timestamp: Date.now(),
+          content: `Done (${event.stop_reason}, ${(event.usage as Record<string, number>)?.total_tokens ?? '?'} tokens)`,
+        }
+
+      default:
+        return null
+    }
+  }, [])
+
+  // Handle incoming WebSocket messages
   const handleWsMessage = useCallback((data: string) => {
     try {
       const event = JSON.parse(data) as Record<string, unknown>
       const type = event.type as string
 
-      switch (type) {
-        case 'agent_start':
-          addMessage(setMessages, 'status', `Agent started (${event.agent})`)
-          break
-
-        case 'step_start':
-          addMessage(setMessages, 'status', `--- step ${event.step} ---`)
-          break
-
-        case 'generation':
-          if (event.content) {
-            addMessage(setMessages, 'assistant', event.content as string, event.usage as Record<string, unknown> | undefined)
-          }
-          break
-
-        case 'tool_start': {
-          let argsStr = ''
-          try {
-            const args = JSON.parse(event.args as string)
-            argsStr = Object.entries(args)
-              .map(([k, v]) => `${k}=${JSON.stringify(v)}`)
-              .join(', ')
-          } catch {
-            argsStr = (event.args as string) || ''
-          }
-          if (argsStr.length > 200) argsStr = argsStr.slice(0, 200) + '...'
-          addMessage(setMessages, 'tool_start', `${event.tool}(${argsStr})`)
-          break
-        }
-
-        case 'tool_end': {
-          const result = (event.result as string) || ''
-          const truncated = result.length > 500 ? result.slice(0, 500) + '...' : result
-          addMessage(setMessages, 'tool_end', truncated, { tool: event.tool, stop: event.stop })
-          break
-        }
-
-        case 'error':
-          addMessage(setMessages, 'error', event.message as string)
-          break
-
-        case 'stalled':
-          addMessage(setMessages, 'status', 'Agent stalled — no tool calls made.')
-          break
-
-        case 'reacted':
-          addMessage(setMessages, 'status', event.content as string)
-          break
-
-        case 'agent_end':
+      if (type === 'session_start') {
+        const prevId = sessionIdRef.current
+        sessionIdRef.current = event.session_id as string
+        if (event.resumed) {
+          addMessage(setMessages, 'status', 'Session resumed.')
+        } else if (prevId) {
+          // Had a session but it expired — clear stale messages
           setIsProcessing(false)
-          addMessage(
-            setMessages,
-            'status',
-            `Done (${event.stop_reason}, ${(event.usage as Record<string, number>)?.total_tokens ?? '?'} tokens)`,
-          )
-          break
+          setMessages([{
+            id: nextId(),
+            type: 'status',
+            content: 'Previous session expired. Starting fresh.',
+            timestamp: Date.now(),
+          }])
+        }
+        return
+      }
+
+      if (type === 'history') {
+        // Batch-replay: convert all events to messages in one pass
+        const events = event.events as Record<string, unknown>[]
+        const restored: ChatMessage[] = [{
+          id: nextId(),
+          type: 'status',
+          content: 'Agentic LaTeX — Session restored.',
+          timestamp: Date.now(),
+        }]
+        const lastType = events.length > 0 ? (events[events.length - 1] as Record<string, unknown>).type : null
+        for (const histEvent of events) {
+          const msg = eventToMessage(histEvent)
+          if (msg) restored.push(msg)
+        }
+        setMessages(restored)
+        // If history ends with agent_end, agent is not running
+        if (lastType === 'agent_end') setIsProcessing(false)
+        return
+      }
+
+      const msg = eventToMessage(event)
+      if (msg) {
+        if (type === 'agent_end') setIsProcessing(false)
+        setMessages(prev => [...prev, msg])
       }
     } catch {
       // ignore parse errors
     }
+  }, [eventToMessage])
+
+  // On WebSocket (re)connect, send resume with session ID
+  const handleWsOpen = useCallback((sendFn: (data: string) => void) => {
+    if (sessionIdRef.current) {
+      sendFn(JSON.stringify({ type: 'resume', session_id: sessionIdRef.current }))
+    } else {
+      // New session — send an empty init so the server assigns an ID
+      sendFn(JSON.stringify({ type: 'init' }))
+    }
   }, [])
 
-  const { status, send } = useWebSocket('/ws/chat', handleWsMessage)
+  const { status, send } = useWebSocket('/ws/chat', handleWsMessage, handleWsOpen)
 
   // Auto-scroll to bottom
   useEffect(() => {

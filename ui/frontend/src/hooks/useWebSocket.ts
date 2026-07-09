@@ -5,14 +5,23 @@ export type ConnectionStatus = 'connecting' | 'connected' | 'disconnected'
 export function useWebSocket(
   path: string,
   onMessage?: (data: string) => void,
+  onOpen?: (send: (data: string) => void) => void,
 ) {
   const wsRef = useRef<WebSocket | null>(null)
   const [status, setStatus] = useState<ConnectionStatus>('disconnected')
   const onMessageRef = useRef(onMessage)
+  const onOpenRef = useRef(onOpen)
   const unmountedRef = useRef(false)
 
-  // Keep callback ref current without re-triggering connect
+  // Keep callback refs current without re-triggering connect
   onMessageRef.current = onMessage
+  onOpenRef.current = onOpen
+
+  const send = useCallback((data: string) => {
+    if (wsRef.current?.readyState === WebSocket.OPEN) {
+      wsRef.current.send(data)
+    }
+  }, [])
 
   const connect = useCallback(() => {
     if (unmountedRef.current) return
@@ -24,7 +33,10 @@ export function useWebSocket(
     const ws = new WebSocket(`${protocol}//${window.location.host}${path}`)
 
     ws.onopen = () => {
-      if (!unmountedRef.current) setStatus('connected')
+      if (!unmountedRef.current) {
+        setStatus('connected')
+        onOpenRef.current?.(send)
+      }
     }
 
     ws.onmessage = (event) => {
@@ -43,7 +55,7 @@ export function useWebSocket(
     }
 
     wsRef.current = ws
-  }, [path])
+  }, [path, send])
 
   useEffect(() => {
     unmountedRef.current = false
@@ -54,12 +66,6 @@ export function useWebSocket(
       wsRef.current = null
     }
   }, [connect])
-
-  const send = useCallback((data: string) => {
-    if (wsRef.current?.readyState === WebSocket.OPEN) {
-      wsRef.current.send(data)
-    }
-  }, [])
 
   return { status, send }
 }
