@@ -317,7 +317,7 @@ export default function TerminalChat() {
         <div style={{ display: 'flex', alignItems: 'baseline', gap: '10px' }}>
           <span style={styles.headerTitle}>AGENTIC L<span style={{ fontSize: '11px' }}>A</span>T<span style={{ fontSize: '11px' }}>E</span>X</span>
           {modelName && (
-            <span style={{ color: 'var(--dn-text-muted)', fontSize: '11px' }}>{modelName}</span>
+            <span style={{ color: '#4fc3f7', fontSize: '11px' }}>{modelName}</span>
           )}
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
