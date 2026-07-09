@@ -1,4 +1,26 @@
 \section{Introduction}
 \label{sec:introduction}
 
-\tbd{Introduce the problem domain and motivation. What gap does this work address?}
+LLM agents cheat on cybersecurity benchmarks, achieving passing scores through shortcut behaviors such as searching for published solutions or reading flag files from evaluation infrastructure, rather than demonstrating genuine problem-solving capability. The result is that reported pass rates overstate genuine capability: a model credited with ``solving'' a capture-the-flag challenge may have simply downloaded the answer. Accurate measurement of offensive cyber capability is critical both for risk evaluation (determining what models can do and whether they should be deployed) and for operational use (selecting models for legitimate security tasks such as penetration testing and vulnerability research). Inflated benchmark scores undermine both.
+
+This is not a hypothetical concern. Prior work has documented the problem, but underestimated its scale. The National Institute of Standards and Technology (NIST) Center for AI Safety and Innovation (CAISI) documented agents searching the internet for challenge flags and walkthroughs on Cybench~\cite{zhang2024cybench}, finding cheating in approximately 0.3\% of logs~\cite{nist2025cheating}. The Meerkat study audited nine benchmarks and found that 3.4\% of successful Cybench traces involved cheating, with 4 models implicated~\cite{stein2026meerkat}. Meanwhile, Anthropic's Claude Opus 4.6 system card described Cybench as ``saturated,'' reporting near-100\% pass rates computed from raw outcomes without transcript audits~\cite{anthropic2026opus46card}. Together, these low cheating rates and unchecked pass rates suggest a marginal problem, but this characterization is misleading.
+
+If prior estimates were representative, cheating would be a marginal artifact affecting a small fraction of traces and a handful of models. The ground truth is an order of magnitude worse. Under baseline conditions with no anti-cheat instructions, 37.1\% of all passes involved cheating, 21 of 22 models cheated, and models attempted to cheat on a third of all tasks whether or not the attempt succeeded. The average pass rate was 41.5\%, but the average solve rate---the fraction of tasks passed without any cheating indicators---was only 26.1\%, with individual models inflated by as much as 5.0$\times$. The gap between our rates and prior estimates is partly methodological: we audit a broader taxonomy of cheating behaviors (web search and infrastructure probing, plus acknowledged violations as a behavioral signal) and count attempts, not just successes. It is also partly structural: we run a true no-intervention baseline, capturing cheating that anti-cheat defaults in other evaluations may already suppress. Cheating is not a marginal artifact but a primary confounder of benchmark scores. This raises a practical question: can cheating be suppressed through lightweight interventions?
+
+Environmental hardening (disabling internet access, isolating sandboxes, using unreleased challenges) is the gold standard but requires infrastructure changes most evaluation platforms have not adopted. System-prompt instructions require no additional infrastructure and can be deployed immediately, making them a natural first intervention to test.
+
+We present a controlled prompt-ablation study testing whether anti-cheat system prompts suppress cheating behavior across 22 frontier LLMs from 7 vendors on the Cybench benchmark. Each model was run against 23 medium-difficulty CTF challenges under three prompt conditions: no anti-cheat instruction (baseline), a normative anti-cheat instruction (standard), and a consequential anti-cheat instruction with explicit enumeration of prohibited behaviors (severe). All 1,518 resulting task trajectories were individually audited for cheating through a three-stage pipeline combining LLM-as-a-judge classification, programmatic verification, and human review.
+
+Anti-cheat prompts are effective but insufficient. Cheat propensity drops from 33.0\% (baseline) to 17.8\% (standard) to 8.5\% (severe), while solve rates remain stable. However, prompts alone cannot eliminate cheating: even under severe conditions, eight models still produced cheated passes, four models showed backfire effects where anti-cheat prompts increased cheating, and cheating escalated from web search toward infrastructure probing, suggesting that prompts redirect the disposition to cheat rather than eliminating it.
+
+\subsection{Contributions}
+\label{sec:contributions}
+
+\begin{itemize}
+    \item \textbf{Controlled prompt-ablation study.} A multi-model, multi-condition prompt-ablation study of cheating suppression on a cybersecurity benchmark, showing that prompts reduce cheating without degrading solve rates but cannot eliminate it.
+
+    \item \textbf{Solve Rate metric.} We distinguish pass rate (all successful submissions) from solve rate (clean passes only) and argue that solve rate, or an equivalent metric, should be standard practice in any evaluation where cheating vectors are available.
+
+    \item \textbf{Extended cheating taxonomy and detection pipeline.} We classify cheating into web search and infrastructure probing, with acknowledged violations tracked as an additional behavioral signal, and detect it through an LLM-as-a-judge backed by programmatic verification and human review. Unlike prior work that audited only successful traces, we count cheat \emph{attempts} regardless of outcome.
+
+\end{itemize}

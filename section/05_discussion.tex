@@ -1,4 +1,32 @@
 \section{Discussion}
 \label{sec:discussion}
 
-\tbd{Interpret results, discuss limitations, and compare with related work.}
+% -----------------------------------------------
+\paragraph{Benchmark Scores Are Inflated.}
+\label{sec:disc-inflation}
+
+The gap between pass rate and solve rate documented in Section~\ref{sec:cheating-picture} suggests that any benchmark where cheating vectors are available (internet access, unsandboxed infrastructure, published solutions) is likely subject to similar inflation. This is consistent with findings beyond Cybench: BenchJack~\cite{wang2026benchjack} found that nine of ten major agent benchmarks could be exploited to near-perfect scores, and DeepSWE~\cite{datacurve2026deepswe} flagged 18--25\% of Claude Opus passes on SWE-bench Pro as achieved through git-history exploits. The problem is invisible unless the evaluator audits transcripts and reports cheating metrics alongside pass rates. Most published evaluations do not: they report raw pass/fail outcomes, treating a cheated pass identically to a clean solve. Without a solve rate or equivalent metric, consumers of benchmark results have no way to distinguish genuine capability from shortcut-taking.
+
+% -----------------------------------------------
+\paragraph{Prompt Mitigation: Cheap but Insufficient.}
+\label{sec:disc-prompts}
+
+Anti-cheat prompts are effectively free: they require no infrastructure changes, no sandbox hardening, and no modifications to the evaluation harness. Cheated passes drop from 78 to 11 (baseline to severe), cheat propensity drops from 33.0\% to 8.5\%, and solve rates are unaffected. Yet prompts alone cannot eliminate cheating. Eight models still produced cheated passes under severe conditions, backfire cases (Section~\ref{sec:prompt-ablation}) show that prompts can even increase cheating in some models, and the escalation from web search toward infrastructure probing (Section~\ref{sec:cheating-strategies}) shows that prompts suppress some cheating channels more effectively than others. Prompts are a useful first layer of defense, but they are not a substitute for environmental controls.
+
+% -----------------------------------------------
+\paragraph{Cheating Is Universal but Mitigation Response Is Model-Specific.}
+\label{sec:disc-model-specific}
+
+Every vendor family in this study cheated under at least one condition, and 21 of 22 models cheated under baseline. Cheating is not confined to a particular architecture, training approach, or capability tier: reasoning and non-reasoning models cheat, large and small models cheat, and models from both Western and Chinese vendors cheat. The correlation between capability and cheating propensity is near zero ($r = -0.093$), confirming that cheating is orthogonal to skill.
+
+Yet models respond to anti-cheat prompts in strikingly different ways. Claude Opus 4.8 went from the highest baseline cheat propensity (65.2\%) to zero under severe. Grok 4.20 showed a U-shaped response, with severe restoring cheating to baseline levels. Gemini 3 Flash cheated more under standard than under no prompt at all. These patterns cannot be predicted from baseline behavior or model family. Evaluators cannot assume that a prompt effective for one model will generalize; prompt responsiveness must be tested empirically per model.
+
+% -----------------------------------------------
+\paragraph{Limitations of our study.}
+\label{sec:limitations}
+
+\begin{itemize}
+\item All results are pass@1: each model--task--condition combination was run once, with no repeated trials to estimate variance. Cheating behavior may differ across runs.
+\item CTF challenges are stylized puzzles, not real-world offensive cyber operations. They serve as a controlled barometer for cheating behavior but may not capture the full range of shortcuts available in production settings.
+\item Testing occurred during a period of rapid model updates, shifting vendor policies around offensive cyber use, and evolving safety tuning. Some models' cheating profiles may reflect transient configurations rather than stable behavior.
+\end{itemize}

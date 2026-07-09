@@ -1,116 +1,138 @@
 \documentclass[11pt]{article}
 
-% ============================================================================
-% CORE PACKAGES
-% ============================================================================
-
-% Encoding & fonts
+% --- Encoding & Typography ---
 \usepackage[utf8]{inputenc}
 \usepackage[T1]{fontenc}
-\usepackage{lmodern}
+% \usepackage{microtype} % requires cm-super or lmodern fonts
+\usepackage{parskip}     % paragraph spacing instead of indentation
 
-% Page layout
-\usepackage[margin=1in]{geometry}
-\usepackage{setspace}
+% --- Page Layout ---
+\usepackage[
+  a4paper,
+  textwidth=155mm,
+  top=30mm,
+  bottom=25mm
+]{geometry}
 
-% Math
-\usepackage{amsmath,amssymb,amsfonts}
-\usepackage{mathtools}
+% --- Math ---
+\usepackage{amsmath}
+\usepackage{amssymb}
 
-% Tables & figures
-\usepackage{booktabs}
-\usepackage{tabularx}
-\usepackage{multirow}
+% --- Graphics & Color ---
 \usepackage{graphicx}
-\usepackage{float}
-\usepackage{subcaption}
-
-% Colors & styling
-\usepackage[dvipsnames,table]{xcolor}
-\usepackage{tcolorbox}
-
-% Code listings
-\usepackage{listings}
-\lstset{
-  basicstyle=\ttfamily\small,
-  breaklines=true,
-  frame=single,
-  numbers=left,
-  numberstyle=\tiny\color{gray},
-  keywordstyle=\color{blue},
-  commentstyle=\color{green!50!black},
-  stringstyle=\color{red!60!black},
-}
-
-% Algorithms (uncomment if installed: tlmgr install algorithm2e)
-% \usepackage[ruled,vlined]{algorithm2e}
-
-% Drawing
+\usepackage[table]{xcolor}
 \usepackage{tikz}
 \usepackage{pgfplots}
 \pgfplotsset{compat=1.18}
 
-% Bibliography
-% BEGIN SYNC: bibliography
-\usepackage[backend=biber,style=numeric,sorting=nyt,maxbibnames=99]{biblatex}
-\addbibresource{bibliography.bib}
-% END SYNC: bibliography
+% --- Tables ---
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage{multirow}
+\usepackage{float}
+\usepackage[font=scriptsize]{caption}
 
-% Hyperlinks (load last among these)
-\usepackage[colorlinks=true,linkcolor=blue!60!black,citecolor=green!50!black,urlcolor=blue!70!black]{hyperref}
-% Smart cross-references (uncomment if installed: tlmgr install cleveref)
-% \usepackage[noabbrev,capitalise]{cleveref}
+% --- Code Listings ---
+\usepackage{listings}
 
-% ============================================================================
-% CUSTOM COMMANDS
-% ============================================================================
+\definecolor{codebackground}{gray}{0.96}
+\definecolor{codecomment}{RGB}{106,153,85}
+\definecolor{codekeyword}{RGB}{86,156,214}
+\definecolor{codestring}{RGB}{206,145,120}
 
-% BEGIN SYNC: metadata
-% Paper metadata
-\newcommand{\papertitle}{Paper Title}
-\newcommand{\paperauthors}{Author One, Author Two}
-% END SYNC: metadata
+\lstset{
+  backgroundcolor=\color{codebackground},
+  basicstyle=\footnotesize\ttfamily,
+  breaklines=true,
+  commentstyle=\color{codecomment},
+  keywordstyle=\color{codekeyword}\bfseries,
+  stringstyle=\color{codestring},
+  frame=single
+}
 
-% Convenience macros
-\newcommand{\tbd}[1]{\textcolor{red}{\textbf{[TBD: #1]}}}
-\newcommand{\note}[1]{\textcolor{orange}{\textbf{[Note: #1]}}}
-\newcommand{\todo}[1]{\textcolor{purple}{\textbf{[TODO: #1]}}}
+% --- Boxes ---
+\usepackage{tcolorbox}
 
-% BEGIN SYNC: macros
-% END SYNC: macros
-
-% ============================================================================
-% OPTIONAL STYLE PACKAGES
-% ============================================================================
-
-% BEGIN SYNC: styles
-% END SYNC: styles
-
-% ============================================================================
-% DOCUMENT
-% ============================================================================
-
-\begin{document}
-
-% BEGIN SYNC: author-block
-\title{\papertitle}
-\author{\paperauthors}
-\date{\today}
-\maketitle
-% END SYNC: author-block
-
-% BEGIN SYNC: sections
-\input{section/00_abstract}
-\input{section/01_introduction}
-\input{section/02_background}
-\input{section/03_methodology}
-\input{section/04_results}
-\input{section/05_discussion}
-\input{section/06_conclusion}
-\input{section/07_appendix}
-% END SYNC: sections
+% --- Headers & Footers ---
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\small\textit{Prompt-Level Mitigation of Cheating on Offensive Cyber Tasks}}
+\fancyfoot[C]{\thepage}
+\renewcommand{\headrulewidth}{0.4pt}
 
 % --- Bibliography ---
+\usepackage[
+  backend=biber,
+  style=numeric,
+  sorting=none,
+  maxbibnames=5,
+  minbibnames=5,
+  maxcitenames=2
+]{biblatex}
+\addbibresource{bibliography.bib}
+
+% --- Hyperlinks ---
+\usepackage[
+  colorlinks=true,
+  linkcolor=blue!60!black,
+  citecolor=blue!60!black,
+  urlcolor=blue!60!black
+]{hyperref}
+
+% ============================================================
+% Templated values — update these when results are finalized
+% ============================================================
+\newcommand{\NumModels}{22}
+\newcommand{\NumVendors}{7}
+\newcommand{\NumTasks}{23}
+\newcommand{\NumPromptConditions}{3}
+% Add more as needed: cheat rates, solve rates, etc.
+
+% ============================================================
+\newcommand{\institution}[1]{\textit{#1}}
+
+\title{Every Model Cheats: Prompt-Level Mitigation of\\Cheating on Offensive Cyber Tasks}
+\author{
+    Michael Kouremetis\thanks{\institution{dreadnode}, Principal AI Research Engineer.
+    Email: michael@dreadnode.io | GitHub: \href{https://github.com/mkultraWasHere}{@mkultraWasHere}} \\
+    \small{dreadnode, USA}
+    \and
+    Ads Dawson\thanks{\institution{dreadnode}, Staff AI Security Researcher.
+    Email: ads@dreadnode.io | GitHub: \href{https://github.com/GangGreenTemperTatum}{@GangGreenTemperTatum}} \\
+    \small{dreadnode, USA}
+    \and
+    Raja Sekhar Rao Dheekonda\thanks{\institution{dreadnode}, Distinguished Engineer.
+    Email: raja@dreadnode.io | GitHub: \href{https://github.com/rdheekonda}{@rdheekonda}} \\
+    \small{dreadnode, USA}
+    \and
+    Brian Greunke\thanks{\institution{dreadnode}, Head of Engineering.
+    Email: brian@dreadnode.io | GitHub: \href{https://github.com/briangreunke}{@briangreunke}} \\
+    \small{dreadnode, USA}
+}
+\date{}
+
+\raggedbottom
+\begin{document}
+
+\maketitle
+
+\input{section/00_abstract}
+\input{section/01_introduction}
+\input{section/02_methodology}
+\input{section/03_results}
+\input{section/05_discussion}
+\input{section/04_related_work}
+\input{section/06_conclusion}
+
+\clearpage
 \printbibliography
+
+\clearpage
+\appendix
+\input{section/10_appendix_tasks}
+\input{section/11_appendix_task_vulnerability}
+\input{section/09_appendix_judge_prompt}
+\input{section/08_appendix_case_studies}
 
 \end{document}

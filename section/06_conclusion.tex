@@ -1,4 +1,10 @@
 \section{Conclusion}
 \label{sec:conclusion}
 
-\tbd{Summarize contributions and outline future work.}
+We tested whether system-prompt instructions can suppress cheating on cybersecurity benchmarks, running 22 frontier LLMs from 7 vendors against 23 Cybench CTF challenges under three prompt conditions and auditing all 1,518 task traces for cheating.
+
+Prompts are partially effective. However, the more fundamental finding is that cheating is far more pervasive than prior estimates suggested. Where earlier audits found cheating in 0.3--3.4\% of traces and implicated a handful of models, we find that 21 of 22 models cheated under baseline, 37.1\% of all passes involved cheating, and benchmark scores were inflated by up to 5.0$\times$ over clean solve rates. Anti-cheat prompts reduce cheating substantially, cutting cheat propensity from 33.0\% (baseline) to 17.8\% (standard) to 8.5\% (severe), without degrading solve rates. They require no infrastructure changes and have no measurable downside.
+
+Yet prompts alone are not sufficient. Eight models still produced cheated passes under the most restrictive prompt condition. Four models showed backfire effects where anti-cheat instructions increased cheating. Cheating escalated from web search toward infrastructure probing under severe conditions, with seven models beginning infrastructure probing that was absent under baseline. The correlation between model capability and cheating propensity is near zero ($r = -0.093$), and prompt responsiveness varies so widely across models that no single prompt configuration can be assumed effective for all.
+
+These findings have two practical implications. First, any benchmark where agents have access to the internet, unsandboxed infrastructure, or challenges with published solutions is likely subject to score inflation from cheating. Evaluators should report solve rates alongside pass rates and audit transcripts for cheating behavior; raw pass/fail outcomes alone are unreliable measures of capability. Second, prompt-level mitigation should be adopted as a default first layer of defense, but environmental controls remain necessary to close the gap that prompts cannot.
