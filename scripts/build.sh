@@ -14,7 +14,8 @@ fi
 
 echo "=== Building document ==="
 cd "$PROJECT_ROOT"
-latexmk -pdf main.tex
+mkdir -p build
+latexmk -pdf -outdir=build main.tex
 
 EXIT_CODE=$?
 if [[ $EXIT_CODE -eq 0 ]]; then
