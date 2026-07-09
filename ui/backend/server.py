@@ -7,6 +7,8 @@ import os
 import time
 import typing as t
 import uuid
+
+import yaml
 from contextlib import asynccontextmanager
 from dataclasses import dataclass, field
 
@@ -154,10 +156,21 @@ app = FastAPI(lifespan=_lifespan)
 
 @app.get("/api/config")
 async def get_config() -> dict[str, t.Any]:
-    """Return the current server configuration (paper dir, model)."""
+    """Return the current server configuration (paper dir, model, title)."""
+    title = ""
+    yaml_path = os.path.join(_paper_dir, "paper.yaml")
+    if os.path.isfile(yaml_path):
+        try:
+            with open(yaml_path) as f:
+                data = yaml.safe_load(f)
+            if isinstance(data, dict):
+                title = data.get("title", "")
+        except Exception:
+            pass
     return {
         "paper_dir": _paper_dir,
         "model": _model,
+        "paper_title": title,
     }
 
 

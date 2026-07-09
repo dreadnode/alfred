@@ -60,11 +60,23 @@ const styles = {
 
 // --- Component ---
 
+const MAX_TITLE_CHARS = 50
+
 export default function PdfViewer() {
   const [pageCount, setPageCount] = useState(0)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [pdfVersion, setPdfVersion] = useState(0)
+  const [paperTitle, setPaperTitle] = useState('')
+
+  // Fetch paper title from server config on mount
+  useEffect(() => {
+    fetch('/api/config')
+      .then(r => r.json())
+      .then(data => setPaperTitle(data.paper_title || ''))
+      .catch(() => {})
+  }, [])
+
   const viewportRef = useRef<HTMLDivElement>(null)
   const pdfDocRef = useRef<pdfjsLib.PDFDocumentProxy | null>(null)
 
@@ -179,7 +191,14 @@ export default function PdfViewer() {
     return (
       <div style={styles.container}>
         <div style={styles.header}>
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: '10px' }}>
           <span style={styles.headerTitle}>PDF PREVIEW</span>
+          {paperTitle && (
+            <span style={{ color: '#4fc3f7', fontSize: '11px' }}>
+              {paperTitle.length > MAX_TITLE_CHARS ? paperTitle.slice(0, MAX_TITLE_CHARS) + '...' : paperTitle}
+            </span>
+          )}
+        </div>
         </div>
         <div style={styles.empty}>{error}</div>
       </div>
@@ -189,7 +208,14 @@ export default function PdfViewer() {
   return (
     <div style={styles.container}>
       <div style={styles.header}>
-        <span style={styles.headerTitle}>PDF PREVIEW</span>
+        <div style={{ display: 'flex', alignItems: 'baseline', gap: '10px' }}>
+          <span style={styles.headerTitle}>PDF PREVIEW</span>
+          {paperTitle && (
+            <span style={{ color: '#4fc3f7', fontSize: '11px' }}>
+              {paperTitle.length > MAX_TITLE_CHARS ? paperTitle.slice(0, MAX_TITLE_CHARS) + '...' : paperTitle}
+            </span>
+          )}
+        </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
           {loading && <span style={styles.loading}>Loading...</span>}
           {pageCount > 0 && (

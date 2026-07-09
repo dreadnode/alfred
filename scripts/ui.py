@@ -19,23 +19,31 @@ from pathlib import Path
 import uvicorn
 
 
-def _resolve_api_key(value: str | None, model: str) -> None:
-    """Resolve ``--api-key`` value and ensure the right env var is set.
+def _resolve_api_key(value: str | None, model: str) -> str:
+    """Resolve ``--api-key`` value, set the right env var, and return the model.
 
     Accepts either an environment variable name (e.g. ``ANTHROPIC_API_KEY``)
     or a raw key (e.g. ``sk-ant-...``).  If a raw key is given, it is set
     into the environment variable that litellm expects for the provider.
 
+    If the env var is ``OPENROUTER_API_KEY``, the model is prefixed with
+    ``openrouter/`` for litellm routing.
+
     Args:
         value: The ``--api-key`` argument value, or ``None``.
         model: The model identifier (used to infer the provider).
+
+    Returns:
+        The model identifier, possibly prefixed for the provider.
     """
     if not value:
-        return
+        return model
 
     # Check if it's an env var name (exists in environment)
     if os.environ.get(value):
-        return  # Already set — nothing to do
+        if value == "OPENROUTER_API_KEY" and not model.startswith("openrouter/"):
+            return f"openrouter/{model}"
+        return model
 
     # Check if it looks like an env var name (all caps, underscores) but isn't set
     if value.isupper() and "_" in value and not value.startswith(("sk-", "key-")):
@@ -53,10 +61,10 @@ def _resolve_api_key(value: str | None, model: str) -> None:
     elif "mistral" in model_lower:
         env_var = "MISTRAL_API_KEY"
     else:
-        # Generic fallback — litellm also checks OPENAI_API_KEY for unknown providers
         env_var = "OPENAI_API_KEY"
 
     os.environ[env_var] = value
+    return model
 
 
 def main() -> None:
@@ -104,7 +112,7 @@ def main() -> None:
     if not os.path.isfile(os.path.join(paper_dir, "paper.yaml")):
         print(f"Warning: No paper.yaml found in {paper_dir}", file=sys.stderr)
 
-    _resolve_api_key(args.api_key, args.model)
+    model: str = _resolve_api_key(args.api_key, args.model)
 
     ui_root: Path = Path(__file__).resolve().parent.parent / "ui"
     frontend_dist: Path = ui_root / "frontend" / "dist"
@@ -123,7 +131,7 @@ def main() -> None:
 
     configure(
         paper_dir=paper_dir,
-        model=args.model,
+        model=model,
     )
 
     if not args.dev and frontend_dist.is_dir():
@@ -133,7 +141,7 @@ def main() -> None:
 
     print("\n  Agentic LaTeX UI")
     print(f"  Paper:  {paper_dir}")
-    print(f"  Model:  {args.model}")
+    print(f"  Model:  {model}")
     print(f"  Server: http://localhost:{args.port}")
     if args.dev:
         print(f"  Frontend dev: {url}")

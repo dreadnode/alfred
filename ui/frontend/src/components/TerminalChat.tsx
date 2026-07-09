@@ -116,19 +116,42 @@ function addMessage(
   setter(prev => [...prev, { id: nextId(), type, content, timestamp: Date.now(), meta }])
 }
 
+const WELCOME_LINES = [
+  'WHAT YOU CAN ASK',
+  '',
+  '  "build the paper"                   Compile LaTeX → PDF',
+  '  "check for errors"                  Validate refs, braces, sync',
+  '  "show me the stats"                 Word count, pages, figures',
+  '  "search for papers on X"            Search Semantic Scholar',
+  '  "add this citation: arXiv:..."      Add to bibliography',
+  '  "switch to neurips format"          Change conference template',
+  '  "diff against last commit"          Track-changes PDF',
+  '  "show reviews"                      List peer review records',
+  '',
+  '  "find papers about X"               Web search for sources',
+  '  "read this page: <URL>"             Fetch and summarize a URL',
+  '  "literature review on X"            Full search → analyze → report',
+  '  "verify claims in the intro"        Check claims against evidence',
+  '  "review my paper"                   Interactive peer review',
+  '',
+  '  Or just ask — edit sections, add figures, fix errors, etc.',
+]
+
 export default function TerminalChat() {
-  const [messages, setMessages] = useState<ChatMessage[]>([
-    {
-      id: nextId(),
-      type: 'status',
-      content: 'Agentic LaTeX — Terminal ready.',
-      timestamp: Date.now(),
-    },
-  ])
+  const [messages, setMessages] = useState<ChatMessage[]>([])
   const [input, setInput] = useState('')
   const [isProcessing, setIsProcessing] = useState(false)
+  const [modelName, setModelName] = useState('')
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const sessionIdRef = useRef<string | null>(null)
+
+  // Fetch model name from server config on mount
+  useEffect(() => {
+    fetch('/api/config')
+      .then(r => r.json())
+      .then(data => setModelName(data.model || ''))
+      .catch(() => {})
+  }, [])
 
   // Convert a server event to a ChatMessage (without setting state)
   const eventToMessage = useCallback((event: Record<string, unknown>): ChatMessage | null => {
@@ -291,7 +314,12 @@ export default function TerminalChat() {
     <div style={styles.container}>
       {/* Header */}
       <div style={styles.header}>
-        <span style={styles.headerTitle}>AGENTIC LATEX</span>
+        <div style={{ display: 'flex', alignItems: 'baseline', gap: '10px' }}>
+          <span style={styles.headerTitle}>AGENTIC L<span style={{ fontSize: '11px' }}>A</span>T<span style={{ fontSize: '11px' }}>E</span>X</span>
+          {modelName && (
+            <span style={{ color: 'var(--dn-text-muted)', fontSize: '11px' }}>{modelName}</span>
+          )}
+        </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <span style={{ color: 'var(--dn-text-dim)', fontSize: '11px' }}>
             {status}
@@ -302,6 +330,19 @@ export default function TerminalChat() {
 
       {/* Messages */}
       <div style={styles.messages}>
+        {messages.length === 0 && (
+          <pre style={{
+            margin: 0,
+            fontFamily: 'inherit',
+            fontSize: '12px',
+            lineHeight: '1.6',
+            color: 'var(--dn-text-dim)',
+            whiteSpace: 'pre',
+          }}>
+            <span style={{ color: '#4caf50' }}>{WELCOME_LINES[0]}</span>
+            {'\n' + WELCOME_LINES.slice(1).join('\n')}
+          </pre>
+        )}
         {messages.map((msg) => (
           <div key={msg.id} style={styles.message(msg.type)}>
             {msg.type === 'user' && (
@@ -353,6 +394,9 @@ export default function TerminalChat() {
       {/* Input */}
       <div style={styles.inputArea}>
         <span style={styles.prompt}>&gt;</span>
+        {!isProcessing && status === 'connected' && input === '' && (
+          <span style={styles.cursor} />
+        )}
         <input
           style={styles.input}
           value={input}
@@ -360,7 +404,7 @@ export default function TerminalChat() {
           onKeyDown={handleKeyDown}
           placeholder={
             status !== 'connected' ? 'Connecting...' :
-            isProcessing ? 'Agent working...' : 'Type a message...'
+            isProcessing ? 'Agent working...' : ''
           }
           disabled={status !== 'connected' || isProcessing}
           autoFocus
@@ -384,9 +428,6 @@ export default function TerminalChat() {
           >
             CANCEL
           </button>
-        )}
-        {!isProcessing && status === 'connected' && input === '' && (
-          <span style={styles.cursor} />
         )}
       </div>
 
