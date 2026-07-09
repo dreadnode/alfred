@@ -40,7 +40,6 @@ if t.TYPE_CHECKING:
 
 _paper_dir: str = ""
 _model: str = ""
-_api_key_env: str | None = None
 
 # WebSocket clients subscribed to PDF change notifications.
 _pdf_clients: set[WebSocket] = set()
@@ -73,7 +72,6 @@ def _prune_sessions() -> None:
 def configure(
     paper_dir: str,
     model: str,
-    api_key_env: str | None = None,
 ) -> None:
     """Store runtime configuration for the server.
 
@@ -82,12 +80,10 @@ def configure(
     Args:
         paper_dir: Absolute path to the paper working directory.
         model: LLM model identifier forwarded to the agent.
-        api_key_env: Name of the env-var holding the LLM API key (optional).
     """
-    global _paper_dir, _model, _api_key_env
+    global _paper_dir, _model
     _paper_dir = os.path.abspath(paper_dir)
     _model = model
-    _api_key_env = api_key_env
 
 
 # ---------------------------------------------------------------------------
@@ -305,7 +301,7 @@ async def ws_chat(websocket: WebSocket) -> None:
         new_id = str(uuid.uuid4())
         new_session = _Session(
             session_id=new_id,
-            agent=create_agent(_model, _paper_dir, _api_key_env),
+            agent=create_agent(_model, _paper_dir),
         )
         _sessions[new_id] = new_session
         return new_session

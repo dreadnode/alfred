@@ -270,10 +270,6 @@ class TestCreateAgent:
         assert "My Great Paper" in agent.instructions
         assert "[in_progress] 01_intro" in agent.instructions
 
-    def test_invalid_api_key_env(self, agent_dir: str) -> None:
-        with pytest.raises(ValueError, match="NONEXISTENT_VAR"):
-            create_agent("test-model", agent_dir, api_key_env="NONEXISTENT_VAR")
-
     def test_hooks_registered(self, agent_dir: str) -> None:
         agent = create_agent("test-model", agent_dir)
         hook_names = [

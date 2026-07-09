@@ -72,24 +72,20 @@ def _load_paper_context(paper_dir: str) -> str:
 def create_agent(
     model: str,
     paper_dir: str,
-    api_key_env: str | None = None,
 ) -> TaskAgent:
     """Create and configure a LaTeX editing agent.
+
+    The LLM API key must already be set in the environment (e.g.
+    ``ANTHROPIC_API_KEY``) before calling this function.  The CLI
+    entry point (``scripts/ui.py``) handles key resolution.
 
     Args:
         model: LLM model identifier (e.g. ``claude-sonnet-4-20250514``).
         paper_dir: Absolute path to the paper working directory.
-        api_key_env: Name of the environment variable holding the LLM API key.
-            If provided, the variable must be set and non-empty.
 
     Returns:
         A configured ``TaskAgent`` with filesystem, shell, web, and LaTeX tools.
-
-    Raises:
-        ValueError: If ``api_key_env`` is specified but the variable is unset.
     """
-    if api_key_env and not os.environ.get(api_key_env):
-        raise ValueError(f"Environment variable '{api_key_env}' is not set or empty")
 
     fs = Filesystem(path=paper_dir, variant="write")
     latex_tools = make_latex_tools(paper_dir)

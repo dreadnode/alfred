@@ -59,14 +59,15 @@ Local web interface with a terminal-style chat (left pane) and live PDF viewer (
 ### Launching
 
 ```bash
-# Quick start (builds frontend automatically if needed)
-bash scripts/launch-ui.sh --model claude-sonnet-4-20250514 --api-key-env ANTHROPIC_API_KEY
+# Quick start — pass env var name or raw key
+./al --model claude-sonnet-4-20250514 --api-key ANTHROPIC_API_KEY
+./al --model claude-sonnet-4-20250514 --api-key sk-ant-...
 
 # For a paper in another directory
-bash scripts/launch-ui.sh --paper /path/to/paper --model gpt-4o --api-key-env OPENAI_API_KEY
+./al --paper /path/to/paper --model gpt-4o --api-key OPENAI_API_KEY
 
 # Dev mode (frontend hot-reload on port 3000)
-ui/backend/.venv/bin/python3 scripts/ui.py --model claude-sonnet-4-20250514 --api-key-env ANTHROPIC_API_KEY --dev
+./al --model claude-sonnet-4-20250514 --api-key ANTHROPIC_API_KEY --dev
 # Then in another terminal: npm run dev --prefix ui/frontend
 ```
 

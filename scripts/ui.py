@@ -1,17 +1,11 @@
 #!/usr/bin/env python3
 """Launch the Agentic LaTeX web UI.
 
-Usage (run from repo root with the backend venv)::
+Usage::
 
-    ui/backend/.venv/bin/python3 scripts/ui.py \\
-        --model claude-sonnet-4-20250514 --api-key-env ANTHROPIC_API_KEY
-
-    ui/backend/.venv/bin/python3 scripts/ui.py \\
-        --paper /path/to/paper --model gpt-4o --api-key-env OPENAI_API_KEY
-
-Or use the convenience script::
-
-    bash scripts/launch-ui.sh --model claude-sonnet-4-20250514 --api-key-env ANTHROPIC_API_KEY
+    ./al --model claude-sonnet-4-20250514 --api-key ANTHROPIC_API_KEY
+    ./al --model claude-sonnet-4-20250514 --api-key sk-ant-...
+    ./al --paper /path/to/paper --model gpt-4o --api-key OPENAI_API_KEY
 """
 
 import argparse
@@ -23,6 +17,46 @@ import webbrowser
 from pathlib import Path
 
 import uvicorn
+
+
+def _resolve_api_key(value: str | None, model: str) -> None:
+    """Resolve ``--api-key`` value and ensure the right env var is set.
+
+    Accepts either an environment variable name (e.g. ``ANTHROPIC_API_KEY``)
+    or a raw key (e.g. ``sk-ant-...``).  If a raw key is given, it is set
+    into the environment variable that litellm expects for the provider.
+
+    Args:
+        value: The ``--api-key`` argument value, or ``None``.
+        model: The model identifier (used to infer the provider).
+    """
+    if not value:
+        return
+
+    # Check if it's an env var name (exists in environment)
+    if os.environ.get(value):
+        return  # Already set — nothing to do
+
+    # Check if it looks like an env var name (all caps, underscores) but isn't set
+    if value.isupper() and "_" in value and not value.startswith(("sk-", "key-")):
+        print(f"Error: Environment variable '{value}' is not set", file=sys.stderr)
+        sys.exit(1)
+
+    # It's a raw key — figure out which env var to set
+    model_lower = model.lower()
+    if "claude" in model_lower or "anthropic" in model_lower:
+        env_var = "ANTHROPIC_API_KEY"
+    elif "gpt" in model_lower or "o1" in model_lower or "o3" in model_lower or "openai" in model_lower:
+        env_var = "OPENAI_API_KEY"
+    elif "gemini" in model_lower or "google" in model_lower:
+        env_var = "GOOGLE_API_KEY"
+    elif "mistral" in model_lower:
+        env_var = "MISTRAL_API_KEY"
+    else:
+        # Generic fallback — litellm also checks OPENAI_API_KEY for unknown providers
+        env_var = "OPENAI_API_KEY"
+
+    os.environ[env_var] = value
 
 
 def main() -> None:
@@ -39,9 +73,9 @@ def main() -> None:
         help="LLM model identifier (e.g. claude-sonnet-4-20250514, gpt-4o)",
     )
     parser.add_argument(
-        "--api-key-env",
+        "--api-key",
         default=None,
-        help="Environment variable name containing the API key (e.g. ANTHROPIC_API_KEY)",
+        help="API key or env var name (e.g. ANTHROPIC_API_KEY or sk-ant-...)",
     )
     parser.add_argument(
         "--port",
@@ -70,9 +104,7 @@ def main() -> None:
     if not os.path.isfile(os.path.join(paper_dir, "paper.yaml")):
         print(f"Warning: No paper.yaml found in {paper_dir}", file=sys.stderr)
 
-    if args.api_key_env and not os.environ.get(args.api_key_env):
-        print(f"Error: Environment variable '{args.api_key_env}' is not set", file=sys.stderr)
-        sys.exit(1)
+    _resolve_api_key(args.api_key, args.model)
 
     ui_root: Path = Path(__file__).resolve().parent.parent / "ui"
     frontend_dist: Path = ui_root / "frontend" / "dist"
@@ -92,7 +124,6 @@ def main() -> None:
     configure(
         paper_dir=paper_dir,
         model=args.model,
-        api_key_env=args.api_key_env,
     )
 
     if not args.dev and frontend_dist.is_dir():

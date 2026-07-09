@@ -87,7 +87,7 @@ Review records are saved to `reviews/` with YAML frontmatter for machine-readabl
 A local web interface for interactive paper editing. Terminal-style chat on the left, live PDF preview on the right.
 
 ```bash
-bash scripts/launch-ui.sh --model claude-sonnet-4-20250514 --api-key-env ANTHROPIC_API_KEY
+./al --model claude-sonnet-4-20250514 --api-key ANTHROPIC_API_KEY
 ```
 
 Opens at `http://localhost:8420`. The agent has access to all scripts, file editing, web search, and capabilities — same as the CLI workflow, but with a visual PDF preview that auto-updates on every build.
