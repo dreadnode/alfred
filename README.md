@@ -28,6 +28,7 @@ Multi-agent workflows you can kick off by asking the agent. These run specialize
 | Source discovery | "Find papers on X" | Quick search — returns a ranked list of relevant sources |
 | Source analysis | "Analyze this paper: [URL]" | Deep-reads a single source into a structured card with findings and methodology |
 | Peer review | "Start a peer review session" | Interactive — you send notes as you read, agent categorizes and builds a structured feedback report |
+| LLM writing detection | "Check if this was written by AI" | Analyzes prose for LLM tells — vocabulary, structure, tone, transitions — produces a per-section detection report |
 
 Reports are written to `capabilities/reports/`. See `capabilities/README.md` for full details.
 

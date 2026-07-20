@@ -180,6 +180,7 @@ These capabilities can be invoked explicitly (e.g., `/lit-review "topic"`) or re
 | **search-sources** | `/search-sources`, "search for sources", "find papers about", "search for papers" | `capabilities/search-sources/skill.md` |
 | **analyze-source** | `/analyze-source`, "analyze this source", "summarize this paper", "read this paper" | `capabilities/analyze-source/skill.md` |
 | **peer-review** | `/peer-review`, "peer review", "review this paper", "start a review session", "review my paper", "give feedback on the paper" | `capabilities/peer-review/skill.md` |
+| **detect-llm-writing** | `/detect-llm-writing`, "check if this was written by AI", "detect LLM writing", "is this AI-generated", "review for AI tells", "check for slop" | `capabilities/detect-llm-writing/skill.md` |
 
 When a trigger is matched:
 1. Read the corresponding `skill.md` for the full workflow

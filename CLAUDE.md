@@ -49,6 +49,7 @@ Extended agent capabilities beyond core document authoring. See `capabilities/RE
 | `/search-sources "query"` | Quick source discovery (no deep analysis) |
 | `/analyze-source <URL or path> "context"` | Deep-read a single source into a structured card |
 | `/peer-review` | Interactive review session — record notes into structured review record |
+| `/detect-llm-writing [file]` | Analyze prose for LLM writing indicators, produce detection report |
 
 Reports are written to `capabilities/reports/`. Peer review records are saved to `reviews/` and tracked in git.
 

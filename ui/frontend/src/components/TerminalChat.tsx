@@ -133,6 +133,7 @@ const WELCOME_LINES = [
   '  "literature review on X"            Full search → analyze → report',
   '  "verify claims in the intro"        Check claims against evidence',
   '  "review my paper"                   Interactive peer review',
+  '  "check for AI writing"              Detect LLM tells in prose',
   '',
   '  Or just ask — edit sections, add figures, fix errors, etc.',
 ]
