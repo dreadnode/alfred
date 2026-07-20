@@ -66,7 +66,9 @@ _sessions: dict[str, _Session] = {}
 def _prune_sessions() -> None:
     """Remove sessions that have been idle longer than ``_SESSION_TTL``."""
     now = time.time()
-    expired = [sid for sid, s in _sessions.items() if now - s.last_active > _SESSION_TTL]
+    expired = [
+        sid for sid, s in _sessions.items() if now - s.last_active > _SESSION_TTL
+    ]
     for sid in expired:
         del _sessions[sid]
 
@@ -154,6 +156,7 @@ app = FastAPI(lifespan=_lifespan)
 # REST endpoints
 # ---------------------------------------------------------------------------
 
+
 @app.get("/api/config")
 async def get_config() -> dict[str, t.Any]:
     """Return the current server configuration (paper dir, model, title)."""
@@ -174,6 +177,56 @@ async def get_config() -> dict[str, t.Any]:
     }
 
 
+@app.post("/api/config")
+async def update_config(body: dict[str, t.Any]) -> dict[str, str]:
+    """Update model and API key at runtime.
+
+    Accepts one of two key forms (exactly one required):
+
+    * ``api_key``: a raw key value — stored into the env var named by
+      ``api_key_env`` (which is required alongside it).
+    * ``api_key_env``: the name of an environment variable that already
+      holds the key (e.g. ``ANTHROPIC_API_KEY``).
+
+    Clears all active sessions so the next WebSocket connection creates a
+    fresh agent with the new model.
+    """
+    global _model
+
+    new_model: str = body.get("model", "").strip()
+    api_key: str = body.get("api_key", "").strip()
+    api_key_env: str = body.get("api_key_env", "").strip()
+
+    if not new_model:
+        return {"error": "model is required"}
+
+
+    if api_key and api_key_env:
+        # Raw key provided — store it in the named env var.
+        os.environ[api_key_env] = api_key
+        if api_key_env == "OPENROUTER_API_KEY" and not new_model.startswith(
+            "openrouter/"
+        ):
+            new_model = f"openrouter/{new_model}"
+    elif api_key_env:
+        # Env var name only — verify it's set.
+        if not os.environ.get(api_key_env):
+            return {"error": f"Environment variable '{api_key_env}' is not set"}
+        if api_key_env == "OPENROUTER_API_KEY" and not new_model.startswith(
+            "openrouter/"
+        ):
+            new_model = f"openrouter/{new_model}"
+    else:
+        return {"error": "Provide either an API key or an environment variable name"}
+
+    _model = new_model
+
+    # Kill all sessions so next connect gets a fresh agent with new model.
+    _sessions.clear()
+
+    return {"model": _model}
+
+
 @app.get("/api/pdf", response_model=None)
 async def get_pdf() -> FileResponse | JSONResponse:
     """Serve the latest built PDF, or 404 if it doesn't exist yet."""
@@ -186,6 +239,7 @@ async def get_pdf() -> FileResponse | JSONResponse:
 # ---------------------------------------------------------------------------
 # WebSocket: PDF update notifications
 # ---------------------------------------------------------------------------
+
 
 @app.websocket("/ws/pdf")
 async def ws_pdf(websocket: WebSocket) -> None:
@@ -204,6 +258,7 @@ async def ws_pdf(websocket: WebSocket) -> None:
 # ---------------------------------------------------------------------------
 # WebSocket: Chat agent
 # ---------------------------------------------------------------------------
+
 
 def _format_event(event: AgentEvent) -> dict[str, t.Any] | None:
     """Convert a dreadnode ``AgentEvent`` to a JSON-serializable dict for the frontend.
@@ -339,23 +394,31 @@ async def ws_chat(websocket: WebSocket) -> None:
                         await _send_event(formatted)
         except asyncio.CancelledError:
             try:
-                await _send_event({
-                    "type": "agent_end",
-                    "stop_reason": "cancelled",
-                    "failed": True,
-                    "steps": 0,
-                    "usage": {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0},
-                })
+                await _send_event(
+                    {
+                        "type": "agent_end",
+                        "stop_reason": "cancelled",
+                        "failed": True,
+                        "steps": 0,
+                        "usage": {
+                            "input_tokens": 0,
+                            "output_tokens": 0,
+                            "total_tokens": 0,
+                        },
+                    }
+                )
             except WebSocketDisconnect:
                 pass  # Client already gone — event is still recorded in history
         except WebSocketDisconnect:
             raise
         except Exception as exc:
             try:
-                await _send_event({
-                    "type": "error",
-                    "message": f"Agent error: {exc}",
-                })
+                await _send_event(
+                    {
+                        "type": "error",
+                        "message": f"Agent error: {exc}",
+                    }
+                )
             except WebSocketDisconnect:
                 raise
 
@@ -409,18 +472,26 @@ async def ws_chat(websocket: WebSocket) -> None:
         is_resumed = requested_id is not None and requested_id == session.session_id
 
         # Tell the client which session they're on
-        await websocket.send_text(json.dumps({
-            "type": "session_start",
-            "session_id": session.session_id,
-            "resumed": is_resumed,
-        }))
+        await websocket.send_text(
+            json.dumps(
+                {
+                    "type": "session_start",
+                    "session_id": session.session_id,
+                    "resumed": is_resumed,
+                }
+            )
+        )
 
         # Replay history on resume
         if is_resumed and session.history:
-            await websocket.send_text(json.dumps({
-                "type": "history",
-                "events": session.history,
-            }))
+            await websocket.send_text(
+                json.dumps(
+                    {
+                        "type": "history",
+                        "events": session.history,
+                    }
+                )
+            )
 
         # If the first message was a regular user message (not resume), process it
         if first_msg.get("type") != "resume" and first_msg.get("content", "").strip():
@@ -433,10 +504,14 @@ async def ws_chat(websocket: WebSocket) -> None:
             try:
                 msg: dict[str, t.Any] = json.loads(data)
             except json.JSONDecodeError:
-                await websocket.send_text(json.dumps({
-                    "type": "error",
-                    "message": "Invalid JSON received",
-                }))
+                await websocket.send_text(
+                    json.dumps(
+                        {
+                            "type": "error",
+                            "message": "Invalid JSON received",
+                        }
+                    )
+                )
                 continue
 
             msg_type: str = msg.get("type", "message")
@@ -460,6 +535,7 @@ async def ws_chat(websocket: WebSocket) -> None:
 # ---------------------------------------------------------------------------
 # Static file serving
 # ---------------------------------------------------------------------------
+
 
 def mount_frontend(frontend_dist: str) -> None:
     """Mount the built frontend as static files on ``/``.

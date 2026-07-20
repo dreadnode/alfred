@@ -17,6 +17,7 @@ import webbrowser
 from pathlib import Path
 
 import uvicorn
+import yaml
 
 
 def _resolve_api_key(value: str | None, model: str) -> str:
@@ -54,7 +55,12 @@ def _resolve_api_key(value: str | None, model: str) -> str:
     model_lower = model.lower()
     if "claude" in model_lower or "anthropic" in model_lower:
         env_var = "ANTHROPIC_API_KEY"
-    elif "gpt" in model_lower or "o1" in model_lower or "o3" in model_lower or "openai" in model_lower:
+    elif (
+        "gpt" in model_lower
+        or "o1" in model_lower
+        or "o3" in model_lower
+        or "openai" in model_lower
+    ):
         env_var = "OPENAI_API_KEY"
     elif "gemini" in model_lower or "google" in model_lower:
         env_var = "GOOGLE_API_KEY"
@@ -65,6 +71,41 @@ def _resolve_api_key(value: str | None, model: str) -> str:
 
     os.environ[env_var] = value
     return model
+
+
+_MINIMAL_PAPER_YAML: dict = {
+    "template": "article",
+    "title": "Untitled Paper",
+    "authors": [],
+    "abstract_summary": "",
+    "sections": [],
+    "bibliography": {"file": "bibliography.bib"},
+    "build": {"engine": "pdflatex", "output_dir": "build"},
+}
+
+
+def _scaffold_paper(paper_dir: str) -> None:
+    """Create a minimal paper project so the UI has something to work with."""
+    repo_root = str(Path(__file__).resolve().parent.parent)
+
+    # Write paper.yaml first — init_template and sync both need it.
+    manifest_path = os.path.join(paper_dir, "paper.yaml")
+    with open(manifest_path, "w") as f:
+        yaml.dump(_MINIMAL_PAPER_YAML, f, default_flow_style=False, sort_keys=False)
+
+    # Create section/ and empty bibliography.bib if missing.
+    os.makedirs(os.path.join(paper_dir, "section"), exist_ok=True)
+    bib_path = os.path.join(paper_dir, "bibliography.bib")
+    if not os.path.exists(bib_path):
+        Path(bib_path).touch()
+
+    # Copy article template main.tex and run sync via init_template.
+    sys.path.insert(0, os.path.join(repo_root, "scripts"))
+    from init_template import init_template
+
+    init_template(paper_dir, "article")
+
+    print(f"\n  Scaffolded a blank article project in {paper_dir}\n")
 
 
 def main() -> None:
@@ -110,7 +151,7 @@ def main() -> None:
         sys.exit(1)
 
     if not os.path.isfile(os.path.join(paper_dir, "paper.yaml")):
-        print(f"Warning: No paper.yaml found in {paper_dir}", file=sys.stderr)
+        _scaffold_paper(paper_dir)
 
     model: str = _resolve_api_key(args.api_key, args.model)
 

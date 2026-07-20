@@ -57,6 +57,11 @@ export function useWebSocket(
     wsRef.current = ws
   }, [path, send])
 
+  const reconnect = useCallback(() => {
+    wsRef.current?.close()
+    wsRef.current = null
+  }, [])
+
   useEffect(() => {
     unmountedRef.current = false
     connect()
@@ -67,5 +72,5 @@ export function useWebSocket(
     }
   }, [connect])
 
-  return { status, send }
+  return { status, send, reconnect }
 }

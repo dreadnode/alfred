@@ -20,6 +20,7 @@ const styles = {
     height: '100%',
     background: 'var(--dn-bg)',
     borderRight: '1px solid var(--dn-border)',
+    position: 'relative' as const,
   },
   header: {
     display: 'flex',
@@ -143,6 +144,12 @@ export default function TerminalChat() {
   const [input, setInput] = useState('')
   const [isProcessing, setIsProcessing] = useState(false)
   const [modelName, setModelName] = useState('')
+  const [showSettings, setShowSettings] = useState(false)
+  const [settingsModel, setSettingsModel] = useState('')
+  const [settingsApiKey, setSettingsApiKey] = useState('')
+  const [settingsApiKeyEnv, setSettingsApiKeyEnv] = useState('')
+  const [settingsError, setSettingsError] = useState('')
+  const [settingsSaving, setSettingsSaving] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const sessionIdRef = useRef<string | null>(null)
 
@@ -278,7 +285,7 @@ export default function TerminalChat() {
     }
   }, [])
 
-  const { status, send } = useWebSocket('/ws/chat', handleWsMessage, handleWsOpen)
+  const { status, send, reconnect } = useWebSocket('/ws/chat', handleWsMessage, handleWsOpen)
 
   // Auto-scroll to bottom
   useEffect(() => {
@@ -311,6 +318,50 @@ export default function TerminalChat() {
     }
   }, [handleSubmit, isProcessing, handleCancel])
 
+  const openSettings = useCallback(() => {
+    setSettingsModel(modelName)
+    setSettingsApiKey('')
+    setSettingsApiKeyEnv('')
+    setSettingsError('')
+    setShowSettings(true)
+  }, [modelName])
+
+  const closeSettings = useCallback(() => {
+    setShowSettings(false)
+    setSettingsError('')
+  }, [])
+
+  const saveSettings = useCallback(async () => {
+    const model = settingsModel.trim()
+    const key = settingsApiKey.trim()
+    const env = settingsApiKeyEnv.trim()
+    if (!model) { setSettingsError('Model is required'); return }
+    if (!key && !env) { setSettingsError('Provide either an API key or an environment variable'); return }
+    if (key && !env) { setSettingsError('Environment variable name is required when providing a raw API key'); return }
+    setSettingsSaving(true)
+    setSettingsError('')
+    try {
+      const res = await fetch('/api/config', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ model, api_key: key, api_key_env: env }),
+      })
+      const data = await res.json()
+      if (data.error) { setSettingsError(data.error); return }
+      setModelName(data.model)
+      // Clear session and reconnect WS to get a fresh agent with the new model
+      sessionIdRef.current = null
+      setMessages([])
+      setIsProcessing(false)
+      setShowSettings(false)
+      reconnect()
+    } catch (e) {
+      setSettingsError(`Failed to save: ${e}`)
+    } finally {
+      setSettingsSaving(false)
+    }
+  }, [settingsModel, settingsApiKey, settingsApiKeyEnv, reconnect])
+
   return (
     <div style={styles.container}>
       {/* Header */}
@@ -318,7 +369,11 @@ export default function TerminalChat() {
         <div style={{ display: 'flex', alignItems: 'baseline', gap: '10px' }}>
           <span style={styles.headerTitle}>AGENTIC L<span style={{ fontSize: '11px' }}>A</span>T<span style={{ fontSize: '11px' }}>E</span>X</span>
           {modelName && (
-            <span style={{ color: '#4fc3f7', fontSize: '11px' }}>{modelName}</span>
+            <span
+              onClick={openSettings}
+              style={{ color: '#4fc3f7', fontSize: '11px', cursor: 'pointer', textDecoration: 'underline', textDecorationStyle: 'dotted' as const, textUnderlineOffset: '3px' }}
+              title="Change model settings"
+            >{modelName}</span>
           )}
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -328,6 +383,79 @@ export default function TerminalChat() {
           <div style={styles.statusDot(status)} />
         </div>
       </div>
+
+      {/* Settings Modal */}
+      {showSettings && (
+        <div style={{
+          position: 'absolute', inset: 0, zIndex: 100,
+          background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center',
+        }} onClick={closeSettings}>
+          <div style={{
+            background: 'var(--dn-bg-lt, #1e1e1e)', border: '1px solid var(--dn-border-lt, #444)',
+            borderRadius: '6px', padding: '20px', width: '340px',
+            fontFamily: 'var(--font-mono)', fontSize: '12px', color: 'var(--dn-text, #ccc)',
+          }} onClick={e => e.stopPropagation()}>
+            <div style={{ fontSize: '13px', fontWeight: 700, marginBottom: '16px', color: 'var(--dn-accent, #4caf50)' }}>
+              Settings
+            </div>
+
+            <label style={{ display: 'block', marginBottom: '4px', color: 'var(--dn-text-dim, #888)' }}>Model</label>
+            <input
+              style={{
+                width: '100%', boxSizing: 'border-box' as const, padding: '6px 8px', marginBottom: '12px',
+                background: 'var(--dn-bg, #121212)', border: '1px solid var(--dn-border, #333)',
+                borderRadius: '3px', color: 'var(--dn-text, #ccc)', fontFamily: 'var(--font-mono)', fontSize: '12px',
+              }}
+              value={settingsModel}
+              onChange={e => setSettingsModel(e.target.value)}
+              placeholder="e.g. claude-sonnet-4-20250514"
+              autoFocus
+            />
+
+            <label style={{ display: 'block', marginBottom: '4px', color: 'var(--dn-text-dim, #888)' }}>API Key</label>
+            <input
+              style={{
+                width: '100%', boxSizing: 'border-box' as const, padding: '6px 8px', marginBottom: '12px',
+                background: 'var(--dn-bg, #121212)', border: '1px solid var(--dn-border, #333)',
+                borderRadius: '3px', color: 'var(--dn-text, #ccc)', fontFamily: 'var(--font-mono)', fontSize: '12px',
+              }}
+              value={settingsApiKey}
+              onChange={e => setSettingsApiKey(e.target.value)}
+              placeholder="sk-ant-..."
+            />
+
+            <label style={{ display: 'block', marginBottom: '4px', color: 'var(--dn-text-dim, #888)' }}>API Key Environment Variable</label>
+            <input
+              style={{
+                width: '100%', boxSizing: 'border-box' as const, padding: '6px 8px', marginBottom: '16px',
+                background: 'var(--dn-bg, #121212)', border: '1px solid var(--dn-border, #333)',
+                borderRadius: '3px', color: 'var(--dn-text, #ccc)', fontFamily: 'var(--font-mono)', fontSize: '12px',
+              }}
+              value={settingsApiKeyEnv}
+              onChange={e => setSettingsApiKeyEnv(e.target.value)}
+              placeholder="ANTHROPIC_API_KEY"
+            />
+
+            {settingsError && (
+              <div style={{ color: 'var(--dn-error, #f44336)', marginBottom: '12px', fontSize: '11px' }}>{settingsError}</div>
+            )}
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
+              <button onClick={closeSettings} style={{
+                background: 'transparent', border: '1px solid var(--dn-border-lt, #444)',
+                color: 'var(--dn-text-dim, #888)', fontFamily: 'var(--font-mono)', fontSize: '11px',
+                padding: '4px 12px', borderRadius: '3px', cursor: 'pointer',
+              }}>CANCEL</button>
+              <button onClick={saveSettings} disabled={settingsSaving} style={{
+                background: 'var(--dn-accent, #4caf50)', border: 'none',
+                color: 'var(--dn-black, #000)', fontFamily: 'var(--font-mono)', fontSize: '11px',
+                padding: '4px 12px', borderRadius: '3px', cursor: 'pointer', fontWeight: 700,
+                opacity: settingsSaving ? 0.6 : 1,
+              }}>{settingsSaving ? 'SAVING...' : 'SAVE'}</button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Messages */}
       <div style={styles.messages}>
