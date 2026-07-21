@@ -40,18 +40,19 @@ See `AGENT.md` for detailed instructions on each workflow.
 
 ## Capabilities
 
-Extended agent capabilities beyond core document authoring. See `capabilities/README.md` for full details.
+Slash commands available in the web UI and Claude Code. See `capabilities/README.md` for full details.
 
 | Command | Purpose |
 |---------|---------|
+| `/analyze-source <URL> "context"` | Deep-read a single source into a structured card |
+| `/detect-llm-writing [file]` | Analyze prose for LLM writing indicators |
 | `/lit-review "topic"` | Full literature review: search → analyze → synthesize → report |
-| `/verify-claims section/01_introduction.tex` | Extract claims from LaTeX, verify against evidence |
-| `/search-sources "query"` | Quick source discovery (no deep analysis) |
-| `/analyze-source <URL or path> "context"` | Deep-read a single source into a structured card |
 | `/peer-review` | Interactive review session — record notes into structured review record |
-| `/detect-llm-writing [file]` | Analyze prose for LLM writing indicators, produce detection report |
+| `/process-peer-review [file]` | Process a peer review — address, accept, or refute each item |
+| `/search-sources "query"` | Quick source discovery (no deep analysis) |
+| `/verify-claims section/file.tex` | Extract claims from LaTeX, verify against evidence |
 
-Reports are written to `capabilities/reports/`. Peer review records are saved to `reviews/` and tracked in git.
+Reports are written to `capabilities/reports/`. Peer review records and responses are saved to `reviews/`.
 
 ## Web UI
 
@@ -64,13 +65,24 @@ Local web interface with a terminal-style chat (left pane) and live PDF viewer (
 ./al --model claude-sonnet-4-20250514 --api-key ANTHROPIC_API_KEY
 ./al --model claude-sonnet-4-20250514 --api-key sk-ant-...
 
-# For a paper in another directory
+# Workspace mode — launch in an empty directory for multi-paper support
+mkdir workspace && cd workspace
+/path/to/agentic-latex/al --model claude-sonnet-4-20250514 --api-key ANTHROPIC_API_KEY
+
+# Single-paper mode — point to an existing paper directory
 ./al --paper /path/to/paper --model gpt-4o --api-key OPENAI_API_KEY
 
 # Dev mode (frontend hot-reload on port 3000)
 ./al --model claude-sonnet-4-20250514 --api-key ANTHROPIC_API_KEY --dev
-# Then in another terminal: npm run dev --prefix ui/frontend
 ```
+
+### Features
+
+- **Slash command autocomplete** — type `/` to see available commands with descriptions
+- **Settings popup** — click the model name to change model and API key at runtime
+- **Paper title editing** — click the paper title above the PDF viewer to rename
+- **Workspace mode** — paper switcher bar with dropdown and "+ NEW" button when launched without a paper.yaml
+- **Session recovery** — WebSocket reconnects and replays chat history automatically
 
 ### Structure
 
@@ -78,6 +90,7 @@ Local web interface with a terminal-style chat (left pane) and live PDF viewer (
 ui/
 ├── backend/
 │   ├── agent.py           # Agent factory, instructions, paper.yaml context
+│   ├── capabilities.py    # Slash command registry, parser, prompt expansion
 │   ├── server.py          # FastAPI + WebSocket + PDF watcher + sessions
 │   ├── tools/
 │   │   ├── subprocess.py  # Async subprocess runner with cancellation
@@ -86,9 +99,9 @@ ui/
 │   └── requirements.txt
 ├── frontend/              # React + Vite + TypeScript
 │   └── src/
-│       ├── App.tsx                    # Split-pane layout with resizer
-│       ├── components/TerminalChat.tsx # Terminal chat with session recovery
-│       ├── components/PdfViewer.tsx    # pdf.js viewer with auto-reload
+│       ├── App.tsx                    # Split-pane layout, workspace bar, paper switcher
+│       ├── components/TerminalChat.tsx # Terminal chat, command autocomplete, settings
+│       ├── components/PdfViewer.tsx    # pdf.js viewer with auto-reload, title editing
 │       └── hooks/useWebSocket.ts      # WebSocket hook with reconnect
 └── .gitignore
 ```
@@ -96,5 +109,9 @@ ui/
 ### Running tests
 
 ```bash
-ui/backend/.venv/bin/python3 -m pytest tests/test_ui.py -v
+task test          # Run all tests
+task lint          # Ruff format check + lint
+task fmt           # Auto-format Python
+task build         # Build frontend
+task check         # fmt + lint + test
 ```

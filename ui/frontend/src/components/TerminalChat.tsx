@@ -118,23 +118,25 @@ function addMessage(
 }
 
 const WELCOME_LINES = [
-  'WHAT YOU CAN ASK',
+  'COMMANDS                              type / to see all',
+  '',
+  '  /analyze-source <URL> "context"   Deep-read a single source',
+  '  /detect-llm-writing [file]        Detect LLM writing tells',
+  '  /lit-review "topic"               Full literature review',
+  '  /peer-review                      Interactive peer review',
+  '  /process-peer-review [file]       Respond to a peer review',
+  '  /search-sources "query"           Find relevant papers',
+  '  /verify-claims section/file.tex   Check claims against evidence',
+  '',
+  'NATURAL LANGUAGE',
   '',
   '  "build the paper"                   Compile LaTeX → PDF',
   '  "check for errors"                  Validate refs, braces, sync',
   '  "show me the stats"                 Word count, pages, figures',
-  '  "search for papers on X"            Search Semantic Scholar',
   '  "add this citation: arXiv:..."      Add to bibliography',
   '  "switch to neurips format"          Change conference template',
   '  "diff against last commit"          Track-changes PDF',
   '  "show reviews"                      List peer review records',
-  '',
-  '  "find papers about X"               Web search for sources',
-  '  "read this page: <URL>"             Fetch and summarize a URL',
-  '  "literature review on X"            Full search → analyze → report',
-  '  "verify claims in the intro"        Check claims against evidence',
-  '  "review my paper"                   Interactive peer review',
-  '  "check for AI writing"              Detect LLM tells in prose',
   '',
   '  Or just ask — edit sections, add figures, fix errors, etc.',
 ]
@@ -513,8 +515,18 @@ export default function TerminalChat() {
             color: 'var(--dn-text-dim)',
             whiteSpace: 'pre',
           }}>
-            <span style={{ color: '#4caf50' }}>{WELCOME_LINES[0]}</span>
-            {'\n' + WELCOME_LINES.slice(1).join('\n')}
+            {WELCOME_LINES.map((line, i) => {
+              const isHeader = line === WELCOME_LINES[0] || line.startsWith('NATURAL LANGUAGE')
+              const cmdMatch = line.match(/^(\s*)(\/\S+)(.*)/)
+              return (
+                <span key={i}>
+                  {i > 0 && '\n'}
+                  {isHeader ? <span style={{ color: '#4caf50' }}>{line}</span>
+                    : cmdMatch ? <>{cmdMatch[1]}<span style={{ color: '#fff' }}>{cmdMatch[2]}</span>{cmdMatch[3]}</>
+                    : line}
+                </span>
+              )
+            })}
           </pre>
         )}
         {messages.map((msg) => (
