@@ -15,10 +15,10 @@ import pytest
 UI_DIR = os.path.join(os.path.dirname(__file__), "..", "ui")
 sys.path.insert(0, UI_DIR)
 
-from backend.agent import _load_paper_context, create_agent
-from backend.server import _Session, _format_event, _prune_sessions, _sessions
-from backend.tools.subprocess import run_script
-from backend.tools.web import _strip_html, web_fetch
+from backend.agent import _load_paper_context, create_agent  # noqa: E402
+from backend.server import _Session, _format_event, _prune_sessions, _sessions  # noqa: E402
+from backend.tools.subprocess import run_script  # noqa: E402
+from backend.tools.web import _strip_html, web_fetch  # noqa: E402
 
 
 # ---------------------------------------------------------------------------
@@ -239,12 +239,23 @@ class TestCreateAgent:
         agent = create_agent("test-model", agent_dir)
         names = {t.name for t in agent.all_tools}
         expected = {
-            "build_paper", "sync_paper", "validate_paper",
-            "search_citations", "add_citation", "paper_stats",
-            "generate_diff", "switch_template", "list_templates", "list_reviews",
-            "web_fetch", "web_search",
-            "command", "read_file", "write_file",
-            "finish_task", "give_up_on_task",
+            "build_paper",
+            "sync_paper",
+            "validate_paper",
+            "search_citations",
+            "add_citation",
+            "paper_stats",
+            "generate_diff",
+            "switch_template",
+            "list_templates",
+            "list_reviews",
+            "web_fetch",
+            "web_search",
+            "command",
+            "read_file",
+            "write_file",
+            "finish_task",
+            "give_up_on_task",
         }
         assert expected.issubset(names), f"Missing: {expected - names}"
 
@@ -283,7 +294,9 @@ class TestCreateAgent:
         """web_search should be available without any API key configuration."""
         agent = create_agent("test-model", agent_dir)
         search_tool = next(t for t in agent.all_tools if t.name == "web_search")
-        params = (search_tool.api_definition.function.parameters or {}).get("properties", {})
+        params = (search_tool.api_definition.function.parameters or {}).get(
+            "properties", {}
+        )
         assert "query" in params
         assert "api_key" not in params
 
@@ -329,7 +342,9 @@ class TestFormatEvent:
 
         msg = rg.Message("assistant", "Here is my response.")
         usage = rg.generator.Usage(input_tokens=100, output_tokens=50, total_tokens=150)
-        result = _format_event(GenerationEnd(**self._base_fields(), message=msg, usage=usage))
+        result = _format_event(
+            GenerationEnd(**self._base_fields(), message=msg, usage=usage)
+        )
         assert result is not None
         assert result["type"] == "generation"
         assert result["content"] == "Here is my response."
@@ -342,7 +357,9 @@ class TestFormatEvent:
         import rigging as rg
 
         msg = rg.Message("assistant", "Response without usage.")
-        result = _format_event(GenerationEnd(**self._base_fields(), message=msg, usage=None))
+        result = _format_event(
+            GenerationEnd(**self._base_fields(), message=msg, usage=None)
+        )
         assert result is not None
         assert result["usage"] is None
         assert result["content"] == "Response without usage."
@@ -369,7 +386,9 @@ class TestFormatEvent:
         tc.name = "web_fetch"
         long_content = "x" * 3000
         msg = rg.Message("tool", long_content)
-        result = _format_event(ToolEnd(**self._base_fields(), tool_call=tc, message=msg, stop=False))
+        result = _format_event(
+            ToolEnd(**self._base_fields(), tool_call=tc, message=msg, stop=False)
+        )
         assert result is not None
         assert len(result["result"]) == 2000
         assert result["stop"] is False
@@ -377,7 +396,9 @@ class TestFormatEvent:
     def test_agent_error(self) -> None:
         from dreadnode.agent.events import AgentError
 
-        result = _format_event(AgentError(**self._base_fields(), error=RuntimeError("boom")))
+        result = _format_event(
+            AgentError(**self._base_fields(), error=RuntimeError("boom"))
+        )
         assert result is not None
         assert result["type"] == "error"
         assert "boom" in result["message"]
@@ -422,7 +443,9 @@ class TestFormatEvent:
         mock_result = MagicMock(spec=AgentResult)
         mock_result.failed = False
         mock_result.steps = 5
-        mock_result.usage = rg.generator.Usage(input_tokens=500, output_tokens=200, total_tokens=700)
+        mock_result.usage = rg.generator.Usage(
+            input_tokens=500, output_tokens=200, total_tokens=700
+        )
         result = _format_event(
             AgentEnd(**self._base_fields(), stop_reason="finished", result=mock_result)
         )

@@ -13,9 +13,9 @@ SCRIPTS_DIR = os.path.join(os.path.dirname(__file__), "..", "scripts")
 sys.path.insert(0, UI_DIR)
 sys.path.insert(0, SCRIPTS_DIR)
 
-import backend.server as srv
-from backend.server import _list_papers, _slugify, _unique_slug
-from scaffold import scaffold_paper
+import backend.server as srv  # noqa: E402
+from backend.server import _list_papers, _slugify, _unique_slug  # noqa: E402
+from scaffold import scaffold_paper  # noqa: E402
 
 
 @contextmanager

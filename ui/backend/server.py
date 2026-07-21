@@ -564,12 +564,12 @@ async def ws_chat(websocket: WebSocket) -> None:
     async def _run_agent(user_input: str) -> None:
         """Stream agent events to the WebSocket. Runs inside a cancellable task."""
         assert session is not None
-        user_input = maybe_expand_command(user_input)
         session.last_active = time.time()
         user_event: dict[str, t.Any] = {"type": "user_message", "content": user_input}
         session.history.append(user_event)
+        expanded = maybe_expand_command(user_input)
         try:
-            async with session.agent.stream(user_input) as events:
+            async with session.agent.stream(expanded) as events:
                 async for event in events:
                     formatted = _format_event(event)
                     if formatted:

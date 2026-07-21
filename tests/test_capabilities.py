@@ -8,7 +8,7 @@ import sys
 UI_DIR = os.path.join(os.path.dirname(__file__), "..", "ui")
 sys.path.insert(0, UI_DIR)
 
-from backend.capabilities import (
+from backend.capabilities import (  # noqa: E402
     CAPABILITIES,
     _REPO_ROOT,
     maybe_expand_command,
@@ -18,8 +18,14 @@ from backend.capabilities import (
 
 class TestParseSlashCommand:
     def test_parses_command_and_strips_quotes(self) -> None:
-        assert parse_slash_command('/lit-review "my topic"') == ("lit-review", "my topic")
-        assert parse_slash_command("/search-sources no quotes") == ("search-sources", "no quotes")
+        assert parse_slash_command('/lit-review "my topic"') == (
+            "lit-review",
+            "my topic",
+        )
+        assert parse_slash_command("/search-sources no quotes") == (
+            "search-sources",
+            "no quotes",
+        )
         assert parse_slash_command("/peer-review") == ("peer-review", "")
 
     def test_rejects_non_commands(self) -> None:
@@ -51,9 +57,21 @@ class TestMaybeExpandCommand:
         assert "/search-sources reward hacking" in result
 
     def test_all_registered_files_exist(self) -> None:
-        expected = {"search-sources", "analyze-source", "lit-review", "verify-claims", "peer-review", "process-peer-review", "detect-llm-writing"}
+        expected = {
+            "search-sources",
+            "analyze-source",
+            "lit-review",
+            "verify-claims",
+            "peer-review",
+            "process-peer-review",
+            "detect-llm-writing",
+        }
         assert set(CAPABILITIES.keys()) == expected
         for name, cap in CAPABILITIES.items():
-            assert os.path.isfile(os.path.join(_REPO_ROOT, cap["skill"])), f"Missing skill for /{name}"
+            assert os.path.isfile(os.path.join(_REPO_ROOT, cap["skill"])), (
+                f"Missing skill for /{name}"
+            )
             for rel_path in cap["extra_files"]:
-                assert os.path.isfile(os.path.join(_REPO_ROOT, rel_path)), f"Missing {rel_path} for /{name}"
+                assert os.path.isfile(os.path.join(_REPO_ROOT, rel_path)), (
+                    f"Missing {rel_path} for /{name}"
+                )
