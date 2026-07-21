@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useWebSocket, ConnectionStatus } from '../hooks/useWebSocket'
 
 // --- Types ---
@@ -117,33 +117,53 @@ function addMessage(
   setter(prev => [...prev, { id: nextId(), type, content, timestamp: Date.now(), meta }])
 }
 
-const WELCOME_LINES = [
-  'COMMANDS                              type / to see all',
-  '',
-  '  /analyze-source <URL> "context"   Deep-read a single source',
-  '  /detect-llm-writing [file]        Detect LLM writing tells',
-  '  /lit-review "topic"               Full literature review',
-  '  /peer-review                      Interactive peer review',
-  '  /process-peer-review [file]       Respond to a peer review',
-  '  /search-sources "query"           Find relevant papers',
-  '  /verify-claims section/file.tex   Check claims against evidence',
-  '',
-  '  /clear                            Reset session and start fresh',
-  '  /copy [N]                         Copy last N agent messages (default 10)',
-  '  /help                             Show this guide',
-  '',
-  'NATURAL LANGUAGE',
-  '',
-  '  "build the paper"                   Compile LaTeX → PDF',
-  '  "check for errors"                  Validate refs, braces, sync',
-  '  "show me the stats"                 Word count, pages, figures',
-  '  "add this citation: arXiv:..."      Add to bibliography',
-  '  "switch to neurips format"          Change conference template',
-  '  "diff against last commit"          Track-changes PDF',
-  '  "show reviews"                      List peer review records',
-  '',
-  '  Or just ask — edit sections, add figures, fix errors, etc.',
+const CLIENT_COMMANDS = [
+  { name: '/clear', description: 'Reset session and start fresh' },
+  { name: '/copy [N]', description: 'Copy last N agent messages (default 10)' },
+  { name: '/help', description: 'Show this guide' },
 ]
+
+const NATURAL_LANGUAGE_LINES = [
+  '"build the paper"                   Compile LaTeX → PDF',
+  '"check for errors"                  Validate refs, braces, sync',
+  '"show me the stats"                 Word count, pages, figures',
+  '"add this citation: arXiv:..."      Add to bibliography',
+  '"switch to neurips format"          Change conference template',
+  '"diff against last commit"          Track-changes PDF',
+  '"show reviews"                      List peer review records',
+]
+
+function buildWelcomeLines(commands: { name: string; description: string; args?: string; arg_label?: string }[]): string[] {
+  // Build command lines with usage hint from arg_label
+  const cmdLines = commands.map(c => {
+    let usage = c.name
+    if (c.arg_label) {
+      const isOptional = c.args === 'optional'
+      usage += isOptional ? ` [${c.arg_label}]` : ` <${c.arg_label}>`
+    }
+    return { usage, desc: c.description }
+  })
+
+  // Add client commands
+  CLIENT_COMMANDS.forEach(c => cmdLines.push({ usage: c.name, desc: c.description }))
+
+  // Compute alignment column
+  const maxUsage = Math.max(...cmdLines.map(c => c.usage.length))
+  const col = maxUsage + 3
+
+  const lines: string[] = [
+    'COMMANDS                              type / to see all',
+    '',
+    ...cmdLines.map(c => `  ${c.usage.padEnd(col)}${c.desc}`),
+    '',
+    'NATURAL LANGUAGE',
+    '',
+    ...NATURAL_LANGUAGE_LINES.map(l => `  ${l}`),
+    '',
+    '  Or just ask — edit sections, add figures, fix errors, etc.',
+  ]
+  return lines
+}
 
 interface CommandDef {
   name: string
@@ -165,6 +185,7 @@ export default function TerminalChat() {
   const [settingsSaving, setSettingsSaving] = useState(false)
   const [commands, setCommands] = useState<CommandDef[]>([])
   const [cmdHighlight, setCmdHighlight] = useState(0)
+  const welcomeLines = useMemo(() => buildWelcomeLines(commands), [commands])
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
   const sessionIdRef = useRef<string | null>(null)
@@ -190,10 +211,8 @@ export default function TerminalChat() {
         return { id: nextId(), type: 'user', content: event.content as string, timestamp: Date.now() }
 
       case 'agent_start':
-        return { id: nextId(), type: 'status', content: `Agent started (${event.agent})`, timestamp: Date.now() }
-
       case 'step_start':
-        return { id: nextId(), type: 'status', content: `--- step ${event.step} ---`, timestamp: Date.now() }
+        return null
 
       case 'generation':
         if (event.content) {
@@ -202,22 +221,37 @@ export default function TerminalChat() {
         return null
 
       case 'tool_start': {
-        let argsStr = ''
+        const tool = (event.tool as string) || 'unknown'
+        let summary = tool
         try {
           const args = JSON.parse(event.args as string)
-          argsStr = Object.entries(args)
-            .map(([k, v]) => `${k}=${JSON.stringify(v)}`)
-            .join(', ')
+          const labels: Record<string, (a: Record<string, unknown>) => string> = {
+            build_paper: () => 'Building paper...',
+            sync_paper: () => 'Syncing paper.yaml → main.tex...',
+            validate_paper: () => 'Validating paper...',
+            search_citations: a => `Searching citations: "${a.query || ''}"`,
+            add_citation: a => `Adding citation: ${a.paper_id || '?'}`,
+            paper_stats: () => 'Getting paper stats...',
+            generate_diff: a => `Generating diff${a.rev ? ` vs ${a.rev}` : ''}...`,
+            switch_template: a => `Switching template to ${a.template || '?'}...`,
+            list_templates: () => 'Listing templates...',
+            list_reviews: () => 'Listing reviews...',
+            web_search: a => `Searching: "${a.query || ''}"`,
+            web_fetch: a => { const u = String(a.url || ''); return `Fetching: ${u.slice(0, 60)}${u.length > 60 ? '...' : ''}` },
+            read_file: a => `Reading ${a.path || a.file_path || 'file'}`,
+            write_file: a => `Writing ${a.path || a.file_path || 'file'}`,
+            command: a => { const c = String(a.command || ''); return `Running: ${c.slice(0, 80)}${c.length > 80 ? '...' : ''}` },
+          }
+          summary = labels[tool]?.(args) ?? `${tool}...`
         } catch {
-          argsStr = (event.args as string) || ''
+          summary = `${tool}...`
         }
-        if (argsStr.length > 200) argsStr = argsStr.slice(0, 200) + '...'
-        return { id: nextId(), type: 'tool_start', content: `${event.tool}(${argsStr})`, timestamp: Date.now() }
+        return { id: nextId(), type: 'tool_start', content: summary, timestamp: Date.now() }
       }
 
       case 'tool_end': {
         const result = (event.result as string) || ''
-        const truncated = result.length > 500 ? result.slice(0, 500) + '...' : result
+        const truncated = result.length > 300 ? result.slice(0, 300) + '...' : result
         return { id: nextId(), type: 'tool_end', content: truncated, timestamp: Date.now(), meta: { tool: event.tool, stop: event.stop } }
       }
 
@@ -225,16 +259,11 @@ export default function TerminalChat() {
         return { id: nextId(), type: 'error', content: event.message as string, timestamp: Date.now() }
 
       case 'stalled':
-        return { id: nextId(), type: 'status', content: 'Agent stalled — no tool calls made.', timestamp: Date.now() }
-
       case 'reacted':
-        return { id: nextId(), type: 'status', content: event.content as string, timestamp: Date.now() }
+        return null
 
       case 'agent_end':
-        return {
-          id: nextId(), type: 'status', timestamp: Date.now(),
-          content: `Done (${event.stop_reason}, ${(event.usage as Record<string, number>)?.total_tokens ?? '?'} tokens)`,
-        }
+        return null
 
       default:
         return null
@@ -326,7 +355,7 @@ export default function TerminalChat() {
     addMessage(setMessages, 'user', trimmed)
 
     if (trimmed === '/help') {
-      addMessage(setMessages, 'assistant', WELCOME_LINES.join('\n'))
+      addMessage(setMessages, 'assistant', welcomeLines.join('\n'))
       setInput('')
       return
     }
@@ -363,7 +392,7 @@ export default function TerminalChat() {
     send(JSON.stringify({ content: trimmed }))
     setInput('')
     setIsProcessing(true)
-  }, [input, isProcessing, status, send])
+  }, [input, isProcessing, status, send, welcomeLines, messages, reconnect])
 
   const handleCancel = useCallback(() => {
     if (!isProcessing || status !== 'connected') return
@@ -563,8 +592,8 @@ export default function TerminalChat() {
             color: 'var(--dn-text-dim)',
             whiteSpace: 'pre',
           }}>
-            {WELCOME_LINES.map((line, i) => {
-              const isHeader = line === WELCOME_LINES[0] || line.startsWith('NATURAL LANGUAGE')
+            {welcomeLines.map((line, i) => {
+              const isHeader = line === welcomeLines[0] || line.startsWith('NATURAL LANGUAGE')
               const cmdMatch = line.match(/^(\s*)(\/\S+)(.*)/)
               return (
                 <span key={i}>
@@ -591,20 +620,20 @@ export default function TerminalChat() {
               </pre>
             )}
             {msg.type === 'tool_start' && (
-              <>
-                <span style={styles.toolBadge}>TOOL</span>
-                {msg.content}
-              </>
+              <span style={{ color: 'var(--dn-text-dim)', fontSize: '11px' }}>
+                ▸ {msg.content}
+              </span>
             )}
-            {msg.type === 'tool_end' && (
+            {msg.type === 'tool_end' && msg.content && (
               <pre style={{
-                margin: '0 0 0 12px',
+                margin: '0 0 0 16px',
                 whiteSpace: 'pre-wrap',
                 fontFamily: 'inherit',
-                fontSize: '12px',
+                fontSize: '11px',
                 color: 'var(--dn-text-dim)',
-                maxHeight: '200px',
+                maxHeight: '120px',
                 overflow: 'auto',
+                opacity: 0.7,
               }}>
                 {msg.content}
               </pre>
