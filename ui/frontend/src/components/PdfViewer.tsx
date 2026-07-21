@@ -33,7 +33,7 @@ const styles = {
     letterSpacing: '0.05em',
   },
   pageInfo: {
-    color: 'var(--dn-text-dim)',
+    color: 'var(--dn-accent)',
     fontSize: '11px',
   },
   viewport: {
@@ -61,7 +61,7 @@ const styles = {
 
 // --- Component ---
 
-const MAX_TITLE_CHARS = 50
+const MAX_TITLE_CHARS = 74
 
 export default function PdfViewer() {
   const [pageCount, setPageCount] = useState(0)
@@ -229,7 +229,7 @@ export default function PdfViewer() {
     return (
       <div style={styles.container}>
         <div style={styles.header}>
-          <div style={{ display: 'flex', alignItems: 'baseline', gap: '10px' }}>
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: '16px' }}>
           <span style={styles.headerTitle}>PDF PREVIEW</span>
           {paperTitle && (
             <span
@@ -250,7 +250,7 @@ export default function PdfViewer() {
   return (
     <div style={styles.container}>
       <div style={styles.header}>
-        <div style={{ display: 'flex', alignItems: 'baseline', gap: '10px' }}>
+        <div style={{ display: 'flex', alignItems: 'baseline', gap: '16px' }}>
           <span style={styles.headerTitle}>PDF PREVIEW</span>
           {paperTitle && (
             <span
