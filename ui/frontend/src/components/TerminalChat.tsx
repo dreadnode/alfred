@@ -139,6 +139,13 @@ const WELCOME_LINES = [
   '  Or just ask — edit sections, add figures, fix errors, etc.',
 ]
 
+interface CommandDef {
+  name: string
+  description: string
+  arg_label: string
+  args: string
+}
+
 export default function TerminalChat() {
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [input, setInput] = useState('')
@@ -150,14 +157,20 @@ export default function TerminalChat() {
   const [settingsApiKeyEnv, setSettingsApiKeyEnv] = useState('')
   const [settingsError, setSettingsError] = useState('')
   const [settingsSaving, setSettingsSaving] = useState(false)
+  const [commands, setCommands] = useState<CommandDef[]>([])
+  const [cmdHighlight, setCmdHighlight] = useState(0)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const sessionIdRef = useRef<string | null>(null)
 
-  // Fetch model name from server config on mount
+  // Fetch model name and commands on mount
   useEffect(() => {
     fetch('/api/config')
       .then(r => r.json())
       .then(data => setModelName(data.model || ''))
+      .catch(() => {})
+    fetch('/api/commands')
+      .then(r => r.json())
+      .then(data => setCommands(data))
       .catch(() => {})
   }, [])
 
@@ -308,7 +321,39 @@ export default function TerminalChat() {
     addMessage(setMessages, 'status', 'Cancelling...')
   }, [isProcessing, status, send])
 
+  // Command autocomplete
+  const filteredCommands = input.startsWith('/')
+    ? commands.filter(c => c.name.startsWith(input.split(' ')[0]))
+    : []
+  const showCmdDropdown = filteredCommands.length > 0 && !input.includes(' ')
+
+  const selectCommand = useCallback((cmd: CommandDef) => {
+    setInput(cmd.name + ' ')
+    setCmdHighlight(0)
+  }, [])
+
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
+    if (showCmdDropdown) {
+      if (e.key === 'ArrowUp') {
+        e.preventDefault()
+        setCmdHighlight(i => (i > 0 ? i - 1 : filteredCommands.length - 1))
+        return
+      }
+      if (e.key === 'ArrowDown') {
+        e.preventDefault()
+        setCmdHighlight(i => (i < filteredCommands.length - 1 ? i + 1 : 0))
+        return
+      }
+      if (e.key === 'Tab' || (e.key === 'Enter' && !e.shiftKey)) {
+        e.preventDefault()
+        selectCommand(filteredCommands[cmdHighlight])
+        return
+      }
+      if (e.key === 'Escape') {
+        setInput('')
+        return
+      }
+    }
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault()
       handleSubmit()
@@ -316,7 +361,7 @@ export default function TerminalChat() {
     if (e.key === 'Escape' && isProcessing) {
       handleCancel()
     }
-  }, [handleSubmit, isProcessing, handleCancel])
+  }, [handleSubmit, isProcessing, handleCancel, showCmdDropdown, filteredCommands, cmdHighlight, selectCommand])
 
   const openSettings = useCallback(() => {
     setSettingsModel(modelName)
@@ -521,6 +566,32 @@ export default function TerminalChat() {
       </div>
 
       {/* Input */}
+      <div style={{ position: 'relative' }}>
+        {/* Command autocomplete dropdown */}
+        {showCmdDropdown && (
+          <div style={{
+            position: 'absolute', bottom: '100%', left: 0, right: 0, zIndex: 50,
+            background: 'var(--dn-bg-lt, #1e1e1e)', border: '1px solid var(--dn-border-lt, #444)',
+            borderBottom: 'none', borderRadius: '4px 4px 0 0',
+            maxHeight: '200px', overflowY: 'auto',
+            fontFamily: 'var(--font-mono)', fontSize: '12px',
+          }}>
+            {filteredCommands.map((cmd, i) => (
+              <div
+                key={cmd.name}
+                onClick={() => selectCommand(cmd)}
+                style={{
+                  padding: '6px 12px', cursor: 'pointer',
+                  background: i === cmdHighlight ? 'var(--dn-border, #333)' : 'transparent',
+                  display: 'flex', justifyContent: 'flex-start', alignItems: 'center',
+                }}
+              >
+                <span style={{ color: 'var(--dn-accent)', minWidth: '180px' }}>{cmd.name}</span>
+                <span style={{ color: 'var(--dn-text-dim, #888)', fontSize: '11px' }}>{cmd.description}</span>
+              </div>
+            ))}
+          </div>
+        )}
       <div style={styles.inputArea}>
         <span style={styles.prompt}>&gt;</span>
         {!isProcessing && status === 'connected' && input === '' && (
@@ -529,7 +600,7 @@ export default function TerminalChat() {
         <input
           style={styles.input}
           value={input}
-          onChange={(e) => setInput(e.target.value)}
+          onChange={(e) => { setInput(e.target.value); setCmdHighlight(0) }}
           onKeyDown={handleKeyDown}
           placeholder={
             status !== 'connected' ? 'Connecting...' :
@@ -558,6 +629,7 @@ export default function TerminalChat() {
             CANCEL
           </button>
         )}
+      </div>
       </div>
 
     </div>

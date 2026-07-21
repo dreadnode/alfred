@@ -45,10 +45,14 @@ class LocalTaskAgent(TaskAgent):
 
         async with AsyncExitStack() as stack:
             for tool_container in self.tools:
-                if hasattr(tool_container, "__aenter__") and hasattr(tool_container, "__aexit__"):
+                if hasattr(tool_container, "__aenter__") and hasattr(
+                    tool_container, "__aexit__"
+                ):
                     await stack.enter_async_context(tool_container)
 
-            async with aclosing(self._stream(thread, messages, commit=commit)) as event_stream:
+            async with aclosing(
+                self._stream(thread, messages, commit=commit)
+            ) as event_stream:
                 yield event_stream
 
 
@@ -204,6 +208,7 @@ Also read any shared guidance files referenced by the skill.md (in capabilities/
 | /lit-review "topic" | capabilities/lit-review/skill.md | Full literature review workflow |
 | /verify-claims section/file.tex | capabilities/verify-claims/skill.md | Verify claims against evidence |
 | /peer-review | capabilities/peer-review/skill.md | Interactive peer review session |
+| /process-peer-review [file] | capabilities/process-peer-review/skill.md | Process a peer review and record responses |
 | /detect-llm-writing [file] | capabilities/detect-llm-writing/skill.md | Detect LLM writing indicators in prose |
 
 Natural-language triggers also work:
@@ -212,6 +217,7 @@ Natural-language triggers also work:
 - "literature review on..." or "find related work for..." → lit-review
 - "check claims in..." or "verify claims..." → verify-claims
 - "review my paper..." or "give feedback on..." → peer-review
+- "process this review..." or "respond to review..." → process-peer-review
 - "check if this was written by AI..." or "detect LLM writing..." → detect-llm-writing
 
 {paper_context}

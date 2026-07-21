@@ -33,6 +33,7 @@ from dreadnode.agent.events import (
 from dreadnode.agent.reactions import Fail, Finish, RetryWithFeedback
 
 from .agent import create_agent
+from .capabilities import CAPABILITIES, maybe_expand_command
 
 if t.TYPE_CHECKING:
     from dreadnode.agent import TaskAgent
@@ -200,6 +201,20 @@ async def get_config() -> dict[str, t.Any]:
         "paper_title": title,
         "workspace": _workspace_root is not None,
     }
+
+
+@app.get("/api/commands")
+async def list_commands() -> list[dict[str, str]]:
+    """Return the list of available slash commands for autocomplete."""
+    return [
+        {
+            "name": f"/{name}",
+            "description": cap["description"],
+            "arg_label": cap["arg_label"],
+            "args": cap["args"],
+        }
+        for name, cap in sorted(CAPABILITIES.items())
+    ]
 
 
 @app.put("/api/paper-title")
@@ -549,6 +564,7 @@ async def ws_chat(websocket: WebSocket) -> None:
     async def _run_agent(user_input: str) -> None:
         """Stream agent events to the WebSocket. Runs inside a cancellable task."""
         assert session is not None
+        user_input = maybe_expand_command(user_input)
         session.last_active = time.time()
         user_event: dict[str, t.Any] = {"type": "user_message", "content": user_input}
         session.history.append(user_event)
