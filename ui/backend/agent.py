@@ -27,9 +27,21 @@ class LocalTaskAgent(TaskAgent):
     through ``_stream_traced()``, which imports ``dreadnode.task_and_run``
     and tries to connect to ``platform.dreadnode.io``.
 
-    All agent functionality (tool calling, hooks, stop conditions) is
-    preserved — only the telemetry wrapper is removed.
+    Also removes ``finish_task``, ``give_up_on_task``, and ``update_todo``
+    tools injected by ``TaskAgent.model_post_init`` — these corrupt the
+    conversation history in multi-turn chat sessions.
     """
+
+    _REMOVE_TOOLS = {"finish_task", "give_up_on_task", "update_todo"}
+
+    def model_post_init(self, context: t.Any) -> None:
+        """Remove SDK-injected task lifecycle tools after parent init."""
+        super().model_post_init(context)
+        self.tools = [t for t in self.tools if t.name not in self._REMOVE_TOOLS]
+        # Remove the stop_never condition so the agent stops after max_steps
+        self.stop_conditions = [
+            c for c in self.stop_conditions if c.name != "stop_never"
+        ]
 
     @asynccontextmanager
     async def stream(

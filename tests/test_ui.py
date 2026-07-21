@@ -254,8 +254,6 @@ class TestCreateAgent:
             "command",
             "read_file",
             "write_file",
-            "finish_task",
-            "give_up_on_task",
         }
         assert expected.issubset(names), f"Missing: {expected - names}"
 

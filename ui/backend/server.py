@@ -571,6 +571,32 @@ async def ws_chat(websocket: WebSocket) -> None:
         try:
             async with session.agent.stream(expanded) as events:
                 async for event in events:
+                    # Detect corrupted history from tool_use/tool_result mismatch
+                    if isinstance(event, AgentError):
+                        err_str = str(event.error)
+                        if "tool_use" in err_str and "tool_result" in err_str:
+                            session.agent = create_agent(_model, _paper_dir)
+                            session.history.clear()
+                            await _send_event(
+                                {
+                                    "type": "error",
+                                    "message": "Session had corrupted history — reset automatically. Please resend your message.",
+                                }
+                            )
+                            await _send_event(
+                                {
+                                    "type": "agent_end",
+                                    "stop_reason": "error_recovery",
+                                    "failed": True,
+                                    "steps": 0,
+                                    "usage": {
+                                        "input_tokens": 0,
+                                        "output_tokens": 0,
+                                        "total_tokens": 0,
+                                    },
+                                }
+                            )
+                            return
                     formatted = _format_event(event)
                     if formatted:
                         await _send_event(formatted)
@@ -594,11 +620,53 @@ async def ws_chat(websocket: WebSocket) -> None:
         except WebSocketDisconnect:
             raise
         except Exception as exc:
+            # Detect corrupted conversation history (dangling tool_use without
+            # tool_result) and auto-recover with a fresh agent.
+            err_str = str(exc)
+            if "tool_use" in err_str and "tool_result" in err_str:
+                session.agent = create_agent(_model, _paper_dir)
+                session.history.clear()
+                try:
+                    await _send_event(
+                        {
+                            "type": "error",
+                            "message": "Session had corrupted history — reset automatically. Please resend your message.",
+                        }
+                    )
+                    await _send_event(
+                        {
+                            "type": "agent_end",
+                            "stop_reason": "error_recovery",
+                            "failed": True,
+                            "steps": 0,
+                            "usage": {
+                                "input_tokens": 0,
+                                "output_tokens": 0,
+                                "total_tokens": 0,
+                            },
+                        }
+                    )
+                except WebSocketDisconnect:
+                    raise
+                return
             try:
                 await _send_event(
                     {
                         "type": "error",
                         "message": f"Agent error: {exc}",
+                    }
+                )
+                await _send_event(
+                    {
+                        "type": "agent_end",
+                        "stop_reason": "error",
+                        "failed": True,
+                        "steps": 0,
+                        "usage": {
+                            "input_tokens": 0,
+                            "output_tokens": 0,
+                            "total_tokens": 0,
+                        },
                     }
                 )
             except WebSocketDisconnect:

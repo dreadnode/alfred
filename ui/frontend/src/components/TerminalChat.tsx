@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import Markdown from 'react-markdown'
 import { useWebSocket, ConnectionStatus } from '../hooks/useWebSocket'
 
 // --- Types ---
@@ -63,19 +64,20 @@ const styles = {
   prompt: {
     color: 'var(--dn-accent)',
     marginRight: '8px',
+    lineHeight: '1.5',
   },
   toolBadge: {
     display: 'inline-block',
     padding: '1px 6px',
     borderRadius: '3px',
-    background: 'var(--dn-accent-dim)',
-    color: 'var(--dn-accent)',
+    background: 'rgba(79, 195, 247, 0.15)',
+    color: '#4fc3f7',
     fontSize: '11px',
     marginRight: '6px',
   },
   inputArea: {
     display: 'flex',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     padding: '12px 16px',
     borderTop: '1px solid var(--dn-border)',
     background: 'var(--dn-black)',
@@ -89,6 +91,11 @@ const styles = {
     fontFamily: 'var(--font-mono)',
     fontSize: '13px',
     caretColor: 'var(--dn-accent)',
+    resize: 'none' as const,
+    overflow: 'hidden',
+    lineHeight: '1.5',
+    padding: 0,
+    minHeight: '20px',
   },
   cursor: {
     display: 'inline-block',
@@ -175,6 +182,11 @@ interface CommandDef {
 export default function TerminalChat() {
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [input, setInput] = useState('')
+  const [promptHistory] = useState<string[]>(() => {
+    try { return JSON.parse(localStorage.getItem('prompt-history') || '[]') }
+    catch { return [] }
+  })
+  const historyIndexRef = useRef(-1)
   const [isProcessing, setIsProcessing] = useState(false)
   const [modelName, setModelName] = useState('')
   const [showSettings, setShowSettings] = useState(false)
@@ -187,7 +199,7 @@ export default function TerminalChat() {
   const [cmdHighlight, setCmdHighlight] = useState(0)
   const welcomeLines = useMemo(() => buildWelcomeLines(commands), [commands])
   const messagesEndRef = useRef<HTMLDivElement>(null)
-  const inputRef = useRef<HTMLInputElement>(null)
+  const inputRef = useRef<HTMLTextAreaElement>(null)
   const sessionIdRef = useRef<string | null>(null)
 
   // Fetch model name and commands on mount
@@ -222,6 +234,7 @@ export default function TerminalChat() {
 
       case 'tool_start': {
         const tool = (event.tool as string) || 'unknown'
+        if (tool === 'finish_task' || tool === 'give_up_on_task') return null
         let summary = tool
         try {
           const args = JSON.parse(event.args as string)
@@ -250,6 +263,8 @@ export default function TerminalChat() {
       }
 
       case 'tool_end': {
+        const endTool = (event.tool as string) || ''
+        if (endTool === 'finish_task' || endTool === 'give_up_on_task') return null
         const result = (event.result as string) || ''
         const truncated = result.length > 300 ? result.slice(0, 300) + '...' : result
         return { id: nextId(), type: 'tool_end', content: truncated, timestamp: Date.now(), meta: { tool: event.tool, stop: event.stop } }
@@ -314,9 +329,9 @@ export default function TerminalChat() {
         return
       }
 
+      if (type === 'agent_end') setIsProcessing(false)
       const msg = eventToMessage(event)
       if (msg) {
-        if (type === 'agent_end') setIsProcessing(false)
         setMessages(prev => [...prev, msg])
       }
     } catch {
@@ -343,6 +358,13 @@ export default function TerminalChat() {
     }
   }, [status, isProcessing])
 
+  // Reset textarea height when input is cleared
+  useEffect(() => {
+    if (!input && inputRef.current) {
+      inputRef.current.style.height = 'auto'
+    }
+  }, [input])
+
   // Auto-scroll to bottom
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -351,6 +373,14 @@ export default function TerminalChat() {
   const handleSubmit = useCallback(() => {
     const trimmed = input.trim()
     if (!trimmed || isProcessing || status !== 'connected') return
+
+    // Save to prompt history (dedup, cap at 100, persist)
+    const idx = promptHistory.indexOf(trimmed)
+    if (idx !== -1) promptHistory.splice(idx, 1)
+    promptHistory.unshift(trimmed)
+    if (promptHistory.length > 100) promptHistory.length = 100
+    localStorage.setItem('prompt-history', JSON.stringify(promptHistory))
+    historyIndexRef.current = -1
 
     addMessage(setMessages, 'user', trimmed)
 
@@ -437,10 +467,32 @@ export default function TerminalChat() {
       e.preventDefault()
       handleSubmit()
     }
+    if (e.key === 'ArrowUp' && !showCmdDropdown && promptHistory.length > 0) {
+      const el = inputRef.current
+      // Only navigate history if cursor is on the first line
+      if (el && el.selectionStart !== undefined && el.value.slice(0, el.selectionStart).indexOf('\n') === -1) {
+        e.preventDefault()
+        const next = Math.min(historyIndexRef.current + 1, promptHistory.length - 1)
+        historyIndexRef.current = next
+        setInput(promptHistory[next])
+        requestAnimationFrame(() => { if (el) { el.style.height = 'auto'; el.style.height = el.scrollHeight + 'px' } })
+      }
+    }
+    if (e.key === 'ArrowDown' && !showCmdDropdown && historyIndexRef.current >= 0) {
+      const el = inputRef.current
+      // Only navigate history if cursor is on the last line
+      if (el && el.selectionStart !== undefined && el.value.slice(el.selectionStart).indexOf('\n') === -1) {
+        e.preventDefault()
+        const next = historyIndexRef.current - 1
+        historyIndexRef.current = next
+        setInput(next >= 0 ? promptHistory[next] : '')
+        requestAnimationFrame(() => { if (el) { el.style.height = 'auto'; el.style.height = el.scrollHeight + 'px' } })
+      }
+    }
     if (e.key === 'Escape' && isProcessing) {
       handleCancel()
     }
-  }, [handleSubmit, isProcessing, handleCancel, showCmdDropdown, filteredCommands, cmdHighlight, selectCommand])
+  }, [handleSubmit, isProcessing, handleCancel, showCmdDropdown, filteredCommands, cmdHighlight, selectCommand, promptHistory])
 
   const openSettings = useCallback(() => {
     setSettingsModel(modelName)
@@ -615,25 +667,25 @@ export default function TerminalChat() {
               </>
             )}
             {msg.type === 'assistant' && (
-              <pre style={{ margin: 0, whiteSpace: 'pre-wrap', fontFamily: 'inherit' }}>
-                {msg.content}
-              </pre>
+              <div className="markdown-body" style={{ fontFamily: 'inherit', fontSize: '13px', lineHeight: '1.5' }}>
+                <Markdown>{msg.content}</Markdown>
+              </div>
             )}
             {msg.type === 'tool_start' && (
-              <span style={{ color: 'var(--dn-text-dim)', fontSize: '11px' }}>
-                ▸ {msg.content}
-              </span>
+              <>
+                <span style={styles.toolBadge}>TOOL</span>
+                <span style={{ color: 'var(--dn-text-muted)', fontSize: '12px' }}>{msg.content}</span>
+              </>
             )}
             {msg.type === 'tool_end' && msg.content && (
               <pre style={{
-                margin: '0 0 0 16px',
+                margin: '0 0 0 12px',
                 whiteSpace: 'pre-wrap',
                 fontFamily: 'inherit',
                 fontSize: '11px',
-                color: 'var(--dn-text-dim)',
+                color: 'var(--dn-text-muted)',
                 maxHeight: '120px',
                 overflow: 'auto',
-                opacity: 0.7,
               }}>
                 {msg.content}
               </pre>
@@ -686,11 +738,17 @@ export default function TerminalChat() {
         {!isProcessing && status === 'connected' && input === '' && (
           <span style={styles.cursor} />
         )}
-        <input
+        <textarea
           ref={inputRef}
           style={styles.input}
           value={input}
-          onChange={(e) => { setInput(e.target.value); setCmdHighlight(0) }}
+          rows={1}
+          onChange={(e) => {
+            setInput(e.target.value)
+            setCmdHighlight(0)
+            e.target.style.height = 'auto'
+            e.target.style.height = e.target.scrollHeight + 'px'
+          }}
           onKeyDown={handleKeyDown}
           placeholder={
             status !== 'connected' ? 'Connecting...' :
