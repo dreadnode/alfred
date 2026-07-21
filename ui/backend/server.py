@@ -5,6 +5,7 @@ import contextlib
 import json
 import os
 import re
+import tempfile
 import time
 import typing as t
 import uuid
@@ -13,7 +14,7 @@ import yaml
 from contextlib import asynccontextmanager
 from dataclasses import dataclass, field
 
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, UploadFile, WebSocket, WebSocketDisconnect
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from watchfiles import awatch
@@ -46,6 +47,7 @@ _paper_dir: str = ""
 _model: str = ""
 _workspace_root: str | None = None
 _pdf_watcher_task: asyncio.Task[None] | None = None
+_custom_pdf: str | None = None  # Override for the PDF viewer (external PDF)
 
 # WebSocket clients subscribed to PDF change notifications.
 _pdf_clients: set[WebSocket] = set()
@@ -201,6 +203,41 @@ async def get_config() -> dict[str, t.Any]:
         "paper_title": title,
         "workspace": _workspace_root is not None,
     }
+
+
+@app.get("/api/debug/sessions")
+async def debug_sessions() -> dict[str, t.Any]:
+    """Dump all active sessions for debugging."""
+    result: dict[str, t.Any] = {}
+    for sid, session in list(_sessions.items()):
+        thread_msgs: list[dict[str, t.Any]] = []
+        try:
+            for msg in session.agent.thread.messages:
+                content = msg.content or ""
+                entry: dict[str, t.Any] = {
+                    "role": msg.role,
+                    "content": content[:200] + "..." if len(content) > 200 else content,
+                }
+                if hasattr(msg, "tool_calls") and msg.tool_calls:
+                    entry["tool_calls"] = [
+                        {
+                            "name": getattr(tc, "name", None)
+                            or getattr(getattr(tc, "function", None), "name", "?"),
+                            "id": getattr(tc, "id", "?"),
+                        }
+                        for tc in msg.tool_calls
+                    ]
+                if msg.role == "tool":
+                    entry["tool_call_id"] = getattr(msg, "tool_call_id", None)
+                thread_msgs.append(entry)
+        except Exception as exc:
+            thread_msgs = [{"error": str(exc)}]
+        result[sid] = {
+            "last_active": session.last_active,
+            "history_count": len(session.history),
+            "thread_messages": thread_msgs,
+        }
+    return result
 
 
 @app.get("/api/commands")
@@ -410,11 +447,98 @@ async def update_config(body: dict[str, t.Any]) -> dict[str, str]:
 
 @app.get("/api/pdf", response_model=None)
 async def get_pdf() -> FileResponse | JSONResponse:
-    """Serve the latest built PDF, or 404 if it doesn't exist yet."""
-    pdf_path = os.path.join(_paper_dir, "build", "main.pdf")
+    """Serve the loaded PDF (custom or built)."""
+    pdf_path = _custom_pdf or os.path.join(_paper_dir, "build", "main.pdf")
     if not os.path.exists(pdf_path):
         return JSONResponse({"error": "PDF not found"}, status_code=404)
     return FileResponse(pdf_path, media_type="application/pdf")
+
+
+@app.post("/api/load-pdf")
+async def load_pdf(body: dict[str, t.Any]) -> dict[str, str]:
+    """Load an external PDF into the viewer."""
+    global _custom_pdf
+    path: str = body.get("path", "").strip()
+    if not path:
+        return {"error": "path is required"}
+    expanded = os.path.expanduser(path)
+    if not os.path.isfile(expanded):
+        return {"error": f"File not found: {path}"}
+    if not expanded.lower().endswith(".pdf"):
+        return {"error": "File must be a PDF"}
+    _custom_pdf = os.path.abspath(expanded)
+    # Notify PDF clients so the viewer reloads
+    msg = json.dumps({"type": "pdf_updated", "timestamp": time.time()})
+    for ws in list(_pdf_clients):
+        try:
+            await ws.send_text(msg)
+        except Exception:
+            _pdf_clients.discard(ws)
+    return {"path": _custom_pdf}
+
+
+@app.post("/api/reset-pdf")
+async def reset_pdf() -> dict[str, str]:
+    """Reset the PDF viewer back to the built paper."""
+    global _custom_pdf
+    _custom_pdf = None
+    msg = json.dumps({"type": "pdf_updated", "timestamp": time.time()})
+    for ws in list(_pdf_clients):
+        try:
+            await ws.send_text(msg)
+        except Exception:
+            _pdf_clients.discard(ws)
+    return {"status": "reset"}
+
+
+@app.post("/api/upload-pdf")
+async def upload_pdf(file: UploadFile) -> dict[str, t.Any]:
+    """Upload a PDF, load it into the viewer, and extract text for the agent."""
+    global _custom_pdf
+    if not file.filename or not file.filename.lower().endswith(".pdf"):
+        return {"error": "File must be a PDF"}
+
+    # Save to a temp location
+    tmp = tempfile.NamedTemporaryFile(delete=False, suffix=".pdf", prefix="al-upload-")
+    content = await file.read()
+    tmp.write(content)
+    tmp.close()
+
+    _custom_pdf = tmp.name
+
+    # Notify PDF clients
+    msg = json.dumps({"type": "pdf_updated", "timestamp": time.time()})
+    for ws in list(_pdf_clients):
+        try:
+            await ws.send_text(msg)
+        except Exception:
+            _pdf_clients.discard(ws)
+
+    # Extract text via pdftotext if available
+    extracted = ""
+    text_ok = False
+    try:
+        proc = await asyncio.create_subprocess_exec(
+            "pdftotext",
+            tmp.name,
+            "-",
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE,
+        )
+        stdout, _ = await asyncio.wait_for(proc.communicate(), timeout=30)
+        extracted = stdout.decode("utf-8", errors="replace")
+        text_ok = bool(extracted.strip())
+    except FileNotFoundError:
+        extracted = "pdftotext not installed — text extraction unavailable"
+    except Exception as exc:
+        extracted = f"Text extraction failed: {exc}"
+
+    return {
+        "filename": file.filename,
+        "path": tmp.name,
+        "text": extracted,
+        "text_ok": text_ok,
+    }
 
 
 # ---------------------------------------------------------------------------

@@ -128,6 +128,8 @@ const CLIENT_COMMANDS = [
   { name: '/clear', description: 'Reset session and start fresh' },
   { name: '/copy [N]', description: 'Copy last N agent messages (default 10)' },
   { name: '/help', description: 'Show this guide' },
+  { name: '/load-pdf <path>', description: 'Load an external PDF into viewer' },
+  { name: '/reset-pdf', description: 'Reset viewer to built paper' },
 ]
 
 const NATURAL_LANGUAGE_LINES = [
@@ -419,6 +421,36 @@ export default function TerminalChat() {
       return
     }
 
+    if (trimmed.startsWith('/load-pdf')) {
+      const pdfPath = trimmed.slice(9).trim()
+      if (!pdfPath) {
+        addMessage(setMessages, 'status', 'Usage: /load-pdf <path>')
+        setInput('')
+        return
+      }
+      fetch('/api/load-pdf', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ path: pdfPath }),
+      })
+        .then(r => r.json())
+        .then(data => {
+          if (data.error) addMessage(setMessages, 'error', data.error)
+          else addMessage(setMessages, 'status', `Loaded: ${data.path}`)
+        })
+        .catch(() => addMessage(setMessages, 'error', 'Failed to load PDF.'))
+      setInput('')
+      return
+    }
+
+    if (trimmed === '/reset-pdf') {
+      fetch('/api/reset-pdf', { method: 'POST' })
+        .then(() => addMessage(setMessages, 'status', 'PDF viewer reset to built paper.'))
+        .catch(() => addMessage(setMessages, 'error', 'Failed to reset PDF.'))
+      setInput('')
+      return
+    }
+
     send(JSON.stringify({ content: trimmed }))
     setInput('')
     setIsProcessing(true)
@@ -494,6 +526,37 @@ export default function TerminalChat() {
     }
   }, [handleSubmit, isProcessing, handleCancel, showCmdDropdown, filteredCommands, cmdHighlight, selectCommand, promptHistory])
 
+  const [isDragging, setIsDragging] = useState(false)
+
+  const handleDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault()
+    setIsDragging(false)
+    const file = e.dataTransfer.files[0]
+    if (!file || !file.name.toLowerCase().endsWith('.pdf')) {
+      addMessage(setMessages, 'error', 'Only PDF files are supported.')
+      return
+    }
+    addMessage(setMessages, 'status', `Uploading ${file.name}...`)
+    const form = new FormData()
+    form.append('file', file)
+    fetch('/api/upload-pdf', { method: 'POST', body: form })
+      .then(r => r.json())
+      .then(data => {
+        if (data.error) {
+          addMessage(setMessages, 'error', data.error)
+          return
+        }
+        addMessage(setMessages, 'status', `Loaded ${data.filename} into viewer.`)
+        // Send extracted text to the agent as context
+        if (data.text_ok && data.text && status === 'connected' && !isProcessing) {
+          const prompt = `I've loaded a PDF: "${data.filename}". Here is the extracted text:\n\n${data.text}`
+          send(JSON.stringify({ content: prompt }))
+          setIsProcessing(true)
+        }
+      })
+      .catch(() => addMessage(setMessages, 'error', 'Failed to upload PDF.'))
+  }, [status, isProcessing, send])
+
   const openSettings = useCallback(() => {
     setSettingsModel(modelName)
     setSettingsApiKey('')
@@ -539,7 +602,13 @@ export default function TerminalChat() {
   }, [settingsModel, settingsApiKey, settingsApiKeyEnv, reconnect])
 
   return (
-    <div style={styles.container} onClick={() => inputRef.current?.focus()}>
+    <div
+      style={styles.container}
+      onClick={() => inputRef.current?.focus()}
+      onDragOver={(e) => { e.preventDefault(); setIsDragging(true) }}
+      onDragLeave={() => setIsDragging(false)}
+      onDrop={handleDrop}
+    >
       {/* Header */}
       <div style={styles.header}>
         <div style={{ display: 'flex', alignItems: 'baseline', gap: '16px' }}>
@@ -559,6 +628,21 @@ export default function TerminalChat() {
           <div style={styles.statusDot(status)} />
         </div>
       </div>
+
+      {/* Drop overlay */}
+      {isDragging && (
+        <div style={{
+          position: 'absolute', inset: 0, zIndex: 90,
+          background: 'rgba(79, 195, 247, 0.1)',
+          border: '2px dashed #4fc3f7',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          pointerEvents: 'none',
+        }}>
+          <span style={{ color: '#4fc3f7', fontSize: '14px', fontFamily: 'var(--font-mono)' }}>
+            Drop PDF to load
+          </span>
+        </div>
+      )}
 
       {/* Settings Modal */}
       {showSettings && (
@@ -647,11 +731,13 @@ export default function TerminalChat() {
             {welcomeLines.map((line, i) => {
               const isHeader = line === welcomeLines[0] || line.startsWith('NATURAL LANGUAGE')
               const cmdMatch = line.match(/^(\s*)(\/\S+)(.*)/)
+              const nlMatch = line.match(/^(\s*)("[^"]+")(.*)/);
               return (
                 <span key={i}>
                   {i > 0 && '\n'}
                   {isHeader ? <span style={{ color: '#4caf50' }}>{line}</span>
                     : cmdMatch ? <>{cmdMatch[1]}<span style={{ color: '#fff' }}>{cmdMatch[2]}</span>{cmdMatch[3]}</>
+                    : nlMatch ? <>{nlMatch[1]}<span style={{ color: '#fff' }}>{nlMatch[2]}</span>{nlMatch[3]}</>
                     : line}
                 </span>
               )
