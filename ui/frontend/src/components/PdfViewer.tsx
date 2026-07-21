@@ -16,6 +16,7 @@ const styles = {
     flexDirection: 'column' as const,
     height: '100%',
     background: 'var(--dn-black)',
+    position: 'relative' as const,
   },
   header: {
     display: 'flex',
@@ -68,6 +69,10 @@ export default function PdfViewer() {
   const [error, setError] = useState<string | null>(null)
   const [pdfVersion, setPdfVersion] = useState(0)
   const [paperTitle, setPaperTitle] = useState('')
+  const [showTitleEdit, setShowTitleEdit] = useState(false)
+  const [editTitle, setEditTitle] = useState('')
+  const [titleError, setTitleError] = useState('')
+  const [titleSaving, setTitleSaving] = useState(false)
 
   // Fetch paper title from server config on mount
   useEffect(() => {
@@ -76,6 +81,39 @@ export default function PdfViewer() {
       .then(data => setPaperTitle(data.paper_title || ''))
       .catch(() => {})
   }, [])
+
+  const openTitleEdit = useCallback(() => {
+    setEditTitle(paperTitle)
+    setTitleError('')
+    setShowTitleEdit(true)
+  }, [paperTitle])
+
+  const closeTitleEdit = useCallback(() => {
+    setShowTitleEdit(false)
+    setTitleError('')
+  }, [])
+
+  const saveTitleEdit = useCallback(async () => {
+    const title = editTitle.trim()
+    if (!title) { setTitleError('Title is required'); return }
+    setTitleSaving(true)
+    setTitleError('')
+    try {
+      const res = await fetch('/api/paper-title', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title }),
+      })
+      const data = await res.json()
+      if (data.error) { setTitleError(data.error); return }
+      setPaperTitle(data.title)
+      setShowTitleEdit(false)
+    } catch (e) {
+      setTitleError(`Failed to save: ${e}`)
+    } finally {
+      setTitleSaving(false)
+    }
+  }, [editTitle])
 
   const viewportRef = useRef<HTMLDivElement>(null)
   const pdfDocRef = useRef<pdfjsLib.PDFDocumentProxy | null>(null)
@@ -194,7 +232,11 @@ export default function PdfViewer() {
           <div style={{ display: 'flex', alignItems: 'baseline', gap: '10px' }}>
           <span style={styles.headerTitle}>PDF PREVIEW</span>
           {paperTitle && (
-            <span style={{ color: '#4fc3f7', fontSize: '11px' }}>
+            <span
+              onClick={openTitleEdit}
+              style={{ color: '#4fc3f7', fontSize: '11px', cursor: 'pointer', textDecoration: 'underline', textDecorationStyle: 'dotted' as const, textUnderlineOffset: '3px' }}
+              title="Edit paper title"
+            >
               {paperTitle.length > MAX_TITLE_CHARS ? paperTitle.slice(0, MAX_TITLE_CHARS) + '...' : paperTitle}
             </span>
           )}
@@ -211,7 +253,11 @@ export default function PdfViewer() {
         <div style={{ display: 'flex', alignItems: 'baseline', gap: '10px' }}>
           <span style={styles.headerTitle}>PDF PREVIEW</span>
           {paperTitle && (
-            <span style={{ color: '#4fc3f7', fontSize: '11px' }}>
+            <span
+              onClick={openTitleEdit}
+              style={{ color: '#4fc3f7', fontSize: '11px', cursor: 'pointer', textDecoration: 'underline', textDecorationStyle: 'dotted' as const, textUnderlineOffset: '3px' }}
+              title="Edit paper title"
+            >
               {paperTitle.length > MAX_TITLE_CHARS ? paperTitle.slice(0, MAX_TITLE_CHARS) + '...' : paperTitle}
             </span>
           )}
@@ -223,6 +269,54 @@ export default function PdfViewer() {
           )}
         </div>
       </div>
+      {/* Title Edit Modal */}
+      {showTitleEdit && (
+        <div style={{
+          position: 'absolute', inset: 0, zIndex: 100,
+          background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center',
+        }} onClick={closeTitleEdit}>
+          <div style={{
+            background: 'var(--dn-bg-lt, #1e1e1e)', border: '1px solid var(--dn-border-lt, #444)',
+            borderRadius: '6px', padding: '20px', width: '340px',
+            fontFamily: 'var(--font-mono)', fontSize: '12px', color: 'var(--dn-text, #ccc)',
+          }} onClick={e => e.stopPropagation()}>
+            <div style={{ fontSize: '13px', fontWeight: 700, marginBottom: '16px', color: 'var(--dn-accent, #4caf50)' }}>
+              Paper Title
+            </div>
+
+            <input
+              style={{
+                width: '100%', boxSizing: 'border-box' as const, padding: '6px 8px', marginBottom: '16px',
+                background: 'var(--dn-bg, #121212)', border: '1px solid var(--dn-border, #333)',
+                borderRadius: '3px', color: 'var(--dn-text, #ccc)', fontFamily: 'var(--font-mono)', fontSize: '12px',
+              }}
+              value={editTitle}
+              onChange={e => setEditTitle(e.target.value)}
+              onKeyDown={e => { if (e.key === 'Enter') saveTitleEdit() }}
+              autoFocus
+            />
+
+            {titleError && (
+              <div style={{ color: 'var(--dn-error, #f44336)', marginBottom: '12px', fontSize: '11px' }}>{titleError}</div>
+            )}
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
+              <button onClick={closeTitleEdit} style={{
+                background: 'transparent', border: '1px solid var(--dn-border-lt, #444)',
+                color: 'var(--dn-text-dim, #888)', fontFamily: 'var(--font-mono)', fontSize: '11px',
+                padding: '4px 12px', borderRadius: '3px', cursor: 'pointer',
+              }}>CANCEL</button>
+              <button onClick={saveTitleEdit} disabled={titleSaving} style={{
+                background: 'var(--dn-accent, #4caf50)', border: 'none',
+                color: 'var(--dn-black, #000)', fontFamily: 'var(--font-mono)', fontSize: '11px',
+                padding: '4px 12px', borderRadius: '3px', cursor: 'pointer', fontWeight: 700,
+                opacity: titleSaving ? 0.6 : 1,
+              }}>{titleSaving ? 'SAVING...' : 'SAVE'}</button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div style={styles.viewport} ref={viewportRef} />
     </div>
   )

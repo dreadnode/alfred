@@ -79,7 +79,10 @@ def get_paper(paper_id: str) -> dict[str, Any] | None:
 def get_bibtex(paper_id: str) -> str | None:
     """Fetch the BibTeX entry for a paper from Semantic Scholar."""
     url = f"https://api.semanticscholar.org/graph/v1/paper/{paper_id}"
-    headers: dict[str, str] = {"User-Agent": "agentic-latex/1.0", "Accept": "application/x-bibtex"}
+    headers: dict[str, str] = {
+        "User-Agent": "agentic-latex/1.0",
+        "Accept": "application/x-bibtex",
+    }
     if _api_key:
         headers["x-api-key"] = _api_key
     req = urllib.request.Request(url, headers=headers)
@@ -115,7 +118,7 @@ def _format_result(i: int, paper: dict[str, Any]) -> str:
     cites = paper.get("citationCount", 0)
     pid = paper.get("paperId", "")
     venue_str = f" — {venue}" if venue else ""
-    return f"  [{i+1}] {title}\n      {author_str} ({year}){venue_str} [{cites} citations]\n      ID: {pid}"
+    return f"  [{i + 1}] {title}\n      {author_str} ({year}){venue_str} [{cites} citations]\n      ID: {pid}"
 
 
 def _read_bib(bib_path: str) -> str:
@@ -160,7 +163,7 @@ def cmd_search(
     auto_add: bool = False,
 ) -> int:
     """Search for papers and optionally add them to bibliography."""
-    print(f"Searching: \"{query}\"\n")
+    print(f'Searching: "{query}"\n')
 
     papers = search_papers(query, limit=limit)
     if not papers:
@@ -175,7 +178,7 @@ def cmd_search(
         paper = papers[0]
         return _add_paper(paper, project_root)
 
-    print(f"To add a paper: python3 scripts/cite.py add <ID>")
+    print("To add a paper: python3 scripts/cite.py add <ID>")
     return 0
 
 
@@ -219,13 +222,18 @@ def main() -> None:
 
     sp_search = subparsers.add_parser("search", help="Search for papers")
     sp_search.add_argument("query", help="Search query")
-    sp_search.add_argument("--limit", type=int, default=10, help="Max results (default: 10)")
+    sp_search.add_argument(
+        "--limit", type=int, default=10, help="Max results (default: 10)"
+    )
     sp_search.add_argument("--add", action="store_true", help="Auto-add top result")
     sp_search.add_argument("--api-key", default=None, help=key_help)
     sp_search.add_argument("--project-root", default=None, help=root_help)
 
     sp_add = subparsers.add_parser("add", help="Add a paper by ID")
-    sp_add.add_argument("paper_id", help="Semantic Scholar paper ID, DOI, or arXiv ID (e.g., arXiv:2301.00001)")
+    sp_add.add_argument(
+        "paper_id",
+        help="Semantic Scholar paper ID, DOI, or arXiv ID (e.g., arXiv:2301.00001)",
+    )
     sp_add.add_argument("--api-key", default=None, help=key_help)
     sp_add.add_argument("--project-root", default=None, help=root_help)
 
@@ -234,7 +242,9 @@ def main() -> None:
     if getattr(args, "api_key", None):
         _api_key = args.api_key
 
-    root = getattr(args, "project_root", None) or os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    root = getattr(args, "project_root", None) or os.path.dirname(
+        os.path.dirname(os.path.abspath(__file__))
+    )
 
     if args.command == "search":
         sys.exit(cmd_search(args.query, root, limit=args.limit, auto_add=args.add))

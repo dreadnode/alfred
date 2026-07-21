@@ -17,7 +17,7 @@ import webbrowser
 from pathlib import Path
 
 import uvicorn
-import yaml
+from scaffold import scaffold_paper as _scaffold_paper
 
 
 def _resolve_api_key(value: str | None, model: str) -> str:
@@ -73,41 +73,6 @@ def _resolve_api_key(value: str | None, model: str) -> str:
     return model
 
 
-_MINIMAL_PAPER_YAML: dict = {
-    "template": "article",
-    "title": "Untitled Paper",
-    "authors": [],
-    "abstract_summary": "",
-    "sections": [],
-    "bibliography": {"file": "bibliography.bib"},
-    "build": {"engine": "pdflatex", "output_dir": "build"},
-}
-
-
-def _scaffold_paper(paper_dir: str) -> None:
-    """Create a minimal paper project so the UI has something to work with."""
-    repo_root = str(Path(__file__).resolve().parent.parent)
-
-    # Write paper.yaml first — init_template and sync both need it.
-    manifest_path = os.path.join(paper_dir, "paper.yaml")
-    with open(manifest_path, "w") as f:
-        yaml.dump(_MINIMAL_PAPER_YAML, f, default_flow_style=False, sort_keys=False)
-
-    # Create section/ and empty bibliography.bib if missing.
-    os.makedirs(os.path.join(paper_dir, "section"), exist_ok=True)
-    bib_path = os.path.join(paper_dir, "bibliography.bib")
-    if not os.path.exists(bib_path):
-        Path(bib_path).touch()
-
-    # Copy article template main.tex and run sync via init_template.
-    sys.path.insert(0, os.path.join(repo_root, "scripts"))
-    from init_template import init_template
-
-    init_template(paper_dir, "article")
-
-    print(f"\n  Scaffolded a blank article project in {paper_dir}\n")
-
-
 def main() -> None:
     """Parse CLI arguments, configure the backend, and start the server."""
     parser = argparse.ArgumentParser(description="Launch the Agentic LaTeX web UI")
@@ -150,8 +115,25 @@ def main() -> None:
         print(f"Error: Paper directory not found: {paper_dir}", file=sys.stderr)
         sys.exit(1)
 
-    if not os.path.isfile(os.path.join(paper_dir, "paper.yaml")):
-        _scaffold_paper(paper_dir)
+    workspace_root: str | None = None
+    if os.path.isfile(os.path.join(paper_dir, "paper.yaml")):
+        # Single-paper mode — backwards compatible.
+        pass
+    else:
+        # Workspace mode — paper_dir is the workspace root.
+        workspace_root = paper_dir
+        # Find first existing paper subdir, or scaffold one.
+        subdirs = sorted(
+            d
+            for d in os.listdir(paper_dir)
+            if os.path.isdir(os.path.join(paper_dir, d))
+            and os.path.isfile(os.path.join(paper_dir, d, "paper.yaml"))
+        )
+        if subdirs:
+            paper_dir = os.path.join(workspace_root, subdirs[0])
+        else:
+            paper_dir = os.path.join(workspace_root, "untitled-paper")
+            _scaffold_paper(paper_dir)
 
     model: str = _resolve_api_key(args.api_key, args.model)
 
@@ -173,6 +155,7 @@ def main() -> None:
     configure(
         paper_dir=paper_dir,
         model=model,
+        workspace_root=workspace_root,
     )
 
     if not args.dev and frontend_dist.is_dir():
@@ -181,6 +164,8 @@ def main() -> None:
     url: str = "http://localhost:3000" if args.dev else f"http://localhost:{args.port}"
 
     print("\n  Agentic LaTeX UI")
+    if workspace_root:
+        print(f"  Workspace: {workspace_root}")
     print(f"  Paper:  {paper_dir}")
     print(f"  Model:  {model}")
     print(f"  Server: http://localhost:{args.port}")

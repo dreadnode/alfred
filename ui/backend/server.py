@@ -4,6 +4,7 @@ import asyncio
 import contextlib
 import json
 import os
+import re
 import time
 import typing as t
 import uuid
@@ -42,6 +43,8 @@ if t.TYPE_CHECKING:
 
 _paper_dir: str = ""
 _model: str = ""
+_workspace_root: str | None = None
+_pdf_watcher_task: asyncio.Task[None] | None = None
 
 # WebSocket clients subscribed to PDF change notifications.
 _pdf_clients: set[WebSocket] = set()
@@ -76,6 +79,7 @@ def _prune_sessions() -> None:
 def configure(
     paper_dir: str,
     model: str,
+    workspace_root: str | None = None,
 ) -> None:
     """Store runtime configuration for the server.
 
@@ -84,10 +88,12 @@ def configure(
     Args:
         paper_dir: Absolute path to the paper working directory.
         model: LLM model identifier forwarded to the agent.
+        workspace_root: If set, enables workspace mode with multi-paper support.
     """
-    global _paper_dir, _model
+    global _paper_dir, _model, _workspace_root
     _paper_dir = os.path.abspath(paper_dir)
     _model = model
+    _workspace_root = os.path.abspath(workspace_root) if workspace_root else None
 
 
 # ---------------------------------------------------------------------------
@@ -125,7 +131,7 @@ async def _watch_pdf() -> None:
                 await ws.send_text(msg)
             except Exception:
                 disconnected.add(ws)
-        _pdf_clients -= disconnected
+        _pdf_clients.difference_update(disconnected)
 
     async for changes in awatch(watch_dir):
         pdf_changed = any(path.endswith("main.pdf") for _, path in changes)
@@ -137,16 +143,34 @@ async def _watch_pdf() -> None:
         pending = asyncio.create_task(_notify())
 
 
+async def _restart_pdf_watcher() -> None:
+    """Cancel the current PDF watcher (if any) and start a new one."""
+    global _pdf_watcher_task
+    if _pdf_watcher_task:
+        _pdf_watcher_task.cancel()
+        with contextlib.suppress(asyncio.CancelledError):
+            await _pdf_watcher_task
+    _pdf_watcher_task = asyncio.create_task(_watch_pdf())
+
+
+async def _switch_paper(new_paper_dir: str) -> None:
+    """Switch the active paper directory at runtime."""
+    global _paper_dir
+    _paper_dir = os.path.abspath(new_paper_dir)
+    _sessions.clear()
+    await _restart_pdf_watcher()
+
+
 @asynccontextmanager
 async def _lifespan(_app: FastAPI) -> t.AsyncIterator[None]:
     """Start the PDF watcher on server boot, cancel on shutdown."""
-    task = asyncio.create_task(_watch_pdf())
+    global _pdf_watcher_task
+    _pdf_watcher_task = asyncio.create_task(_watch_pdf())
     yield
-    task.cancel()
-    try:
-        await task
-    except asyncio.CancelledError:
-        pass
+    if _pdf_watcher_task:
+        _pdf_watcher_task.cancel()
+        with contextlib.suppress(asyncio.CancelledError):
+            await _pdf_watcher_task
 
 
 app = FastAPI(lifespan=_lifespan)
@@ -174,7 +198,150 @@ async def get_config() -> dict[str, t.Any]:
         "paper_dir": _paper_dir,
         "model": _model,
         "paper_title": title,
+        "workspace": _workspace_root is not None,
     }
+
+
+@app.put("/api/paper-title")
+async def update_paper_title(body: dict[str, t.Any]) -> dict[str, str]:
+    """Update the paper title in ``paper.yaml``."""
+    new_title: str = body.get("title", "").strip()
+    if not new_title:
+        return {"error": "title is required"}
+
+    yaml_path = os.path.join(_paper_dir, "paper.yaml")
+    if not os.path.isfile(yaml_path):
+        return {"error": "paper.yaml not found"}
+
+    try:
+        with open(yaml_path) as f:
+            content = f.read()
+        # Use regex replace to preserve formatting (same approach as init_template).
+        new_content = re.sub(
+            r"^title:\s*.*$",
+            f'title: "{new_title}"',
+            content,
+            count=1,
+            flags=re.MULTILINE,
+        )
+        with open(yaml_path, "w") as f:
+            f.write(new_content)
+    except Exception as exc:
+        return {"error": f"Failed to update: {exc}"}
+
+    return {"title": new_title}
+
+
+def _slugify(title: str) -> str:
+    """Convert a paper title to a filesystem-safe slug."""
+    slug = re.sub(r"[^a-z0-9]+", "-", title.lower()).strip("-")[:50]
+    return slug or "untitled"
+
+
+def _unique_slug(title: str, workspace: str) -> str:
+    """Return a slug that doesn't collide with existing subdirs."""
+    base = _slugify(title)
+    slug = base
+    n = 2
+    while os.path.exists(os.path.join(workspace, slug)):
+        slug = f"{base}-{n}"
+        n += 1
+    return slug
+
+
+def _list_papers() -> list[dict[str, t.Any]]:
+    """Scan the workspace for paper subdirectories."""
+    if not _workspace_root:
+        return []
+    papers: list[dict[str, t.Any]] = []
+    for name in sorted(os.listdir(_workspace_root)):
+        subdir = os.path.join(_workspace_root, name)
+        manifest = os.path.join(subdir, "paper.yaml")
+        if not os.path.isdir(subdir) or not os.path.isfile(manifest):
+            continue
+        title = name
+        try:
+            with open(manifest) as f:
+                data = yaml.safe_load(f)
+            if isinstance(data, dict):
+                title = data.get("title", name)
+        except Exception:
+            pass
+        papers.append(
+            {
+                "slug": name,
+                "title": title,
+                "active": os.path.abspath(subdir) == _paper_dir,
+            }
+        )
+    return papers
+
+
+@app.get("/api/papers")
+async def list_papers() -> dict[str, t.Any]:
+    """List all papers in the workspace."""
+    return {
+        "workspace": _workspace_root is not None,
+        "papers": _list_papers(),
+    }
+
+
+@app.post("/api/papers")
+async def create_paper(body: dict[str, t.Any]) -> dict[str, t.Any]:
+    """Create a new paper in the workspace and switch to it."""
+    if not _workspace_root:
+        return {"error": "Not in workspace mode"}
+
+    title: str = body.get("title", "").strip()
+    if not title:
+        return {"error": "title is required"}
+
+    slug = _unique_slug(title, _workspace_root)
+    new_dir = os.path.join(_workspace_root, slug)
+
+    # Scaffold the new paper.
+    import sys
+    from pathlib import Path
+
+    repo_root = str(Path(__file__).resolve().parent.parent.parent)
+    scripts_dir = os.path.join(repo_root, "scripts")
+    if scripts_dir not in sys.path:
+        sys.path.insert(0, scripts_dir)
+    from scaffold import scaffold_paper
+
+    scaffold_paper(new_dir, title=title)
+
+    await _switch_paper(new_dir)
+    return {"slug": slug, "title": title, "paper_dir": new_dir}
+
+
+@app.put("/api/papers/switch")
+async def switch_paper(body: dict[str, t.Any]) -> dict[str, t.Any]:
+    """Switch the active paper in the workspace."""
+    if not _workspace_root:
+        return {"error": "Not in workspace mode"}
+
+    slug: str = body.get("slug", "").strip()
+    if not slug:
+        return {"error": "slug is required"}
+
+    target = os.path.join(_workspace_root, slug)
+    if not os.path.isfile(os.path.join(target, "paper.yaml")):
+        return {"error": f"Paper '{slug}' not found"}
+
+    await _switch_paper(target)
+
+    # Read title from the paper we switched to.
+    title = slug
+    try:
+        with open(os.path.join(target, "paper.yaml")) as f:
+            data = yaml.safe_load(f)
+        if isinstance(data, dict):
+            title = data.get("title", slug)
+    except Exception:
+        pass
+
+    return {"slug": slug, "title": title, "paper_dir": target}
 
 
 @app.post("/api/config")
@@ -199,7 +366,6 @@ async def update_config(body: dict[str, t.Any]) -> dict[str, str]:
 
     if not new_model:
         return {"error": "model is required"}
-
 
     if api_key and api_key_env:
         # Raw key provided — store it in the named env var.
