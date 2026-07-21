@@ -320,6 +320,42 @@ export default function TerminalChat() {
     if (!trimmed || isProcessing || status !== 'connected') return
 
     addMessage(setMessages, 'user', trimmed)
+
+    if (trimmed === '/help') {
+      addMessage(setMessages, 'assistant', WELCOME_LINES.join('\n'))
+      setInput('')
+      return
+    }
+
+    if (trimmed === '/clear') {
+      sessionIdRef.current = null
+      setMessages([])
+      setIsProcessing(false)
+      setInput('')
+      reconnect()
+      return
+    }
+
+    if (trimmed.startsWith('/copy')) {
+      const countArg = trimmed.slice(5).trim()
+      const parsed = countArg ? parseInt(countArg, 10) : 10
+      const count = isNaN(parsed) || parsed <= 0 ? 10 : parsed
+      const all = messages.filter(m => m.type === 'assistant')
+      const selected = all.slice(-count)
+      const text = selected.map(m => m.content).join('\n\n')
+      if (selected.length === 0) {
+        addMessage(setMessages, 'status', 'No agent messages to copy.')
+        setInput('')
+        return
+      }
+      navigator.clipboard.writeText(text).then(
+        () => addMessage(setMessages, 'status', `Copied ${selected.length} message(s) to clipboard.`),
+        () => addMessage(setMessages, 'status', 'Failed to copy to clipboard.'),
+      )
+      setInput('')
+      return
+    }
+
     send(JSON.stringify({ content: trimmed }))
     setInput('')
     setIsProcessing(true)
