@@ -162,6 +162,7 @@ export default function TerminalChat() {
   const [commands, setCommands] = useState<CommandDef[]>([])
   const [cmdHighlight, setCmdHighlight] = useState(0)
   const messagesEndRef = useRef<HTMLDivElement>(null)
+  const inputRef = useRef<HTMLInputElement>(null)
   const sessionIdRef = useRef<string | null>(null)
 
   // Fetch model name and commands on mount
@@ -302,6 +303,13 @@ export default function TerminalChat() {
 
   const { status, send, reconnect } = useWebSocket('/ws/chat', handleWsMessage, handleWsOpen)
 
+  // Focus input when connection is established or processing ends
+  useEffect(() => {
+    if (status === 'connected' && !isProcessing) {
+      inputRef.current?.focus()
+    }
+  }, [status, isProcessing])
+
   // Auto-scroll to bottom
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -410,7 +418,7 @@ export default function TerminalChat() {
   }, [settingsModel, settingsApiKey, settingsApiKeyEnv, reconnect])
 
   return (
-    <div style={styles.container}>
+    <div style={styles.container} onClick={() => inputRef.current?.focus()}>
       {/* Header */}
       <div style={styles.header}>
         <div style={{ display: 'flex', alignItems: 'baseline', gap: '16px' }}>
@@ -610,6 +618,7 @@ export default function TerminalChat() {
           <span style={styles.cursor} />
         )}
         <input
+          ref={inputRef}
           style={styles.input}
           value={input}
           onChange={(e) => { setInput(e.target.value); setCmdHighlight(0) }}
@@ -619,7 +628,6 @@ export default function TerminalChat() {
             isProcessing ? 'Agent working...' : ''
           }
           disabled={status !== 'connected' || isProcessing}
-          autoFocus
         />
         {isProcessing && (
           <button
