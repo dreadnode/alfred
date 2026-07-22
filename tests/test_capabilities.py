@@ -64,6 +64,7 @@ class TestMaybeExpandCommand:
             "verify-claims",
             "peer-review",
             "process-peer-review",
+            "spellcheck",
             "detect-llm-writing",
         }
         assert set(CAPABILITIES.keys()) == expected

@@ -104,6 +104,13 @@ CAPABILITIES: dict[str, _CapabilityDef] = {
         "args": "optional",
         "arg_label": "review file path",
     },
+    "spellcheck": {
+        "description": "Spelling and grammar check of the paper",
+        "skill": "capabilities/spellcheck/skill.md",
+        "extra_files": [],
+        "args": "optional",
+        "arg_label": "file",
+    },
     "detect-llm-writing": {
         "description": "Detect LLM writing indicators in prose",
         "skill": "capabilities/detect-llm-writing/skill.md",

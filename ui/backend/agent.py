@@ -222,6 +222,7 @@ Also read any shared guidance files referenced by the skill.md (in capabilities/
 | /peer-review | capabilities/peer-review/skill.md | Interactive peer review session |
 | /process-peer-review [file] | capabilities/process-peer-review/skill.md | Process a peer review and record responses |
 | /detect-llm-writing [file] | capabilities/detect-llm-writing/skill.md | Detect LLM writing indicators in prose |
+| /spellcheck [file] | capabilities/spellcheck/skill.md | Spelling and grammar check |
 
 Natural-language triggers also work:
 - "find papers about..." or "search for sources on..." → search-sources
@@ -231,6 +232,7 @@ Natural-language triggers also work:
 - "review my paper..." or "give feedback on..." → peer-review
 - "process this review..." or "respond to review..." → process-peer-review
 - "check if this was written by AI..." or "detect LLM writing..." → detect-llm-writing
+- "check spelling..." or "grammar check..." → spellcheck
 
 {paper_context}
 """
