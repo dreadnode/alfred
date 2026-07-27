@@ -240,7 +240,9 @@ async def update_paper_title(body: dict[str, t.Any]) -> dict[str, str]:
         with open(yaml_path) as f:
             content = f.read()
         # Use yaml.dump to produce a safely quoted scalar value
-        safe_value = yaml.dump(new_title, default_flow_style=True).replace("\n...\n", "").strip()
+        safe_value = (
+            yaml.dump(new_title, default_flow_style=True).replace("\n...\n", "").strip()
+        )
         replacement = f"title: {safe_value}"
         new_content = re.sub(
             r"^title:\s*.*$",
