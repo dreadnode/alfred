@@ -470,8 +470,8 @@ async def upload_pdf(file: UploadFile) -> dict[str, t.Any]:
     if not file.filename or not file.filename.lower().endswith(".pdf"):
         return {"error": "File must be a PDF"}
 
-    # Clean up previous upload
-    if _custom_pdf and os.path.exists(_custom_pdf):
+    # Clean up previous upload (only delete temp files we created)
+    if _custom_pdf and os.path.basename(_custom_pdf).startswith("al-upload-"):
         with contextlib.suppress(OSError):
             os.unlink(_custom_pdf)
 
