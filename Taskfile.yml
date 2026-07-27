@@ -42,7 +42,7 @@ tasks:
       - npm run build --prefix ui/frontend
 
   check:
-    desc: Run all checks (lint, typecheck, test)
+    desc: Run all checks (fmt, lint, test)
     cmds:
       - task: fmt
       - task: lint

@@ -71,7 +71,12 @@ def make_latex_tools(paper_dir: str) -> list[AnyTool]:
             stderr=asyncio.subprocess.STDOUT,
             cwd=paper_dir,
         )
-        stdout, _ = await asyncio.wait_for(proc.communicate(), timeout=30)
+        try:
+            stdout, _ = await asyncio.wait_for(proc.communicate(), timeout=30)
+        except asyncio.TimeoutError:
+            proc.kill()
+            await proc.wait()
+            return "Validation timed out after 30 seconds."
         return stdout.decode(errors="replace")
 
     @tool(catch=True)

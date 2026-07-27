@@ -135,12 +135,11 @@ export default function PdfViewer() {
   // Load PDF — runs inside useEffect with cancellation token
   useEffect(() => {
     let cancelled = false
+    let loadingTask: pdfjsLib.PDFDocumentLoadingTask | null = null
 
     async function loadPdf() {
       setLoading(true)
       setError(null)
-
-      let loadingTask: pdfjsLib.PDFDocumentLoadingTask | null = null
 
       try {
         const url = `/api/pdf?v=${pdfVersion}&t=${Date.now()}`
@@ -212,6 +211,9 @@ export default function PdfViewer() {
 
     return () => {
       cancelled = true
+      if (loadingTask) {
+        loadingTask.destroy()
+      }
     }
   }, [pdfVersion])
 

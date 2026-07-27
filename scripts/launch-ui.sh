@@ -3,8 +3,8 @@
 # Automatically uses the backend venv Python.
 #
 # Usage:
-#   bash scripts/launch-ui.sh --model claude-sonnet-4-20250514 --api-key-env ANTHROPIC_API_KEY
-#   bash scripts/launch-ui.sh --paper /path/to/paper --model gpt-4o --api-key-env OPENAI_API_KEY
+#   bash scripts/launch-ui.sh --model claude-sonnet-4-20250514 --api-key ANTHROPIC_API_KEY
+#   bash scripts/launch-ui.sh --paper /path/to/paper --model gpt-4o --api-key OPENAI_API_KEY
 
 set -euo pipefail
 
@@ -32,6 +32,10 @@ else
     fi
 fi
 if [ "$NEEDS_BUILD" = true ]; then
+    if [ ! -d "$FRONTEND_DIR/node_modules" ]; then
+        echo "Installing frontend dependencies..."
+        npm ci --prefix "$FRONTEND_DIR"
+    fi
     echo "Building frontend..."
     npm run build --prefix "$FRONTEND_DIR"
     touch "$FRONTEND_DIR/dist/.build_stamp"
