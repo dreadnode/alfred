@@ -327,8 +327,8 @@ export default function TerminalChat() {
           if (msg) restored.push(msg)
         }
         setMessages(restored)
-        // If history ends with agent_end, agent is not running
-        if (lastType === 'agent_end') setIsProcessing(false)
+        // Sync processing state with whether the agent is still running
+        setIsProcessing(lastType !== 'agent_end')
         return
       }
 
