@@ -94,8 +94,10 @@ def insert_markers(tex: str) -> tuple[str, list[str]]:
             old = match.group(0)
             tex = tex.replace(
                 old,
-                MARKER_BEGIN.format("bibliography") + "\n"
-                + old + "\n"
+                MARKER_BEGIN.format("bibliography")
+                + "\n"
+                + old
+                + "\n"
                 + MARKER_END.format("bibliography"),
             )
             changes.append("Inserted markers: bibliography")
@@ -112,8 +114,10 @@ def insert_markers(tex: str) -> tuple[str, list[str]]:
             old = match.group(0)
             tex = tex.replace(
                 old,
-                MARKER_BEGIN.format("metadata") + "\n"
-                + old + "\n"
+                MARKER_BEGIN.format("metadata")
+                + "\n"
+                + old
+                + "\n"
                 + MARKER_END.format("metadata"),
             )
             changes.append("Inserted markers: metadata")
@@ -134,8 +138,10 @@ def insert_markers(tex: str) -> tuple[str, list[str]]:
             insert_pos = end_of_line + skip_lines
             marker_block = (
                 "\n"
-                + MARKER_BEGIN.format("macros") + "\n"
-                + MARKER_END.format("macros") + "\n"
+                + MARKER_BEGIN.format("macros")
+                + "\n"
+                + MARKER_END.format("macros")
+                + "\n"
             )
             tex = tex[:insert_pos] + marker_block + tex[insert_pos:]
             changes.append("Inserted markers: macros")
@@ -152,8 +158,10 @@ def insert_markers(tex: str) -> tuple[str, list[str]]:
             old = match.group(0).rstrip("\n")
             tex = tex.replace(
                 old,
-                MARKER_BEGIN.format("styles") + "\n"
-                + old + "\n"
+                MARKER_BEGIN.format("styles")
+                + "\n"
+                + old
+                + "\n"
                 + MARKER_END.format("styles"),
             )
             changes.append("Inserted markers: styles")
@@ -165,13 +173,14 @@ def insert_markers(tex: str) -> tuple[str, list[str]]:
         if match:
             old = match.group(0).rstrip("\n")
             content = "\n".join(
-                line for line in old.split("\n")
-                if line.startswith("\\input{")
+                line for line in old.split("\n") if line.startswith("\\input{")
             )
             tex = tex.replace(
                 old,
-                MARKER_BEGIN.format("sections") + "\n"
-                + content + "\n"
+                MARKER_BEGIN.format("sections")
+                + "\n"
+                + content
+                + "\n"
                 + MARKER_END.format("sections"),
             )
             changes.append("Inserted markers: sections")
@@ -252,7 +261,9 @@ def render_sections(manifest: dict[str, Any]) -> str:
     return "\n".join(lines) + "\n"
 
 
-def render_author_block(manifest: dict[str, Any], author_format: str = "article") -> str:
+def render_author_block(
+    manifest: dict[str, Any], author_format: str = "article"
+) -> str:
     """Render the title/author/maketitle block for a given conference format.
 
     Each format produces conference-specific LaTeX for author names,
@@ -271,11 +282,7 @@ def render_author_block(manifest: dict[str, Any], author_format: str = "article"
                 parts.append(f"\\texttt{{{a['email']}}}")
             author_parts.append(" \\\\\n  ".join(parts))
         author_str = " \\And\n  ".join(author_parts)
-        return (
-            f"\\title{{{title}}}\n"
-            f"\\author{{\n  {author_str}\n}}\n"
-            "\\maketitle\n"
-        )
+        return f"\\title{{{title}}}\n\\author{{\n  {author_str}\n}}\n\\maketitle\n"
 
     elif author_format == "ieee":
         author_blocks = []
@@ -290,11 +297,7 @@ def render_author_block(manifest: dict[str, Any], author_format: str = "article"
                 block += "\n\\IEEEauthorblockA{" + "\\\\".join(aff_parts) + "}"
             author_blocks.append(block)
         author_str = "\n\\and\n".join(author_blocks)
-        return (
-            f"\\title{{{title}}}\n"
-            f"\\author{{{author_str}}}\n"
-            "\\maketitle\n"
-        )
+        return f"\\title{{{title}}}\n\\author{{{author_str}}}\n\\maketitle\n"
 
     elif author_format == "acm":
         lines = [f"\\title{{{title}}}"]
@@ -316,11 +319,7 @@ def render_author_block(manifest: dict[str, Any], author_format: str = "article"
                 parts.append(a["affiliation"])
             author_parts.append("\\\\".join(parts))
         author_str = " \\and ".join(author_parts)
-        return (
-            f"\\title{{{title}}}\n"
-            f"\\author{{{author_str}}}\n"
-            "\\maketitle\n"
-        )
+        return f"\\title{{{title}}}\n\\author{{{author_str}}}\n\\maketitle\n"
 
     elif author_format == "acl":
         author_parts = []
@@ -332,11 +331,7 @@ def render_author_block(manifest: dict[str, Any], author_format: str = "article"
                 parts.append(f"\\texttt{{{a['email']}}}")
             author_parts.append(" \\\\ ".join(parts))
         author_str = " \\And ".join(author_parts)
-        return (
-            f"\\title{{{title}}}\n"
-            f"\\author{{{author_str}}}\n"
-            "\\maketitle\n"
-        )
+        return f"\\title{{{title}}}\n\\author{{{author_str}}}\n\\maketitle\n"
 
     else:  # article (default)
         return (
@@ -367,7 +362,7 @@ def ensure_section_files(
                 if slug.endswith("_abstract") or slug == "00_abstract":
                     content = (
                         "\\begin{abstract}\n"
-                        f"\\tbd{{Write your abstract here.}}\n"
+                        "\\tbd{Write your abstract here.}\n"
                         "\\end{abstract}\n"
                     )
                 else:
@@ -419,7 +414,10 @@ def sync(project_root: str, *, dry_run: bool = False) -> int:
     # Step 2: Verify required markers present
     missing = [r for r in REQUIRED_REGIONS if not has_markers(tex, r)]
     if missing:
-        print(f"ERROR: Could not find/insert markers for: {', '.join(missing)}", file=sys.stderr)
+        print(
+            f"ERROR: Could not find/insert markers for: {', '.join(missing)}",
+            file=sys.stderr,
+        )
         return 1
 
     # Step 3: Render and replace each region
@@ -465,11 +463,15 @@ def sync(project_root: str, *, dry_run: bool = False) -> int:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Sync paper.yaml → main.tex")
-    parser.add_argument("--dry-run", action="store_true", help="Preview changes without writing")
+    parser.add_argument(
+        "--dry-run", action="store_true", help="Preview changes without writing"
+    )
     parser.add_argument("--project-root", default=None, help="Project root directory")
     args = parser.parse_args()
 
-    root = args.project_root or os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    root = args.project_root or os.path.dirname(
+        os.path.dirname(os.path.abspath(__file__))
+    )
     sys.exit(sync(root, dry_run=args.dry_run))
 
 

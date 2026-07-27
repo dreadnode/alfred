@@ -129,14 +129,20 @@ def get_issue_counts(record: dict[str, Any]) -> tuple[int, int, int, int, bool]:
     live = record.get("_live_counts")
     if live:
         return (
-            live.get("major", 0), live.get("minor", 0),
-            live.get("nit", 0), live.get("positive", 0), True,
+            live.get("major", 0),
+            live.get("minor", 0),
+            live.get("nit", 0),
+            live.get("positive", 0),
+            True,
         )
 
     issues = record.get("issues", {})
     return (
-        issues.get("major", 0), issues.get("minor", 0),
-        issues.get("nit", 0), issues.get("positive", 0), False,
+        issues.get("major", 0),
+        issues.get("minor", 0),
+        issues.get("nit", 0),
+        issues.get("positive", 0),
+        False,
     )
 
 
@@ -158,7 +164,9 @@ def print_table(records: list[dict[str, Any]]) -> None:
     print("=== Peer Review History ===\n")
     header = f"  {'Date':<12s} {'Reviewer':<18s} {'Rec.':<14s} {'Maj':>4s} {'Min':>4s} {'Nit':>4s} {'Pos':>4s}  {'File'}"
     print(header)
-    print(f"  {'-' * 12} {'-' * 18} {'-' * 14} {'-' * 4} {'-' * 4} {'-' * 4} {'-' * 4}  {'-' * 20}")
+    print(
+        f"  {'-' * 12} {'-' * 18} {'-' * 14} {'-' * 4} {'-' * 4} {'-' * 4} {'-' * 4}  {'-' * 20}"
+    )
 
     for r in records:
         date = r.get("date", "?")
@@ -209,7 +217,7 @@ def print_detail(record: dict[str, Any]) -> None:
 
     live = record.get("_live_counts")
     if live:
-        print(f"\n  Issue counts (from body — not yet finalized):")
+        print("\n  Issue counts (from body — not yet finalized):")
         for sev, count in live.items():
             print(f"    {sev}: {count}")
 
@@ -238,12 +246,16 @@ def main() -> None:
     parser.add_argument("--json", action="store_true", help="Output as JSON")
     parser.add_argument("--reviewer", default=None, help="Filter by reviewer name")
     parser.add_argument(
-        "--detail", default=None, metavar="FILENAME",
+        "--detail",
+        default=None,
+        metavar="FILENAME",
         help="Show detail for a specific review (match by filename or substring)",
     )
     args = parser.parse_args()
 
-    root = args.project_root or os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    root = args.project_root or os.path.dirname(
+        os.path.dirname(os.path.abspath(__file__))
+    )
     reviews_dir = os.path.join(root, "reviews")
 
     if not os.path.isdir(reviews_dir):
@@ -259,11 +271,13 @@ def main() -> None:
             sys.exit(1)
         if args.json:
             import json
+
             print(json.dumps(clean_record(record), indent=2, default=str))
         else:
             print_detail(record)
     elif args.json:
         import json
+
         clean = [clean_record(r) for r in records]
         print(json.dumps(clean, indent=2, default=str))
     else:

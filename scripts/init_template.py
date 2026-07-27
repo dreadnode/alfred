@@ -46,7 +46,9 @@ def list_templates(project_root: str) -> None:
 def _get_old_extra_files(project_root: str, manifest: dict[str, Any]) -> list[str]:
     """Return the extra_files list from the currently active template."""
     old_template = manifest.get("template", "article")
-    old_config_path = os.path.join(project_root, "templates", old_template, "template.yaml")
+    old_config_path = os.path.join(
+        project_root, "templates", old_template, "template.yaml"
+    )
     if os.path.exists(old_config_path):
         with open(old_config_path) as f:
             old_config = yaml.safe_load(f) or {}
@@ -86,9 +88,13 @@ def init_template(project_root: str, template_name: str) -> int:
     tpl_dir = os.path.join(templates_dir, template_name)
 
     if not os.path.isdir(tpl_dir):
-        print(f"ERROR: Template '{template_name}' not found in templates/", file=sys.stderr)
+        print(
+            f"ERROR: Template '{template_name}' not found in templates/",
+            file=sys.stderr,
+        )
         available = sorted(
-            d for d in os.listdir(templates_dir)
+            d
+            for d in os.listdir(templates_dir)
             if os.path.isdir(os.path.join(templates_dir, d))
         )
         print(f"Available: {', '.join(available)}", file=sys.stderr)
@@ -146,6 +152,7 @@ def init_template(project_root: str, template_name: str) -> int:
     scripts_dir = os.path.join(project_root, "scripts")
     sys.path.insert(0, scripts_dir)
     from sync import sync as run_sync
+
     result = run_sync(project_root)
 
     if result == 0:
@@ -158,13 +165,19 @@ def init_template(project_root: str, template_name: str) -> int:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Initialize project from a conference template")
-    parser.add_argument("template", nargs="?", help="Template name (e.g., neurips2024, ieee, acm)")
+    parser = argparse.ArgumentParser(
+        description="Initialize project from a conference template"
+    )
+    parser.add_argument(
+        "template", nargs="?", help="Template name (e.g., neurips2024, ieee, acm)"
+    )
     parser.add_argument("--project-root", default=None, help="Project root directory")
     parser.add_argument("--list", action="store_true", help="List available templates")
     args = parser.parse_args()
 
-    root = args.project_root or os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    root = args.project_root or os.path.dirname(
+        os.path.dirname(os.path.abspath(__file__))
+    )
 
     if args.list:
         list_templates(root)

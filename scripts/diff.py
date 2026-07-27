@@ -54,7 +54,9 @@ def _get_section_files(project_root: str) -> list[str]:
             for line in f:
                 m = re.match(r"\\input\{section/([^}]+)\}", line.strip())
                 if m:
-                    files.append(os.path.join(project_root, "section", f"{m.group(1)}.tex"))
+                    files.append(
+                        os.path.join(project_root, "section", f"{m.group(1)}.tex")
+                    )
     return files
 
 
@@ -80,7 +82,9 @@ def diff(project_root: str, rev: str = "HEAD") -> int:
         print(f"ERROR: git revision '{rev}' not found.", file=sys.stderr)
         return 1
 
-    rev_short = _run(["git", "-C", project_root, "rev-parse", "--short", rev]).stdout.strip()
+    rev_short = _run(
+        ["git", "-C", project_root, "rev-parse", "--short", rev]
+    ).stdout.strip()
     print(f"Diffing against: {rev} ({rev_short})")
 
     main_tex = os.path.join(project_root, "main.tex")
@@ -124,12 +128,14 @@ def diff(project_root: str, rev: str = "HEAD") -> int:
         # Step 3: Run latexdiff on main.tex (flatten to handle \input)
         print("  Running latexdiff...")
         diff_main_path = os.path.join(diff_dir, "main.tex")
-        result = _run([
-            "latexdiff",
-            "--flatten",
-            old_main_path,
-            main_tex,
-        ])
+        result = _run(
+            [
+                "latexdiff",
+                "--flatten",
+                old_main_path,
+                main_tex,
+            ]
+        )
 
         if result.returncode != 0:
             print(f"  latexdiff error: {result.stderr}", file=sys.stderr)
@@ -161,7 +167,13 @@ def diff(project_root: str, rev: str = "HEAD") -> int:
         os.makedirs(build_dir, exist_ok=True)
 
         result = _run(
-            ["latexmk", "-pdf", "-interaction=nonstopmode", "-outdir=build", "main.tex"],
+            [
+                "latexmk",
+                "-pdf",
+                "-interaction=nonstopmode",
+                "-outdir=build",
+                "main.tex",
+            ],
             cwd=diff_dir,
             timeout=120,
         )
@@ -181,7 +193,7 @@ def diff(project_root: str, rev: str = "HEAD") -> int:
         out_path = os.path.join(out_dir, "diff.pdf")
         shutil.copy2(diff_pdf, out_path)
 
-        print(f"\n  Output: build/diff.pdf")
+        print("\n  Output: build/diff.pdf")
         print(f"  Compared against: {rev} ({rev_short})")
 
     return 0
@@ -192,13 +204,17 @@ def main() -> None:
         description="Generate a track-changes PDF by diffing against a git commit",
     )
     parser.add_argument(
-        "revision", nargs="?", default="HEAD",
+        "revision",
+        nargs="?",
+        default="HEAD",
         help="Git revision to diff against (default: HEAD)",
     )
     parser.add_argument("--project-root", default=None, help="Project root directory")
     args = parser.parse_args()
 
-    root = args.project_root or os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    root = args.project_root or os.path.dirname(
+        os.path.dirname(os.path.abspath(__file__))
+    )
     sys.exit(diff(root, rev=args.revision))
 
 

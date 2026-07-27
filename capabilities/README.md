@@ -14,6 +14,7 @@ Capabilities activate when the user's message matches trigger patterns. The agen
 |------------|-------|-------------|
 | [search-sources](search-sources/) | `/search-sources "query"` | Find relevant papers, preprints, and reports for a topic |
 | [analyze-source](analyze-source/) | `/analyze-source <URL> "context"` | Deep-read a single source, extract structured findings |
+| [detect-llm-writing](detect-llm-writing/) | `/detect-llm-writing [file]` | Analyze prose for LLM writing indicators, produce detection report |
 
 ### Interactive
 
