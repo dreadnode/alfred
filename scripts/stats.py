@@ -33,7 +33,9 @@ def strip_latex(text: str) -> str:
     # Remove non-prose environments (including starred variants)
     text = re.sub(
         r"\\begin\{((?:equation|align|lstlisting|verbatim|figure|table)\*?)\}.*?\\end\{\1\}",
-        "", text, flags=re.DOTALL,
+        "",
+        text,
+        flags=re.DOTALL,
     )
     # Remove math (inline $...$ and display \[...\])
     text = re.sub(r"\$[^$]*\$", " MATH ", text)
@@ -41,7 +43,8 @@ def strip_latex(text: str) -> str:
     # Remove commands but keep their text arguments
     text = re.sub(
         r"\\(?:textbf|textit|emph|texttt|underline|textcolor\{[^}]*\})\{([^}]*)\}",
-        r"\1", text,
+        r"\1",
+        text,
     )
     # Remove remaining commands
     text = re.sub(r"\\[a-zA-Z]+\*?(\[[^\]]*\])*(\{[^}]*\})*", " ", text)
@@ -75,7 +78,9 @@ def get_page_count(project_root: str) -> int | None:
     try:
         result = subprocess.run(
             ["pdfinfo", pdf_path],
-            capture_output=True, text=True, timeout=5,
+            capture_output=True,
+            text=True,
+            timeout=5,
         )
         for line in result.stdout.split("\n"):
             if line.startswith("Pages:"):
@@ -123,7 +128,9 @@ def stats(project_root: str, *, as_json: bool = False) -> int:
         filepath = os.path.join(project_root, "section", f"{slug}.tex")
 
         if not os.path.exists(filepath):
-            section_stats.append({"slug": slug, "title": title, "words": 0, "exists": False})
+            section_stats.append(
+                {"slug": slug, "title": title, "words": 0, "exists": False}
+            )
             continue
 
         with open(filepath) as f:
@@ -141,29 +148,36 @@ def stats(project_root: str, *, as_json: bool = False) -> int:
         total_citations += citations
         total_equations += equations
 
-        section_stats.append({
-            "slug": slug,
-            "title": title,
-            "words": words,
-            "figures": figures,
-            "tables": tables,
-            "citations": citations,
-            "equations": equations,
-            "exists": True,
-        })
+        section_stats.append(
+            {
+                "slug": slug,
+                "title": title,
+                "words": words,
+                "figures": figures,
+                "tables": tables,
+                "citations": citations,
+                "equations": equations,
+                "exists": True,
+            }
+        )
 
     pages = get_page_count(project_root)
 
     if as_json:
-        print(json.dumps({
-            "total_words": total_words,
-            "pages": pages,
-            "figures": total_figures,
-            "tables": total_tables,
-            "citations": total_citations,
-            "equations": total_equations,
-            "sections": section_stats,
-        }, indent=2))
+        print(
+            json.dumps(
+                {
+                    "total_words": total_words,
+                    "pages": pages,
+                    "figures": total_figures,
+                    "tables": total_tables,
+                    "citations": total_citations,
+                    "equations": total_equations,
+                    "sections": section_stats,
+                },
+                indent=2,
+            )
+        )
     else:
         print("=== Paper Statistics ===\n")
         print(f"  {'Section':<30s} {'Words':>6s}")
@@ -191,7 +205,9 @@ def main() -> None:
     parser.add_argument("--json", action="store_true", help="Output as JSON")
     args = parser.parse_args()
 
-    root = args.project_root or os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    root = args.project_root or os.path.dirname(
+        os.path.dirname(os.path.abspath(__file__))
+    )
     sys.exit(stats(root, as_json=args.json))
 
 

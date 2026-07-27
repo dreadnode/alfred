@@ -44,6 +44,8 @@ async def run_script(
     output = stdout.decode(errors="replace")
 
     if proc.returncode != 0:
-        raise RuntimeError(f"Command {cmd[0]!r} failed (exit {proc.returncode}):\n{output}")
+        raise RuntimeError(
+            f"Command {cmd[0]!r} failed (exit {proc.returncode}):\n{output}"
+        )
 
     return output

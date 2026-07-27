@@ -752,10 +752,17 @@ export default function TerminalChat() {
         {messages.map((msg) => (
           <div key={msg.id} style={styles.message(msg.type)}>
             {msg.type === 'user' && (
-              <>
+              <div style={{
+                background: 'var(--dn-surface, #1a1a1a)',
+                border: '1px solid var(--dn-border-lt, #2a2a2a)',
+                borderRadius: '6px',
+                padding: '8px 12px',
+                display: 'inline-block',
+                maxWidth: '90%',
+              }}>
                 <span style={styles.prompt}>&gt;</span>
                 {msg.content}
-              </>
+              </div>
             )}
             {msg.type === 'assistant' && (
               <div className="markdown-body" style={{ fontFamily: 'inherit', fontSize: '13px', lineHeight: '1.5' }}>
