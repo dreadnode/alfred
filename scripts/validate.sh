@@ -3,11 +3,11 @@
 # Usage: ./scripts/validate.sh
 set -euo pipefail
 
-PROJECT_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+PROJECT_ROOT="${PROJECT_ROOT:-$(pwd)}"
 
 if [[ ! -f "$PROJECT_ROOT/paper.yaml" ]]; then
   echo "ERROR: paper.yaml not found in $PROJECT_ROOT" >&2
-  echo "Run from a paper directory or ensure paper.yaml exists." >&2
+  echo "Run from a paper directory or set PROJECT_ROOT." >&2
   exit 1
 fi
 

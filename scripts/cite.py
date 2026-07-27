@@ -247,6 +247,12 @@ def main() -> None:
     if args.command == "search":
         sys.exit(cmd_search(args.query, root, limit=args.limit, auto_add=args.add))
     elif args.command == "add":
+        if not os.path.isfile(os.path.join(root, "bibliography.bib")):
+            print(
+                "ERROR: bibliography.bib not found. Run from a paper directory or pass --project-root.",
+                file=sys.stderr,
+            )
+            sys.exit(1)
         sys.exit(cmd_add(args.paper_id, root))
     else:
         parser.print_help()

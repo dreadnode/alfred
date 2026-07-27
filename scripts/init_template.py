@@ -20,10 +20,13 @@ from typing import Any
 
 import yaml
 
+# Templates live in the repo, not in per-paper directories.
+_REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
 
 def list_templates(project_root: str) -> None:
     """Print a table of available templates with descriptions."""
-    templates_dir = os.path.join(project_root, "templates")
+    templates_dir = os.path.join(_REPO_ROOT, "templates")
     if not os.path.isdir(templates_dir):
         print("No templates directory found.", file=sys.stderr)
         return
@@ -47,7 +50,7 @@ def _get_old_extra_files(project_root: str, manifest: dict[str, Any]) -> list[st
     """Return the extra_files list from the currently active template."""
     old_template = manifest.get("template", "article")
     old_config_path = os.path.join(
-        project_root, "templates", old_template, "template.yaml"
+        _REPO_ROOT, "templates", old_template, "template.yaml"
     )
     if os.path.exists(old_config_path):
         with open(old_config_path) as f:
@@ -84,7 +87,7 @@ def init_template(project_root: str, template_name: str) -> int:
 
     Returns 0 on success, 1 on error.
     """
-    templates_dir = os.path.join(project_root, "templates")
+    templates_dir = os.path.join(_REPO_ROOT, "templates")
     tpl_dir = os.path.join(templates_dir, template_name)
 
     if not os.path.isdir(tpl_dir):
