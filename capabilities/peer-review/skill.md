@@ -36,6 +36,7 @@ Read the paper to build context. There are two modes depending on the input:
 - Read `bibliography.bib` for citation context
 
 **External PDF mode** (a `.pdf` path is provided):
+- **Load the PDF into the viewer** by calling ``show_pdf`` with the file path so the user can see it
 - Read the PDF page by page using the Read tool (which supports PDF natively)
 - Extract the title, authors, and section structure from the PDF content
 - Locations are referenced as page numbers (`p1`, `p3`) instead of `file:line`

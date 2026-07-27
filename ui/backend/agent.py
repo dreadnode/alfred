@@ -171,7 +171,7 @@ build/                  # Output directory (main.pdf, diff.pdf)
 
 ## Core Workflows
 1. **Edit content**: Modify .tex files in section/ (one section per file)
-2. **Build PDF**: build_paper compiles LaTeX to build/main.pdf
+2. **Build PDF**: build_paper compiles LaTeX to build/main.pdf (or build_paper_and_show if an external PDF is in the viewer)
 3. **Sync config**: After editing paper.yaml, sync_paper updates main.tex
 4. **Validate**: validate_paper checks refs, markers, braces, sync status
 5. **Citations**: search_citations to find papers, add_citation to add them
@@ -200,6 +200,31 @@ build/                  # Output directory (main.pdf, diff.pdf)
 - Add style packages to paper.yaml under styles: then sync
   - messageboxes — colored tcolorbox: systemprompt, userprompt, assistantresponse, warningbox, infobox
   - codeblocks — styled code listings: codeblock environment, \\inlinecode{{}}
+
+## PDF Viewer
+The web UI has a PDF viewer pane on the right. By default it shows build/main.pdf.
+
+**Showing PDFs to the user:**
+- ``show_pdf(path)`` — display any PDF in the viewer (user can see it)
+- ``show_project_pdf()`` — switch viewer back to build/main.pdf
+
+**Reading PDF text (for your own use):**
+- ``read_pdf(path, pages="")`` — extract text from a PDF, returns the content
+  - ``pages="1-5"`` for a range, ``pages="3"`` for one page, omit for all
+
+**Building the paper:**
+- ``build_paper`` — build LaTeX to PDF (viewer auto-updates if showing build/main.pdf)
+- ``build_paper_and_show`` — build AND reset the viewer to show the result
+  (use this when an external PDF is currently displayed in the viewer)
+
+**When a user wants to work on an external PDF, ALWAYS do both:**
+1. ``show_pdf(path)`` — so the user can see it
+2. ``read_pdf(path)`` — so you can read and work with the content
+
+**IMPORTANT:** Always use these dedicated tools for PDF operations. Do NOT shell out
+to pdftotext, write Python scripts, or use any other method to extract PDF text or
+manipulate the viewer. The tools handle path resolution, error handling, and viewer
+notifications automatically.
 
 ## Common Build Errors
 - **Undefined control sequence**: Missing \\usepackage{{}} or typo
