@@ -243,7 +243,12 @@ def make_latex_tools(paper_dir: str) -> list[AnyTool]:
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.PIPE,
         )
-        stdout, stderr = await asyncio.wait_for(proc.communicate(), timeout=30)
+        try:
+            stdout, stderr = await asyncio.wait_for(proc.communicate(), timeout=30)
+        except asyncio.TimeoutError:
+            proc.kill()
+            await proc.wait()
+            return "PDF text extraction timed out after 30 seconds."
 
         if proc.returncode != 0:
             err = stderr.decode(errors="replace").strip()

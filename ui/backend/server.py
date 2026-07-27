@@ -528,6 +528,10 @@ async def upload_pdf(file: UploadFile) -> dict[str, t.Any]:
         stdout, _ = await asyncio.wait_for(proc.communicate(), timeout=30)
         extracted = stdout.decode("utf-8", errors="replace")
         text_ok = bool(extracted.strip())
+    except asyncio.TimeoutError:
+        proc.kill()
+        await proc.wait()
+        extracted = "Text extraction timed out"
     except FileNotFoundError:
         extracted = "pdftotext not installed — text extraction unavailable"
     except Exception as exc:
