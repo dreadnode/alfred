@@ -186,8 +186,10 @@ export default function TerminalChat() {
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [input, setInput] = useState('')
   const [promptHistory] = useState<string[]>(() => {
-    try { return JSON.parse(localStorage.getItem('prompt-history') || '[]') }
-    catch { return [] }
+    try {
+      const parsed = JSON.parse(localStorage.getItem('prompt-history') || '[]')
+      return Array.isArray(parsed) ? parsed : []
+    } catch { return [] }
   })
   const historyIndexRef = useRef(-1)
   const [isProcessing, setIsProcessing] = useState(false)

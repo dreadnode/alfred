@@ -129,7 +129,7 @@ async def _watch_pdf() -> None:
             return
         msg = json.dumps({"type": "pdf_updated", "timestamp": time.time()})
         disconnected: set[WebSocket] = set()
-        for ws in _pdf_clients:
+        for ws in list(_pdf_clients):
             try:
                 await ws.send_text(msg)
             except Exception:
