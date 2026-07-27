@@ -437,6 +437,8 @@ async def load_pdf(body: dict[str, t.Any]) -> dict[str, str]:
     if not path:
         return {"error": "path is required"}
     expanded = os.path.expanduser(path)
+    if not os.path.isabs(expanded):
+        expanded = os.path.join(_paper_dir, expanded)
     if not os.path.isfile(expanded):
         return {"error": f"File not found: {path}"}
     if not expanded.lower().endswith(".pdf"):

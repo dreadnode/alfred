@@ -83,7 +83,7 @@ async def web_search(
     Uses DuckDuckGo. No API key required.
     """
     results = await asyncio.to_thread(
-        lambda: DDGS().text(query, max_results=max_results)
+        lambda: list(DDGS().text(query, max_results=max_results))
     )
 
     if not results:
