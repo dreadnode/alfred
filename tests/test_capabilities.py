@@ -32,6 +32,19 @@ class TestParseSlashCommand:
         assert parse_slash_command("hello world") is None
         assert parse_slash_command("use /lit-review for that") is None
 
+    def test_extra_whitespace(self) -> None:
+        assert parse_slash_command('/lit-review   "spaced out"') == (
+            "lit-review",
+            "spaced out",
+        )
+        assert parse_slash_command("  /peer-review  ") == ("peer-review", "")
+
+    def test_whitespace_only_args(self) -> None:
+        assert parse_slash_command("/peer-review   ") == ("peer-review", "")
+
+    def test_empty_quoted_arg(self) -> None:
+        assert parse_slash_command('/lit-review ""') == ("lit-review", "")
+
 
 class TestMaybeExpandCommand:
     def test_unknown_command_returns_error(self) -> None:

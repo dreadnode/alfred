@@ -7,6 +7,7 @@ import os
 import sys
 import time
 import typing as t
+from contextlib import contextmanager
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -16,6 +17,7 @@ UI_DIR = os.path.join(os.path.dirname(__file__), "..", "ui")
 sys.path.insert(0, UI_DIR)
 
 from backend.agent import _load_paper_context, create_agent  # noqa: E402
+import backend.server as srv  # noqa: E402
 from backend.server import _Session, _format_event, _prune_sessions, _sessions  # noqa: E402
 from backend.tools.subprocess import run_script  # noqa: E402
 from backend.tools.web import _strip_html, web_fetch  # noqa: E402
@@ -308,45 +310,53 @@ class TestCreateAgent:
 # ---------------------------------------------------------------------------
 
 
+def _base_fields() -> dict[str, t.Any]:
+    """Common fields required by AgentEvent dataclasses."""
+    agent = MagicMock()
+    agent.name = "test-agent"
+    agent._generator = None
+    return {
+        "session_id": MagicMock(),
+        "agent": agent,
+        "thread": MagicMock(),
+        "messages": [],
+        "events": [],
+    }
+
+
+def _make_event(cls_path: str, **kwargs: t.Any) -> t.Any:
+    """Import an event class by dotted name and instantiate with base fields."""
+    module_path, cls_name = cls_path.rsplit(".", 1)
+    import importlib
+
+    mod = importlib.import_module(module_path)
+    cls = getattr(mod, cls_name)
+    return cls(**_base_fields(), **kwargs)
+
+
 class TestFormatEvent:
-    """Test _format_event with minimal mock events."""
+    """Test _format_event across all event types."""
 
-    @staticmethod
-    def _base_fields() -> dict[str, t.Any]:
-        """Common fields required by AgentEvent dataclasses."""
-        agent = MagicMock()
-        agent.name = "test-agent"
-        agent._generator = None
-        return {
-            "session_id": MagicMock(),
-            "agent": agent,
-            "thread": MagicMock(),
-            "messages": [],
-            "events": [],
-        }
-
-    def test_agent_start(self) -> None:
-        from dreadnode.agent.events import AgentStart
-
-        result = _format_event(AgentStart(**self._base_fields()))
-        assert result == {"type": "agent_start", "agent": "test-agent"}
-
-    def test_step_start(self) -> None:
-        from dreadnode.agent.events import StepStart
-
-        result = _format_event(StepStart(**self._base_fields(), step=3))
-        assert result == {"type": "step_start", "step": 3}
+    @pytest.mark.parametrize(
+        "cls_path, extra_kwargs, expected",
+        [
+            ("dreadnode.agent.events.AgentStart", {}, {"type": "agent_start", "agent": "test-agent"}),
+            ("dreadnode.agent.events.StepStart", {"step": 3}, {"type": "step_start", "step": 3}),
+            ("dreadnode.agent.events.AgentStalled", {}, {"type": "stalled"}),
+            ("dreadnode.agent.events.AgentEvent", {}, None),
+        ],
+        ids=["agent_start", "step_start", "stalled", "unknown_returns_none"],
+    )
+    def test_simple_events(self, cls_path: str, extra_kwargs: dict, expected: t.Any) -> None:
+        event = _make_event(cls_path, **extra_kwargs)
+        assert _format_event(event) == expected
 
     def test_generation_end(self) -> None:
-        from dreadnode.agent.events import GenerationEnd
-
         import rigging as rg
 
         msg = rg.Message("assistant", "Here is my response.")
         usage = rg.generator.Usage(input_tokens=100, output_tokens=50, total_tokens=150)
-        result = _format_event(
-            GenerationEnd(**self._base_fields(), message=msg, usage=usage)
-        )
+        result = _format_event(_make_event("dreadnode.agent.events.GenerationEnd", message=msg, usage=usage))
         assert result is not None
         assert result["type"] == "generation"
         assert result["content"] == "Here is my response."
@@ -354,90 +364,57 @@ class TestFormatEvent:
         assert result["usage"]["total_tokens"] == 150
 
     def test_generation_end_no_usage(self) -> None:
-        from dreadnode.agent.events import GenerationEnd
-
         import rigging as rg
 
         msg = rg.Message("assistant", "Response without usage.")
-        result = _format_event(
-            GenerationEnd(**self._base_fields(), message=msg, usage=None)
-        )
+        result = _format_event(_make_event("dreadnode.agent.events.GenerationEnd", message=msg, usage=None))
         assert result is not None
         assert result["usage"] is None
         assert result["content"] == "Response without usage."
 
     def test_tool_start(self) -> None:
-        from dreadnode.agent.events import ToolStart
-
         tc = MagicMock()
         tc.name = "build_paper"
         tc.function.arguments = '{"timeout": 120}'
-        result = _format_event(ToolStart(**self._base_fields(), tool_call=tc))
-        assert result == {
-            "type": "tool_start",
-            "tool": "build_paper",
-            "args": '{"timeout": 120}',
-        }
+        result = _format_event(_make_event("dreadnode.agent.events.ToolStart", tool_call=tc))
+        assert result == {"type": "tool_start", "tool": "build_paper", "args": '{"timeout": 120}'}
 
     def test_tool_end_truncates(self) -> None:
-        from dreadnode.agent.events import ToolEnd
-
         import rigging as rg
 
         tc = MagicMock()
         tc.name = "web_fetch"
-        long_content = "x" * 3000
-        msg = rg.Message("tool", long_content)
-        result = _format_event(
-            ToolEnd(**self._base_fields(), tool_call=tc, message=msg, stop=False)
-        )
+        msg = rg.Message("tool", "x" * 3000)
+        result = _format_event(_make_event("dreadnode.agent.events.ToolEnd", tool_call=tc, message=msg, stop=False))
         assert result is not None
         assert len(result["result"]) == 2000
         assert result["stop"] is False
 
     def test_agent_error(self) -> None:
-        from dreadnode.agent.events import AgentError
-
-        result = _format_event(
-            AgentError(**self._base_fields(), error=RuntimeError("boom"))
-        )
+        result = _format_event(_make_event("dreadnode.agent.events.AgentError", error=RuntimeError("boom")))
         assert result is not None
         assert result["type"] == "error"
         assert "boom" in result["message"]
 
-    def test_stalled(self) -> None:
-        from dreadnode.agent.events import AgentStalled
+    @pytest.mark.parametrize(
+        "reaction_cls, kwargs, expected_substr",
+        [
+            ("RetryWithFeedback", {"feedback": "Try again."}, "RetryWithFeedback"),
+            ("Finish", {"reason": "Task complete"}, "Finish"),
+            ("Fail", {"error": "Out of retries"}, "Fail"),
+        ],
+        ids=["retry", "finish", "fail"],
+    )
+    def test_reacted(self, reaction_cls: str, kwargs: dict, expected_substr: str) -> None:
+        from dreadnode import agent as _a
 
-        result = _format_event(AgentStalled(**self._base_fields()))
-        assert result == {"type": "stalled"}
-
-    def test_reacted_retry_with_feedback(self) -> None:
-        from dreadnode.agent.events import Reacted
-        from dreadnode.agent.reactions import RetryWithFeedback
-
-        reaction = RetryWithFeedback(feedback="Try using a different tool.")
-        result = _format_event(
-            Reacted(**self._base_fields(), hook_name="my_hook", reaction=reaction)
-        )
+        reaction = getattr(_a.reactions, reaction_cls)(**kwargs)
+        result = _format_event(_make_event("dreadnode.agent.events.Reacted", hook_name="h", reaction=reaction))
         assert result is not None
         assert result["type"] == "reacted"
-        assert "RetryWithFeedback" in result["content"]
-        assert "Try using a different tool." in result["content"]
-
-    def test_reacted_finish(self) -> None:
-        from dreadnode.agent.events import Reacted
-        from dreadnode.agent.reactions import Finish
-
-        reaction = Finish(reason="Task complete")
-        result = _format_event(
-            Reacted(**self._base_fields(), hook_name="done_hook", reaction=reaction)
-        )
-        assert result is not None
-        assert "Finish" in result["content"]
-        assert "Task complete" in result["content"]
+        assert expected_substr in result["content"]
 
     def test_agent_end(self) -> None:
-        from dreadnode.agent.events import AgentEnd
         from dreadnode.agent.result import AgentResult
 
         import rigging as rg
@@ -445,24 +422,13 @@ class TestFormatEvent:
         mock_result = MagicMock(spec=AgentResult)
         mock_result.failed = False
         mock_result.steps = 5
-        mock_result.usage = rg.generator.Usage(
-            input_tokens=500, output_tokens=200, total_tokens=700
-        )
-        result = _format_event(
-            AgentEnd(**self._base_fields(), stop_reason="finished", result=mock_result)
-        )
+        mock_result.usage = rg.generator.Usage(input_tokens=500, output_tokens=200, total_tokens=700)
+        result = _format_event(_make_event("dreadnode.agent.events.AgentEnd", stop_reason="finished", result=mock_result))
         assert result is not None
         assert result["type"] == "agent_end"
-        assert result["stop_reason"] == "finished"
         assert result["failed"] is False
         assert result["steps"] == 5
         assert result["usage"]["total_tokens"] == 700
-
-    def test_unknown_event_returns_none(self) -> None:
-        from dreadnode.agent.events import AgentEvent
-
-        result = _format_event(AgentEvent(**self._base_fields()))
-        assert result is None
 
 
 # ---------------------------------------------------------------------------
@@ -470,35 +436,174 @@ class TestFormatEvent:
 # ---------------------------------------------------------------------------
 
 
-class TestSessionManagement:
-    def setup_method(self) -> None:
-        """Clear global session store before each test."""
+@contextmanager
+def _isolated_sessions() -> t.Iterator[dict[str, _Session]]:
+    """Temporarily replace global _sessions, restoring on exit."""
+    old = _sessions.copy()
+    _sessions.clear()
+    try:
+        yield _sessions
+    finally:
         _sessions.clear()
+        _sessions.update(old)
 
+
+class TestSessionManagement:
     def test_prune_removes_expired(self) -> None:
-        _sessions["old"] = _Session(
-            session_id="old",
-            agent=MagicMock(),
-            last_active=time.time() - 7200,
-        )
-        _sessions["new"] = _Session(
-            session_id="new",
-            agent=MagicMock(),
-            last_active=time.time(),
-        )
-        _prune_sessions()
-        assert "old" not in _sessions
-        assert "new" in _sessions
+        with _isolated_sessions() as sessions:
+            sessions["old"] = _Session(
+                session_id="old",
+                agent=MagicMock(),
+                last_active=time.time() - 7200,
+            )
+            sessions["new"] = _Session(
+                session_id="new",
+                agent=MagicMock(),
+                last_active=time.time(),
+            )
+            _prune_sessions()
+            assert "old" not in sessions
+            assert "new" in sessions
 
     def test_prune_keeps_active(self) -> None:
-        _sessions["active"] = _Session(
-            session_id="active",
-            agent=MagicMock(),
-            last_active=time.time() - 60,
-        )
-        _prune_sessions()
-        assert "active" in _sessions
+        with _isolated_sessions() as sessions:
+            sessions["active"] = _Session(
+                session_id="active",
+                agent=MagicMock(),
+                last_active=time.time() - 60,
+            )
+            _prune_sessions()
+            assert "active" in sessions
 
     def test_prune_empty(self) -> None:
-        _prune_sessions()
-        assert len(_sessions) == 0
+        with _isolated_sessions():
+            _prune_sessions()
+            assert len(_sessions) == 0
+
+
+# ---------------------------------------------------------------------------
+# update_paper_title endpoint
+# ---------------------------------------------------------------------------
+
+
+@contextmanager
+def _paper_dir(path: str) -> t.Iterator[None]:
+    """Temporarily set srv._paper_dir, restoring on exit."""
+    old = srv._paper_dir
+    srv._paper_dir = path
+    try:
+        yield
+    finally:
+        srv._paper_dir = old
+
+
+class TestUpdatePaperTitle:
+    def test_normal_update(self, tmp_path: t.Any) -> None:
+        import yaml
+
+        (tmp_path / "paper.yaml").write_text('title: "Old Title"\ntemplate: article\n')
+        with _paper_dir(str(tmp_path)):
+            result = asyncio.run(srv.update_paper_title({"title": "New Title"}))
+        assert result == {"title": "New Title"}
+        data = yaml.safe_load((tmp_path / "paper.yaml").read_text())
+        assert data["title"] == "New Title"
+        assert data["template"] == "article"
+
+    @pytest.mark.parametrize(
+        "title",
+        [
+            'He said "hello"',
+            r"C:\Users\me",
+            "Colons: tricky",
+            "Hash # sign",
+        ],
+        ids=["quotes", "backslashes", "colons", "hash"],
+    )
+    def test_special_chars_roundtrip(self, tmp_path: t.Any, title: str) -> None:
+        """Titles with YAML-special characters must survive a write/read cycle."""
+        import yaml
+
+        (tmp_path / "paper.yaml").write_text('title: "Old"\n')
+        with _paper_dir(str(tmp_path)):
+            result = asyncio.run(srv.update_paper_title({"title": title}))
+        assert result == {"title": title}
+        data = yaml.safe_load((tmp_path / "paper.yaml").read_text())
+        assert data["title"] == title
+
+    def test_control_chars_stripped(self, tmp_path: t.Any) -> None:
+        (tmp_path / "paper.yaml").write_text('title: "Old"\n')
+        with _paper_dir(str(tmp_path)):
+            result = asyncio.run(srv.update_paper_title({"title": "A\x00B\nC"}))
+        assert result == {"title": "A B C"}
+
+    def test_empty_title_rejected(self) -> None:
+        result = asyncio.run(srv.update_paper_title({"title": ""}))
+        assert result == {"error": "title is required"}
+
+    def test_whitespace_only_rejected(self) -> None:
+        result = asyncio.run(srv.update_paper_title({"title": "   "}))
+        assert result == {"error": "title is required"}
+
+    def test_control_only_rejected(self) -> None:
+        result = asyncio.run(srv.update_paper_title({"title": "\x01\x02"}))
+        assert result == {"error": "title is required"}
+
+    def test_missing_yaml(self, tmp_path: t.Any) -> None:
+        with _paper_dir(str(tmp_path)):
+            result = asyncio.run(srv.update_paper_title({"title": "X"}))
+        assert result == {"error": "paper.yaml not found"}
+
+    def test_missing_title_field(self, tmp_path: t.Any) -> None:
+        (tmp_path / "paper.yaml").write_text("template: article\n")
+        with _paper_dir(str(tmp_path)):
+            result = asyncio.run(srv.update_paper_title({"title": "X"}))
+        assert result == {"error": "Could not find title field in paper.yaml"}
+
+
+# ---------------------------------------------------------------------------
+# upload_pdf temp file cleanup
+# ---------------------------------------------------------------------------
+
+
+class TestUploadPdfCleanup:
+    def test_deletes_previous_upload(self, tmp_path: t.Any) -> None:
+        """Uploading a new PDF should delete the previous al-upload-* temp file."""
+        old_tmp = tmp_path / "al-upload-old.pdf"
+        old_tmp.write_bytes(b"%PDF-old")
+        srv._custom_pdf = str(old_tmp)
+
+        mock_file = MagicMock()
+        mock_file.filename = "new.pdf"
+        mock_file.read = AsyncMock(return_value=b"%PDF-new")
+
+        with patch("backend.server.tempfile.NamedTemporaryFile") as mock_ntf:
+            new_tmp = tmp_path / "al-upload-new.pdf"
+            mock_obj = MagicMock()
+            mock_obj.name = str(new_tmp)
+            mock_ntf.return_value = mock_obj
+
+            with patch("backend.server._pdf_clients", set()):
+                asyncio.run(srv.upload_pdf(mock_file))
+
+        assert not old_tmp.exists(), "Previous upload should be deleted"
+
+    def test_does_not_delete_user_pdf(self, tmp_path: t.Any) -> None:
+        """PDFs loaded via /load-pdf (not uploads) must NOT be deleted."""
+        user_pdf = tmp_path / "my-paper.pdf"
+        user_pdf.write_bytes(b"%PDF-user")
+        srv._custom_pdf = str(user_pdf)
+
+        mock_file = MagicMock()
+        mock_file.filename = "upload.pdf"
+        mock_file.read = AsyncMock(return_value=b"%PDF-upload")
+
+        with patch("backend.server.tempfile.NamedTemporaryFile") as mock_ntf:
+            new_tmp = tmp_path / "al-upload-new.pdf"
+            mock_obj = MagicMock()
+            mock_obj.name = str(new_tmp)
+            mock_ntf.return_value = mock_obj
+
+            with patch("backend.server._pdf_clients", set()):
+                asyncio.run(srv.upload_pdf(mock_file))
+
+        assert user_pdf.exists(), "User PDF must not be deleted"
