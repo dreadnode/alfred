@@ -143,6 +143,8 @@ async def _watch_pdf() -> None:
         # Reset the debounce timer on each change
         if pending and not pending.done():
             pending.cancel()
+            with contextlib.suppress(asyncio.CancelledError):
+                await pending
         pending = asyncio.create_task(_notify())
 
 
