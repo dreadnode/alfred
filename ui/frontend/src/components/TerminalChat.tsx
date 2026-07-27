@@ -6,7 +6,7 @@ import { useWebSocket, ConnectionStatus } from '../hooks/useWebSocket'
 
 interface ChatMessage {
   id: string
-  type: 'user' | 'assistant' | 'tool_start' | 'tool_end' | 'status' | 'error'
+  type: 'user' | 'assistant' | 'tool_start' | 'tool_end' | 'status' | 'error' | 'help'
   content: string
   timestamp: number
   meta?: Record<string, unknown>
@@ -387,7 +387,7 @@ export default function TerminalChat() {
     addMessage(setMessages, 'user', trimmed)
 
     if (trimmed === '/help') {
-      addMessage(setMessages, 'assistant', welcomeLines.join('\n'))
+      addMessage(setMessages, 'help', welcomeLines.join('\n'))
       setInput('')
       return
     }
@@ -462,14 +462,19 @@ export default function TerminalChat() {
     addMessage(setMessages, 'status', 'Cancelling...')
   }, [isProcessing, status, send])
 
-  // Command autocomplete
+  // Command autocomplete (merge backend capabilities + client commands)
+  const allCommands = useMemo(() => [
+    ...commands,
+    ...CLIENT_COMMANDS.map(c => ({ ...c, arg_label: '', args: '' })),
+  ].sort((a, b) => a.name.localeCompare(b.name)), [commands])
   const filteredCommands = input.startsWith('/')
-    ? commands.filter(c => c.name.startsWith(input.split(' ')[0]))
+    ? allCommands.filter(c => c.name.startsWith(input.split(' ')[0]))
     : []
   const showCmdDropdown = filteredCommands.length > 0 && !input.includes(' ')
 
   const selectCommand = useCallback((cmd: CommandDef) => {
-    setInput(cmd.name + ' ')
+    // Use just the command word (strip arg hints like "[N]" or "<path>")
+    setInput(cmd.name.split(' ')[0] + ' ')
     setCmdHighlight(0)
   }, [])
 
@@ -774,6 +779,24 @@ export default function TerminalChat() {
                 overflow: 'auto',
               }}>
                 {msg.content}
+              </pre>
+            )}
+            {msg.type === 'help' && (
+              <pre style={{ margin: 0, fontFamily: 'inherit', fontSize: '12px', lineHeight: '1.6', color: 'var(--dn-text-dim)', whiteSpace: 'pre' }}>
+                {msg.content.split('\n').map((line, i) => {
+                  const isHeader = i === 0 || line.startsWith('NATURAL LANGUAGE')
+                  const cmdMatch = line.match(/^(\s*)(\/\S+)(.*)/)
+                  const nlMatch = line.match(/^(\s*)("[^"]+")(.*)/);
+                  return (
+                    <span key={i}>
+                      {i > 0 && '\n'}
+                      {isHeader ? <span style={{ color: '#4caf50' }}>{line}</span>
+                        : cmdMatch ? <>{cmdMatch[1]}<span style={{ color: '#fff' }}>{cmdMatch[2]}</span>{cmdMatch[3]}</>
+                        : nlMatch ? <>{nlMatch[1]}<span style={{ color: '#fff' }}>{nlMatch[2]}</span>{nlMatch[3]}</>
+                        : line}
+                    </span>
+                  )
+                })}
               </pre>
             )}
             {msg.type === 'status' && (
