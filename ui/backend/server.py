@@ -205,41 +205,6 @@ async def get_config() -> dict[str, t.Any]:
     }
 
 
-@app.get("/api/debug/sessions")
-async def debug_sessions() -> dict[str, t.Any]:
-    """Dump all active sessions for debugging."""
-    result: dict[str, t.Any] = {}
-    for sid, session in list(_sessions.items()):
-        thread_msgs: list[dict[str, t.Any]] = []
-        try:
-            for msg in session.agent.thread.messages:
-                content = msg.content or ""
-                entry: dict[str, t.Any] = {
-                    "role": msg.role,
-                    "content": content[:200] + "..." if len(content) > 200 else content,
-                }
-                if hasattr(msg, "tool_calls") and msg.tool_calls:
-                    entry["tool_calls"] = [
-                        {
-                            "name": getattr(tc, "name", None)
-                            or getattr(getattr(tc, "function", None), "name", "?"),
-                            "id": getattr(tc, "id", "?"),
-                        }
-                        for tc in msg.tool_calls
-                    ]
-                if msg.role == "tool":
-                    entry["tool_call_id"] = getattr(msg, "tool_call_id", None)
-                thread_msgs.append(entry)
-        except Exception as exc:
-            thread_msgs = [{"error": str(exc)}]
-        result[sid] = {
-            "last_active": session.last_active,
-            "history_count": len(session.history),
-            "thread_messages": thread_msgs,
-        }
-    return result
-
-
 @app.get("/api/commands")
 async def list_commands() -> list[dict[str, str]]:
     """Return the list of available slash commands for autocomplete."""
@@ -260,6 +225,10 @@ async def update_paper_title(body: dict[str, t.Any]) -> dict[str, str]:
     new_title: str = body.get("title", "").strip()
     if not new_title:
         return {"error": "title is required"}
+    # Sanitize: strip control characters and limit length
+    new_title = re.sub(r"[\x00-\x1f]+", " ", new_title).strip()
+    if not new_title:
+        return {"error": "title is required"}
 
     yaml_path = os.path.join(_paper_dir, "paper.yaml")
     if not os.path.isfile(yaml_path):
@@ -268,14 +237,17 @@ async def update_paper_title(body: dict[str, t.Any]) -> dict[str, str]:
     try:
         with open(yaml_path) as f:
             content = f.read()
-        # Use regex replace to preserve formatting (same approach as init_template).
+        # Escape quotes for safe YAML embedding
+        safe_title = new_title.replace("\\", "\\\\").replace('"', '\\"')
         new_content = re.sub(
             r"^title:\s*.*$",
-            f'title: "{new_title}"',
+            f'title: "{safe_title}"',
             content,
             count=1,
             flags=re.MULTILINE,
         )
+        if new_content == content:
+            return {"error": "Could not find title field in paper.yaml"}
         with open(yaml_path, "w") as f:
             f.write(new_content)
     except Exception as exc:
@@ -497,6 +469,11 @@ async def upload_pdf(file: UploadFile) -> dict[str, t.Any]:
     global _custom_pdf
     if not file.filename or not file.filename.lower().endswith(".pdf"):
         return {"error": "File must be a PDF"}
+
+    # Clean up previous upload
+    if _custom_pdf and os.path.exists(_custom_pdf):
+        with contextlib.suppress(OSError):
+            os.unlink(_custom_pdf)
 
     # Save to a temp location
     tmp = tempfile.NamedTemporaryFile(delete=False, suffix=".pdf", prefix="al-upload-")

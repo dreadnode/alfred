@@ -555,7 +555,11 @@ export default function TerminalChat() {
         addMessage(setMessages, 'status', `Loaded ${data.filename} into viewer.`)
         // Send extracted text to the agent as context
         if (data.text_ok && data.text && status === 'connected' && !isProcessing) {
-          const prompt = `I've loaded a PDF: "${data.filename}". Here is the extracted text:\n\n${data.text}`
+          const maxChars = 50000
+          const text = data.text.length > maxChars
+            ? data.text.slice(0, maxChars) + '\n\n[...truncated — full text available via read_pdf tool]'
+            : data.text
+          const prompt = `I've loaded a PDF: "${data.filename}". Here is the extracted text:\n\n${text}`
           send(JSON.stringify({ content: prompt }))
           setIsProcessing(true)
         }
