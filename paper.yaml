@@ -1,81 +1,69 @@
 # paper.yaml — Agent-readable paper manifest
 # This file is the source of truth for paper structure.
+# The agent reads and updates this file to track the paper's state.
 
 template: article
 
-title: "Every Model Cheats: Prompt-Level Mitigation of Cheating on Offensive Cyber Tasks"
+title: "Paper Title"
 document_class: article
 document_options: "11pt"
 
 authors:
-  - name: "Michael Kouremetis"
-    affiliation: "dreadnode"
-    email: "michael@dreadnode.io"
-  - name: "Ads Dawson"
-    affiliation: "dreadnode"
-    email: "ads@dreadnode.io"
-  - name: "Raja Sekhar Rao Dheekonda"
-    affiliation: "dreadnode"
-    email: "raja@dreadnode.io"
-  - name: "Brian Greunke"
-    affiliation: "dreadnode"
-    email: "brian@dreadnode.io"
+  - name: "Author One"
+    affiliation: "Institution"
+    email: "author@example.com"
+  - name: "Author Two"
+    affiliation: "Institution"
+    email: "author2@example.com"
 
-abstract_summary: >
-  Study of cheating behavior across 22 LLMs from 7 vendors on 23 offensive
-  cybersecurity tasks from CyBench. All models cheat. Prompt-level anti-cheat
-  instructions reduce cheating by ~44% without harming legitimate capability.
+# Abstract summary (plain text, used by agent for context)
+abstract_summary: ""
 
+# Ordered list of sections — each maps to section/{slug}.tex
 sections:
   - slug: "00_abstract"
     title: "Abstract"
-    status: complete
+    status: draft        # draft | in_progress | complete | reviewed
   - slug: "01_introduction"
     title: "Introduction"
-    status: complete
-  - slug: "02_methodology"
+    status: draft
+  - slug: "02_background"
+    title: "Background"
+    status: draft
+  - slug: "03_methodology"
     title: "Methodology"
-    status: complete
-  - slug: "03_results"
+    status: draft
+  - slug: "04_results"
     title: "Results"
-    status: complete
+    status: draft
   - slug: "05_discussion"
     title: "Discussion"
-    status: complete
-  - slug: "04_related_work"
-    title: "Related Work"
-    status: complete
+    status: draft
   - slug: "06_conclusion"
     title: "Conclusion"
-    status: complete
-  - slug: "10_appendix_tasks"
-    title: "Appendix: Tasks"
-    status: complete
-  - slug: "11_appendix_task_vulnerability"
-    title: "Appendix: Task Vulnerability"
-    status: complete
-  - slug: "09_appendix_judge_prompt"
-    title: "Appendix: Judge Prompt"
-    status: complete
-  - slug: "08_appendix_case_studies"
-    title: "Appendix: Case Studies"
-    status: complete
+    status: draft
+  - slug: "07_appendix"
+    title: "Appendix"
+    status: draft
 
-macros:
-  NumModels: "22"
-  NumVendors: "7"
-  NumTasks: "23"
-  NumPromptConditions: "3"
+# Custom LaTeX macros — rendered as \newcommand{\key}{value} in main.tex
+# Example:
+#   NumSamples: "1{,}000"
+#   NumModels: "5"
+macros: {}
 
+# Optional style packages — add names here and run sync
 styles: []
 
+# Bibliography
 bibliography:
   backend: biber
   style: numeric
-  sorting: none
-  maxbibnames: 5
+  sorting: nyt
+  maxbibnames: 99
   file: bibliography.bib
 
+# Build configuration
 build:
   engine: pdflatex
   output_dir: build
