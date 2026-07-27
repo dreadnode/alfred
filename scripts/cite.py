@@ -242,9 +242,7 @@ def main() -> None:
     if getattr(args, "api_key", None):
         _api_key = args.api_key
 
-    root = getattr(args, "project_root", None) or os.path.dirname(
-        os.path.dirname(os.path.abspath(__file__))
-    )
+    root = getattr(args, "project_root", None) or os.getcwd()
 
     if args.command == "search":
         sys.exit(cmd_search(args.query, root, limit=args.limit, auto_add=args.add))

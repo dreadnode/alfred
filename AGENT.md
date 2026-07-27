@@ -4,19 +4,30 @@ This repository is a template for AI-agent-driven LaTeX document creation. Follo
 
 ## Project Structure
 
+The repo contains tooling. Paper files (`paper.yaml`, `main.tex`, `section/`, etc.) are created per-paper via `./al` or `scripts/scaffold.py`.
+
+```
+├── templates/              # Conference template definitions + .cls/.sty files
+├── styles/                 # Optional .sty packages (messageboxes, codeblocks)
+├── scripts/                # Build, sync, validation, and template scripts
+├── capabilities/           # Multi-agent research workflows
+├── ui/                     # Web UI (FastAPI backend + React frontend)
+├── al                      # Web UI launcher
+└── Taskfile.yml            # Dev tasks (test, lint, fmt, check)
+```
+
+Each paper directory contains:
+
 ```
 ├── paper.yaml              # Source of truth for paper structure — read this first
 ├── main.tex                # Main document (managed by sync + templates)
 ├── bibliography.bib        # BibTeX references
 ├── section/                # Ordered section files (00_abstract.tex, 01_introduction.tex, ...)
-├── templates/              # Conference template definitions + .cls/.sty files
 ├── data/                   # CSV/data files for tables and figures
 ├── figures/                # Images and generated figures
-├── styles/                 # Optional .sty packages (messageboxes, codeblocks)
-├── scripts/                # Build, sync, validation, and template scripts
-├── reviews/                # Peer review records (tracked in git)
+├── reviews/                # Peer review records
 ├── .latexmkrc              # Build engine configuration
-└── build/                  # Output directory (gitignored)
+└── build/                  # Output directory
 ```
 
 ## Key Workflows

@@ -5,6 +5,12 @@ set -uo pipefail
 
 PROJECT_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 
+if [[ ! -f "$PROJECT_ROOT/main.tex" ]]; then
+  echo "ERROR: main.tex not found in $PROJECT_ROOT" >&2
+  echo "Run from a paper directory or ensure main.tex exists." >&2
+  exit 1
+fi
+
 if [[ "${1:-}" == "--clean" ]]; then
   echo "=== Cleaning build artifacts ==="
   rm -rf "$PROJECT_ROOT/build"

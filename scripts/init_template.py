@@ -175,9 +175,7 @@ def main() -> None:
     parser.add_argument("--list", action="store_true", help="List available templates")
     args = parser.parse_args()
 
-    root = args.project_root or os.path.dirname(
-        os.path.dirname(os.path.abspath(__file__))
-    )
+    root = args.project_root or os.getcwd()
 
     if args.list:
         list_templates(root)

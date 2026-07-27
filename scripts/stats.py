@@ -205,9 +205,13 @@ def main() -> None:
     parser.add_argument("--json", action="store_true", help="Output as JSON")
     args = parser.parse_args()
 
-    root = args.project_root or os.path.dirname(
-        os.path.dirname(os.path.abspath(__file__))
-    )
+    root = args.project_root or os.getcwd()
+    if not os.path.isfile(os.path.join(root, "paper.yaml")):
+        print(
+            "ERROR: paper.yaml not found. Run from a paper directory or pass --project-root.",
+            file=sys.stderr,
+        )
+        sys.exit(1)
     sys.exit(stats(root, as_json=args.json))
 
 
