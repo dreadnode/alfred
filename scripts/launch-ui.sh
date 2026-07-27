@@ -18,10 +18,23 @@ if [ ! -f "$VENV_PYTHON" ]; then
     uv pip install --python "$VENV_PYTHON" -r "$REPO_ROOT/ui/backend/requirements.txt"
 fi
 
-# Build frontend if not already built
-if [ ! -d "$REPO_ROOT/ui/frontend/dist" ]; then
+# Build frontend if missing or source is newer than dist
+FRONTEND_DIR="$REPO_ROOT/ui/frontend"
+NEEDS_BUILD=false
+if [ ! -d "$FRONTEND_DIR/dist" ]; then
+    NEEDS_BUILD=true
+else
+    DIST_STAMP="$FRONTEND_DIR/dist/.build_stamp"
+    if [ ! -f "$DIST_STAMP" ]; then
+        NEEDS_BUILD=true
+    elif [ -n "$(find "$FRONTEND_DIR/src" "$FRONTEND_DIR/package.json" "$FRONTEND_DIR/index.html" "$FRONTEND_DIR/vite.config.ts" "$FRONTEND_DIR/tsconfig.json" -newer "$DIST_STAMP" 2>/dev/null)" ]; then
+        NEEDS_BUILD=true
+    fi
+fi
+if [ "$NEEDS_BUILD" = true ]; then
     echo "Building frontend..."
-    npm run build --prefix "$REPO_ROOT/ui/frontend"
+    npm run build --prefix "$FRONTEND_DIR"
+    touch "$FRONTEND_DIR/dist/.build_stamp"
 fi
 
 exec "$VENV_PYTHON" "$SCRIPT_DIR/ui.py" "$@"

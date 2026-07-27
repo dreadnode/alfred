@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import Markdown from 'react-markdown'
+import remarkGfm from 'remark-gfm'
 import { useWebSocket, ConnectionStatus } from '../hooks/useWebSocket'
 
 // --- Types ---
@@ -766,7 +767,7 @@ export default function TerminalChat() {
             )}
             {msg.type === 'assistant' && (
               <div className="markdown-body" style={{ fontFamily: 'inherit', fontSize: '13px', lineHeight: '1.5' }}>
-                <Markdown>{msg.content}</Markdown>
+                <Markdown remarkPlugins={[remarkGfm]}>{msg.content}</Markdown>
               </div>
             )}
             {msg.type === 'tool_start' && (
