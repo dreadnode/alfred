@@ -163,9 +163,10 @@ export default function PdfViewer() {
         // Extract title from PDF metadata or first page text
         try {
           const meta = await pdf.getMetadata()
-          const infoTitle = (meta?.info as Record<string, unknown>)?.Title as string
-          if (infoTitle && infoTitle.trim()) {
-            setPaperTitle(infoTitle.trim())
+          const rawTitle = (meta?.info as Record<string, unknown>)?.Title
+          const infoTitle = typeof rawTitle === 'string' ? rawTitle.trim() : ''
+          if (infoTitle) {
+            setPaperTitle(infoTitle)
           } else {
             // Fallback: collect all text at the largest font size on page 1
             const page1 = await pdf.getPage(1)

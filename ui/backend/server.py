@@ -454,7 +454,7 @@ async def update_config(body: dict[str, t.Any]) -> dict[str, str]:
 async def clear_chat_history() -> dict[str, str]:
     """Delete the on-disk chat history backup."""
     backup_path = os.path.join(_paper_dir, ".chat-history.json")
-    if os.path.isfile(backup_path):
+    with contextlib.suppress(OSError):
         os.unlink(backup_path)
     return {"status": "cleared"}
 
@@ -780,6 +780,7 @@ async def ws_chat(websocket: WebSocket) -> None:
                                     },
                                 }
                             )
+                            _persist_history()
                             return
                     formatted = _format_event(event)
                     if formatted:
@@ -834,6 +835,7 @@ async def ws_chat(websocket: WebSocket) -> None:
                     )
                 except WebSocketDisconnect:
                     raise
+                _persist_history()
                 return
             try:
                 await _send_event(
