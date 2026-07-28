@@ -855,6 +855,7 @@ async def ws_chat(websocket: WebSocket) -> None:
                 )
             except WebSocketDisconnect:
                 raise
+            _persist_history()
 
     async def _cancel_agent() -> None:
         """Cancel the running agent task and wait for cleanup."""

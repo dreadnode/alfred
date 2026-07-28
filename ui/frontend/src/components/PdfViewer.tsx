@@ -35,7 +35,7 @@ const styles = {
     letterSpacing: '0.05em',
   },
   pageInfo: {
-    color: '#008080',
+    color: 'var(--al-brand)',
     fontSize: '11px',
   },
   viewport: {
@@ -311,7 +311,7 @@ export default function PdfViewer() {
             borderRadius: '6px', padding: '20px', width: '340px',
             fontFamily: 'var(--font-mono)', fontSize: '12px', color: 'var(--dn-text, #ccc)',
           }} onClick={e => e.stopPropagation()}>
-            <div style={{ fontSize: '13px', fontWeight: 700, marginBottom: '16px', color: '#008080' }}>
+            <div style={{ fontSize: '13px', fontWeight: 700, marginBottom: '16px', color: 'var(--al-brand)' }}>
               Paper Title
             </div>
 
@@ -338,7 +338,7 @@ export default function PdfViewer() {
                 padding: '4px 12px', borderRadius: '3px', cursor: 'pointer',
               }}>CANCEL</button>
               <button onClick={saveTitleEdit} disabled={titleSaving} style={{
-                background: '#008080', border: 'none',
+                background: 'var(--al-brand)', border: 'none',
                 color: 'var(--dn-black, #000)', fontFamily: 'var(--font-mono)', fontSize: '11px',
                 padding: '4px 12px', borderRadius: '3px', cursor: 'pointer', fontWeight: 700,
                 opacity: titleSaving ? 0.6 : 1,

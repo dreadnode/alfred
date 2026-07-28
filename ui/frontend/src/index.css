@@ -1,4 +1,8 @@
 :root {
+  /* Agentic LaTeX brand */
+  --al-brand:       #008080;
+  --al-interactive: #f5c842;
+
   /* Dreadnode palette */
   --dn-black:       #0a0a0a;
   --dn-bg:          #111111;

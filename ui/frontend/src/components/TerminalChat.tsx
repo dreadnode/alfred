@@ -33,7 +33,7 @@ const styles = {
     background: 'var(--dn-black)',
   },
   headerTitle: {
-    color: '#008080',
+    color: 'var(--al-brand)',
     fontSize: '13px',
     fontWeight: 700,
     letterSpacing: '0.05em',
@@ -63,7 +63,7 @@ const styles = {
            'var(--dn-text)',
   }),
   prompt: {
-    color: '#f5c842',
+    color: 'var(--al-interactive)',
     marginRight: '8px',
     lineHeight: '1.5',
   },
@@ -91,7 +91,7 @@ const styles = {
     color: 'var(--dn-text-bright)',
     fontFamily: 'var(--font-mono)',
     fontSize: '13px',
-    caretColor: '#f5c842',
+    caretColor: 'var(--al-interactive)',
     resize: 'none' as const,
     overflow: 'hidden',
     lineHeight: '1.5',
@@ -102,7 +102,7 @@ const styles = {
     display: 'inline-block',
     width: '8px',
     height: '15px',
-    background: '#f5c842',
+    background: 'var(--al-interactive)',
     animation: 'blink 1s step-end infinite',
     verticalAlign: 'text-bottom',
     marginLeft: '2px',
@@ -674,7 +674,7 @@ export default function TerminalChat({ headerExtra }: TerminalChatProps = {}) {
             borderRadius: '6px', padding: '20px', width: '340px',
             fontFamily: 'var(--font-mono)', fontSize: '12px', color: 'var(--dn-text, #ccc)',
           }} onClick={e => e.stopPropagation()}>
-            <div style={{ fontSize: '13px', fontWeight: 700, marginBottom: '16px', color: '#008080' }}>
+            <div style={{ fontSize: '13px', fontWeight: 700, marginBottom: '16px', color: 'var(--al-brand)' }}>
               Change Model
             </div>
 
@@ -726,7 +726,7 @@ export default function TerminalChat({ headerExtra }: TerminalChatProps = {}) {
                 padding: '4px 12px', borderRadius: '3px', cursor: 'pointer',
               }}>CANCEL</button>
               <button onClick={saveSettings} disabled={settingsSaving} style={{
-                background: '#008080', border: 'none',
+                background: 'var(--al-brand)', border: 'none',
                 color: 'var(--dn-black, #000)', fontFamily: 'var(--font-mono)', fontSize: '11px',
                 padding: '4px 12px', borderRadius: '3px', cursor: 'pointer', fontWeight: 700,
                 opacity: settingsSaving ? 0.6 : 1,
@@ -754,7 +754,7 @@ export default function TerminalChat({ headerExtra }: TerminalChatProps = {}) {
               return (
                 <span key={i}>
                   {i > 0 && '\n'}
-                  {isHeader ? <span style={{ color: '#f5c842' }}>{line}</span>
+                  {isHeader ? <span style={{ color: 'var(--al-interactive)' }}>{line}</span>
                     : cmdMatch ? <>{cmdMatch[1]}<span style={{ color: '#fff' }}>{cmdMatch[2]}</span>{cmdMatch[3]}</>
                     : nlMatch ? <>{nlMatch[1]}<span style={{ color: '#fff' }}>{nlMatch[2]}</span>{nlMatch[3]}</>
                     : line}
@@ -811,7 +811,7 @@ export default function TerminalChat({ headerExtra }: TerminalChatProps = {}) {
                   return (
                     <span key={i}>
                       {i > 0 && '\n'}
-                      {isHeader ? <span style={{ color: '#f5c842' }}>{line}</span>
+                      {isHeader ? <span style={{ color: 'var(--al-interactive)' }}>{line}</span>
                         : cmdMatch ? <>{cmdMatch[1]}<span style={{ color: '#fff' }}>{cmdMatch[2]}</span>{cmdMatch[3]}</>
                         : nlMatch ? <>{nlMatch[1]}<span style={{ color: '#fff' }}>{nlMatch[2]}</span>{nlMatch[3]}</>
                         : line}
@@ -857,7 +857,7 @@ export default function TerminalChat({ headerExtra }: TerminalChatProps = {}) {
                   display: 'flex', justifyContent: 'flex-start', alignItems: 'center',
                 }}
               >
-                <span style={{ color: '#f5c842', minWidth: '180px' }}>{cmd.name}</span>
+                <span style={{ color: 'var(--al-interactive)', minWidth: '180px' }}>{cmd.name}</span>
                 <span style={{ color: '#fff', fontSize: '11px' }}>{cmd.description}</span>
               </div>
             ))}
