@@ -636,7 +636,7 @@ export default function TerminalChat({ headerExtra }: TerminalChatProps = {}) {
       {/* Header */}
       <div style={styles.header}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '24px' }}>
-          <span style={styles.headerTitle}>AGENTIC L<span style={{ fontSize: '11px' }}>A</span>T<span style={{ fontSize: '11px' }}>E</span>X</span>
+          <span style={styles.headerTitle}>AGENTIC L<span style={{ fontSize: '11px' }}>A</span>T<span style={{ fontSize: '11px' }}>E</span>X <span style={{ color: '#fff', fontSize: '10px', fontWeight: 400 }}>v0.2</span></span>
           {headerExtra && (
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginRight: '8px' }}>
               {headerExtra}
