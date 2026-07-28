@@ -726,12 +726,13 @@ async def ws_chat(websocket: WebSocket) -> None:
         await websocket.send_text(json.dumps(event_dict))
 
     def _persist_history() -> None:
-        """Write session history to disk as a backup."""
+        """Write session history to disk as a backup (atomic via rename)."""
         if not session:
             return
         backup_path = os.path.join(_paper_dir, ".chat-history.json")
+        tmp_path = backup_path + ".tmp"
         try:
-            with open(backup_path, "w") as f:
+            with open(tmp_path, "w") as f:
                 json.dump(
                     {
                         "session_id": session.session_id,
@@ -740,6 +741,7 @@ async def ws_chat(websocket: WebSocket) -> None:
                     },
                     f,
                 )
+            os.replace(tmp_path, backup_path)
         except Exception:
             pass  # Best-effort — don't crash the agent loop
 

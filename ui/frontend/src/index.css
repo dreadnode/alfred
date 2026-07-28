@@ -120,7 +120,7 @@ html, body, #root {
 .markdown-body hr { border: none; border-top: 1px solid var(--dn-border); margin: 0.6em 0; }
 
 /* PDF text layer — transparent overlay for text selection */
-.pdf-text-layer { overflow: clip; opacity: 1; line-height: 1; z-index: 1; }
+.pdf-text-layer { overflow: hidden; overflow: clip; opacity: 1; line-height: 1; z-index: 1; }
 .pdf-text-layer span { position: absolute; white-space: pre; color: transparent; cursor: text; }
 .pdf-text-layer span::selection { background: rgba(79, 195, 247, 0.4); color: transparent; }
 .pdf-text-layer br { display: none; }
