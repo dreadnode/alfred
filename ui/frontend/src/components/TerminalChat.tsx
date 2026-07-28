@@ -757,7 +757,7 @@ export default function TerminalChat({ headerExtra }: TerminalChatProps = {}) {
               return (
                 <span key={i}>
                   {i > 0 && '\n'}
-                  {isHeader ? <span style={{ color: '#4caf50' }}>{line}</span>
+                  {isHeader ? <span style={{ color: '#f5c842' }}>{line}</span>
                     : cmdMatch ? <>{cmdMatch[1]}<span style={{ color: '#fff' }}>{cmdMatch[2]}</span>{cmdMatch[3]}</>
                     : nlMatch ? <>{nlMatch[1]}<span style={{ color: '#fff' }}>{nlMatch[2]}</span>{nlMatch[3]}</>
                     : line}
@@ -814,7 +814,7 @@ export default function TerminalChat({ headerExtra }: TerminalChatProps = {}) {
                   return (
                     <span key={i}>
                       {i > 0 && '\n'}
-                      {isHeader ? <span style={{ color: '#4caf50' }}>{line}</span>
+                      {isHeader ? <span style={{ color: '#f5c842' }}>{line}</span>
                         : cmdMatch ? <>{cmdMatch[1]}<span style={{ color: '#fff' }}>{cmdMatch[2]}</span>{cmdMatch[3]}</>
                         : nlMatch ? <>{nlMatch[1]}<span style={{ color: '#fff' }}>{nlMatch[2]}</span>{nlMatch[3]}</>
                         : line}
