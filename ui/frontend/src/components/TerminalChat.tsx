@@ -673,7 +673,7 @@ export default function TerminalChat({ headerExtra }: TerminalChatProps = {}) {
             fontFamily: 'var(--font-mono)', fontSize: '12px', color: 'var(--dn-text, #ccc)',
           }} onClick={e => e.stopPropagation()}>
             <div style={{ fontSize: '13px', fontWeight: 700, marginBottom: '16px', color: '#008080' }}>
-              Settings
+              Change Model
             </div>
 
             <label style={{ display: 'block', marginBottom: '4px', color: 'var(--dn-text-dim, #888)' }}>Model</label>
