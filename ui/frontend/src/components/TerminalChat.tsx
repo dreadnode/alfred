@@ -262,7 +262,7 @@ export default function TerminalChat({ headerExtra }: TerminalChatProps = {}) {
             web_fetch: a => { const u = String(a.url || ''); return `Fetching: ${u.slice(0, 60)}${u.length > 60 ? '...' : ''}` },
             read_file: a => `Reading ${a.path || a.file_path || 'file'}`,
             write_file: a => `Writing ${a.path || a.file_path || 'file'}`,
-            command: a => { const c = String(a.command || ''); return `Running: ${c.slice(0, 80)}${c.length > 80 ? '...' : ''}` },
+            command: a => { const c = Array.isArray(a.cmd) ? a.cmd.join(' ') : String(a.cmd || ''); return `Running: ${c.slice(0, 80)}${c.length > 80 ? '...' : ''}` },
           }
           summary = labels[tool]?.(args) ?? `${tool}...`
         } catch {
