@@ -24,7 +24,7 @@ import yaml
 _REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 
-def list_templates(project_root: str) -> None:
+def list_templates() -> None:
     """Print a table of available templates with descriptions."""
     templates_dir = os.path.join(_REPO_ROOT, "templates")
     if not os.path.isdir(templates_dir):
@@ -46,7 +46,7 @@ def list_templates(project_root: str) -> None:
             print(f"  {name:20s} (no template.yaml)")
 
 
-def _get_old_extra_files(project_root: str, manifest: dict[str, Any]) -> list[str]:
+def _get_old_extra_files(manifest: dict[str, Any]) -> list[str]:
     """Return the extra_files list from the currently active template."""
     old_template = manifest.get("template", "article")
     old_config_path = os.path.join(
@@ -124,7 +124,7 @@ def init_template(project_root: str, template_name: str) -> int:
         with open(manifest_path) as f:
             manifest: dict[str, Any] = yaml.safe_load(f) or {}
         new_files = config.get("extra_files", [])
-        for old_file in _get_old_extra_files(project_root, manifest):
+        for old_file in _get_old_extra_files(manifest):
             if old_file not in new_files:
                 old_path = os.path.join(project_root, old_file)
                 if os.path.exists(old_path):
@@ -181,7 +181,7 @@ def main() -> None:
     root = args.project_root or os.getcwd()
 
     if args.list:
-        list_templates(root)
+        list_templates()
         return
 
     if not args.template:
