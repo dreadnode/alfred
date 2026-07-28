@@ -524,15 +524,12 @@ export default function TerminalChat({ headerExtra }: TerminalChatProps = {}) {
       }
     }
     if (e.key === 'ArrowDown' && !showCmdDropdown && historyIndexRef.current >= 0) {
+      e.preventDefault()
       const el = inputRef.current
-      // Only navigate history if cursor is on the last line
-      if (el && el.selectionStart !== undefined && el.value.slice(el.selectionStart).indexOf('\n') === -1) {
-        e.preventDefault()
-        const next = historyIndexRef.current - 1
-        historyIndexRef.current = next
-        setInput(next >= 0 ? promptHistory[next] : '')
-        requestAnimationFrame(() => { if (el) { el.style.height = 'auto'; el.style.height = el.scrollHeight + 'px' } })
-      }
+      const next = historyIndexRef.current - 1
+      historyIndexRef.current = next
+      setInput(next >= 0 ? promptHistory[next] : '')
+      requestAnimationFrame(() => { if (el) { el.style.height = 'auto'; el.style.height = el.scrollHeight + 'px' } })
     }
     if (e.key === 'Escape' && isProcessing) {
       handleCancel()
