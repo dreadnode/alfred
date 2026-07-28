@@ -623,7 +623,7 @@ export default function TerminalChat() {
     >
       {/* Header */}
       <div style={styles.header}>
-        <div style={{ display: 'flex', alignItems: 'baseline', gap: '16px' }}>
+        <div style={{ display: 'flex', alignItems: 'baseline', gap: '24px' }}>
           <span style={styles.headerTitle}>AGENTIC L<span style={{ fontSize: '11px' }}>A</span>T<span style={{ fontSize: '11px' }}>E</span>X</span>
           {modelName && (
             <span

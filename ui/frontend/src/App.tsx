@@ -145,7 +145,7 @@ export default function App() {
             onClick={() => { setNewPaperTitle(''); setNewPaperError(''); setShowNewPaper(true) }}
             style={{
               background: 'transparent', border: '1px solid var(--dn-border-lt, #444)',
-              color: 'var(--dn-accent)', fontFamily: 'var(--font-mono)', fontSize: '11px',
+              color: '#008080', fontFamily: 'var(--font-mono)', fontSize: '11px',
               padding: '2px 8px', borderRadius: '3px', cursor: 'pointer',
             }}
           >+ NEW</button>
