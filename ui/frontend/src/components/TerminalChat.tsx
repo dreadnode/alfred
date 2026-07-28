@@ -82,6 +82,7 @@ const styles = {
     padding: '12px 16px',
     borderTop: '1px solid var(--dn-border)',
     background: 'var(--dn-black)',
+    position: 'relative' as const,
   },
   input: {
     flex: 1,
@@ -889,12 +890,16 @@ export default function TerminalChat({ headerExtra }: TerminalChatProps = {}) {
             e.target.style.height = e.target.scrollHeight + 'px'
           }}
           onKeyDown={handleKeyDown}
-          placeholder={
-            status !== 'connected' ? 'Connecting...' :
-            isProcessing ? 'Agent working...' : ''
-          }
+          placeholder={status !== 'connected' ? 'Connecting...' : ''}
           disabled={status !== 'connected' || isProcessing}
         />
+        {isProcessing && (
+          <span className="agent-working" style={{
+            position: 'absolute', left: '28px', top: '50%', transform: 'translateY(-50%)',
+            color: 'var(--al-interactive)', fontSize: '13px', fontFamily: 'var(--font-mono)',
+            pointerEvents: 'none', opacity: 0.6,
+          }}>Agent working</span>
+        )}
         {isProcessing && (
           <button
             onClick={handleCancel}
