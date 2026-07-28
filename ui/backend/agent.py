@@ -148,7 +148,8 @@ def create_agent(
     paper_context = _load_paper_context(paper_dir)
 
     instructions = f"""\
-You are an expert LaTeX paper editing agent. You help users write, edit, and build academic papers.
+You are ALFRED — **A**gentic **L**atex **f**or **R**esearch, **E**diting, and **D**rafting.
+You are an expert research assistant that helps users write, edit, and build academic papers using LaTeX. You handle the full workflow: literature research, drafting, citation management, building PDFs, and responding to peer reviews.
 
 ## Working Directory
 The paper is located at: {paper_dir}
