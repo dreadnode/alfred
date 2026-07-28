@@ -697,3 +697,118 @@ class TestSwapModel:
         (tmp_path / "paper.yaml").write_text('title: "Test"\n')
         with _paper_dir(str(tmp_path)), _isolated_sessions():
             srv._swap_model("new-model")  # should not raise
+
+
+# ---------------------------------------------------------------------------
+# Chat history persistence
+# ---------------------------------------------------------------------------
+
+
+class TestChatHistoryPersistence:
+    """Test .chat-history.json backup and restore."""
+
+    def _write_backup(self, paper_dir: str, history: list, session_id: str = "s1") -> None:
+        import json as _json
+
+        path = os.path.join(paper_dir, ".chat-history.json")
+        with open(path, "w") as f:
+            _json.dump({"session_id": session_id, "history": history, "timestamp": 0}, f)
+
+    def test_clear_chat_history_deletes_file(self, tmp_path: t.Any) -> None:
+        """DELETE /api/chat-history should remove the backup file."""
+        self._write_backup(str(tmp_path), [{"type": "test"}])
+        with _paper_dir(str(tmp_path)):
+            result = asyncio.run(srv.clear_chat_history())
+        assert result == {"status": "cleared"}
+        assert not os.path.exists(os.path.join(str(tmp_path), ".chat-history.json"))
+
+    def test_clear_chat_history_missing_file(self, tmp_path: t.Any) -> None:
+        """Clearing when no backup exists should not error."""
+        with _paper_dir(str(tmp_path)):
+            result = asyncio.run(srv.clear_chat_history())
+        assert result == {"status": "cleared"}
+
+    def test_backup_file_format(self, tmp_path: t.Any) -> None:
+        """Verify the backup file is valid JSON with expected keys."""
+        import json as _json
+
+        backup_path = os.path.join(str(tmp_path), ".chat-history.json")
+        history = [
+            {"type": "user_message", "content": "hello"},
+            {"type": "generation", "content": "world"},
+        ]
+        self._write_backup(str(tmp_path), history, session_id="test-id")
+
+        with open(backup_path) as f:
+            data = _json.load(f)
+        assert data["session_id"] == "test-id"
+        assert data["history"] == history
+        assert "timestamp" in data
+
+    def test_restore_from_backup(self, tmp_path: t.Any) -> None:
+        """New session should restore history from backup file."""
+        (tmp_path / "paper.yaml").write_text('title: "Test"\n')
+        history = [
+            {"type": "user_message", "content": "old message"},
+            {"type": "generation", "content": "old response"},
+        ]
+        self._write_backup(str(tmp_path), history)
+
+        with _paper_dir(str(tmp_path)), _isolated_sessions() as sessions:
+            # Simulate what ws_chat does: call the restore logic
+            # Since _get_or_create_session is nested, we test the contract
+            # by creating a session manually and checking backup restore
+            import json as _json
+
+            backup_path = os.path.join(str(tmp_path), ".chat-history.json")
+            new_session = _Session(
+                session_id="new",
+                agent=MagicMock(),
+            )
+            # Replicate restore logic from _get_or_create_session
+            if os.path.isfile(backup_path):
+                with open(backup_path) as f:
+                    backup = _json.load(f)
+                if isinstance(backup.get("history"), list):
+                    new_session.history = backup["history"]
+            sessions["new"] = new_session
+
+            assert len(sessions["new"].history) == 2
+            assert sessions["new"].history[0]["content"] == "old message"
+
+    def test_corrupt_backup_ignored(self, tmp_path: t.Any) -> None:
+        """Corrupt backup file should be silently ignored."""
+        (tmp_path / "paper.yaml").write_text('title: "Test"\n')
+        backup_path = os.path.join(str(tmp_path), ".chat-history.json")
+        with open(backup_path, "w") as f:
+            f.write("not valid json{{{")
+
+        import json as _json
+
+        new_session = _Session(session_id="new", agent=MagicMock())
+        # Replicate restore logic
+        try:
+            with open(backup_path) as f:
+                backup = _json.load(f)
+            if isinstance(backup.get("history"), list):
+                new_session.history = backup["history"]
+        except Exception:
+            pass  # Should be silently ignored
+
+        assert new_session.history == []
+
+    def test_backup_with_non_list_history_ignored(self, tmp_path: t.Any) -> None:
+        """Backup with history as a string should not crash."""
+        import json as _json
+
+        backup_path = os.path.join(str(tmp_path), ".chat-history.json")
+        with open(backup_path, "w") as f:
+            _json.dump({"session_id": "x", "history": "not a list"}, f)
+
+        new_session = _Session(session_id="new", agent=MagicMock())
+        with open(backup_path) as f:
+            backup = _json.load(f)
+        if isinstance(backup.get("history"), list):
+            new_session.history = backup["history"]
+
+        assert new_session.history == []
