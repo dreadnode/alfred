@@ -682,16 +682,31 @@ async def ws_chat(websocket: WebSocket) -> None:
         """Look up an existing session or create a new one.
 
         Prunes expired sessions on each call and updates ``last_active``.
+        If a backup file exists and no in-memory session matches, restores
+        the session history from disk.
         """
         _prune_sessions()
         if session_id and session_id in _sessions:
             _sessions[session_id].last_active = time.time()
             return _sessions[session_id]
+
         new_id = str(uuid.uuid4())
         new_session = _Session(
             session_id=new_id,
             agent=create_agent(_model, _paper_dir),
         )
+
+        # Restore history from disk backup if available
+        backup_path = os.path.join(_paper_dir, ".chat-history.json")
+        if os.path.isfile(backup_path):
+            try:
+                with open(backup_path) as f:
+                    backup = json.load(f)
+                if isinstance(backup.get("history"), list):
+                    new_session.history = backup["history"]
+            except Exception:
+                pass  # Corrupted backup — start fresh
+
         _sessions[new_id] = new_session
         return new_session
 
@@ -700,6 +715,24 @@ async def ws_chat(websocket: WebSocket) -> None:
         if session:
             session.history.append(event_dict)
         await websocket.send_text(json.dumps(event_dict))
+
+    def _persist_history() -> None:
+        """Write session history to disk as a backup."""
+        if not session:
+            return
+        backup_path = os.path.join(_paper_dir, ".chat-history.json")
+        try:
+            with open(backup_path, "w") as f:
+                json.dump(
+                    {
+                        "session_id": session.session_id,
+                        "history": session.history,
+                        "timestamp": time.time(),
+                    },
+                    f,
+                )
+        except Exception:
+            pass  # Best-effort — don't crash the agent loop
 
     async def _run_agent(user_input: str) -> None:
         """Stream agent events to the WebSocket. Runs inside a cancellable task."""
@@ -740,6 +773,7 @@ async def ws_chat(websocket: WebSocket) -> None:
                     formatted = _format_event(event)
                     if formatted:
                         await _send_event(formatted)
+            _persist_history()
         except asyncio.CancelledError:
             try:
                 await _send_event(
@@ -757,6 +791,7 @@ async def ws_chat(websocket: WebSocket) -> None:
                 )
             except WebSocketDisconnect:
                 pass  # Client already gone — event is still recorded in history
+            _persist_history()
         except WebSocketDisconnect:
             raise
         except Exception as exc:
