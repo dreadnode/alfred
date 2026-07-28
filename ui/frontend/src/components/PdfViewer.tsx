@@ -34,7 +34,7 @@ const styles = {
     letterSpacing: '0.05em',
   },
   pageInfo: {
-    color: 'var(--dn-accent)',
+    color: '#008080',
     fontSize: '11px',
   },
   viewport: {

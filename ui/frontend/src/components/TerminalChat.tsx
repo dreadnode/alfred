@@ -33,7 +33,7 @@ const styles = {
     background: 'var(--dn-black)',
   },
   headerTitle: {
-    color: 'var(--dn-accent)',
+    color: '#008080',
     fontSize: '13px',
     fontWeight: 700,
     letterSpacing: '0.05em',
