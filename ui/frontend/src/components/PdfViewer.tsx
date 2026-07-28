@@ -224,10 +224,9 @@ export default function PdfViewer() {
           canvas.height = viewport.height
           pageDiv.appendChild(canvas)
 
-          // Text layer overlay — same pixel dimensions as canvas, CSS-scaled by wrapper
+          // Text layer overlay — uses official pdfjs .textLayer class
           const textDiv = document.createElement('div')
-          textDiv.className = 'pdf-text-layer'
-          textDiv.style.cssText = `position: absolute; top: 0; left: 0; width: ${viewport.width}px; height: ${viewport.height}px; transform-origin: 0 0;`
+          textDiv.className = 'textLayer'
           pageDiv.appendChild(textDiv)
 
           container.appendChild(pageDiv)
@@ -243,13 +242,6 @@ export default function PdfViewer() {
             viewport,
           })
           await textLayer.render()
-
-          // Scale text layer to match CSS-scaled canvas
-          const actualWidth = pageDiv.getBoundingClientRect().width
-          if (actualWidth > 0 && actualWidth !== viewport.width) {
-            const s = actualWidth / viewport.width
-            textDiv.style.transform = `scale(${s})`
-          }
         }
 
         // Restore scroll position

@@ -119,11 +119,34 @@ html, body, #root {
 .markdown-body th { color: var(--dn-text-bright); background: var(--dn-surface); }
 .markdown-body hr { border: none; border-top: 1px solid var(--dn-border); margin: 0.6em 0; }
 
-/* PDF text layer — transparent overlay for text selection */
-.pdf-text-layer { overflow: hidden; overflow: clip; opacity: 1; line-height: 1; z-index: 1; }
-.pdf-text-layer span { position: absolute; white-space: pre; color: transparent; cursor: text; }
-.pdf-text-layer span::selection { background: rgba(79, 195, 247, 0.4); color: transparent; }
-.pdf-text-layer br { display: none; }
+/* PDF text layer — extracted from pdfjs-dist/web/pdf_viewer.css */
+.textLayer {
+  position: absolute;
+  text-align: initial;
+  inset: 0;
+  overflow: hidden;
+  overflow: clip;
+  opacity: 1;
+  line-height: 1;
+  -webkit-text-size-adjust: none;
+  -moz-text-size-adjust: none;
+  text-size-adjust: none;
+  forced-color-adjust: none;
+  transform-origin: 0 0;
+  z-index: 0;
+}
+.textLayer :is(span, br) {
+  color: transparent;
+  position: absolute;
+  white-space: pre;
+  cursor: text;
+  transform-origin: 0% 0%;
+}
+.textLayer > :not(.markedContent),
+.textLayer .markedContent span:not(.markedContent) {
+  z-index: 1;
+}
+.textLayer ::selection { background: rgba(79, 195, 247, 0.4); }
 
 /* Animated dots for "Agent working" */
 .agent-working::after {
