@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import * as pdfjsLib from 'pdfjs-dist'
+import { TextLayer } from 'pdfjs-dist'
 import { useWebSocket } from '../hooks/useWebSocket'
 
 // Configure pdf.js worker
@@ -176,15 +177,42 @@ export default function PdfViewer() {
           const scale = 1.5
           const viewport = page.getViewport({ scale })
 
+          // Page wrapper scales canvas + text layer together
+          const pageDiv = document.createElement('div')
+          pageDiv.style.cssText = `position: relative; display: inline-block; width: ${viewport.width}px; max-width: 100%; box-shadow: 0 2px 12px rgba(0,0,0,0.5);`
+
           const canvas = document.createElement('canvas')
-          canvas.style.cssText = 'box-shadow: 0 2px 12px rgba(0,0,0,0.5); max-width: 100%;'
+          canvas.style.cssText = 'display: block; width: 100%; height: auto;'
           canvas.width = viewport.width
           canvas.height = viewport.height
+          pageDiv.appendChild(canvas)
 
-          container.appendChild(canvas)
+          // Text layer overlay — same pixel dimensions as canvas, CSS-scaled by wrapper
+          const textDiv = document.createElement('div')
+          textDiv.className = 'pdf-text-layer'
+          textDiv.style.cssText = `position: absolute; top: 0; left: 0; width: ${viewport.width}px; height: ${viewport.height}px; transform-origin: 0 0;`
+          pageDiv.appendChild(textDiv)
+
+          container.appendChild(pageDiv)
 
           const ctx = canvas.getContext('2d')!
           await page.render({ canvasContext: ctx, viewport }).promise
+
+          // Render selectable text overlay
+          const textContent = await page.getTextContent()
+          const textLayer = new TextLayer({
+            textContentSource: textContent,
+            container: textDiv,
+            viewport,
+          })
+          await textLayer.render()
+
+          // Scale text layer to match CSS-scaled canvas
+          const actualWidth = pageDiv.getBoundingClientRect().width
+          if (actualWidth > 0 && actualWidth !== viewport.width) {
+            const s = actualWidth / viewport.width
+            textDiv.style.transform = `scale(${s})`
+          }
         }
 
         // Restore scroll position
