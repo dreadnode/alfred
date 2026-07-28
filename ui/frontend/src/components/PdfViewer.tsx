@@ -63,7 +63,7 @@ const styles = {
 
 // --- Component ---
 
-const MAX_TITLE_CHARS = 74
+const MAX_TITLE_CHARS = 92
 
 export default function PdfViewer() {
   const [pageCount, setPageCount] = useState(0)
@@ -167,22 +167,30 @@ export default function PdfViewer() {
           if (infoTitle && infoTitle.trim()) {
             setPaperTitle(infoTitle.trim())
           } else {
-            // Fallback: largest text item on page 1 is likely the title
+            // Fallback: collect all text at the largest font size on page 1
             const page1 = await pdf.getPage(1)
             const text = await page1.getTextContent()
-            let best = ''
-            let bestHeight = 0
+            let maxHeight = 0
             for (const item of text.items) {
-              if ('str' in item && 'height' in item) {
+              if ('height' in item) {
                 const h = (item as { height: number }).height
-                const s = (item as { str: string }).str.trim()
-                if (h > bestHeight && s.length > 3) {
-                  bestHeight = h
-                  best = s
-                }
+                if (h > maxHeight) maxHeight = h
               }
             }
-            if (best) setPaperTitle(best)
+            if (maxHeight > 0) {
+              const titleParts: string[] = []
+              for (const item of text.items) {
+                if ('str' in item && 'height' in item) {
+                  const h = (item as { height: number }).height
+                  const s = (item as { str: string }).str
+                  if (h >= maxHeight * 0.95 && s.trim()) {
+                    titleParts.push(s.trim())
+                  }
+                }
+              }
+              const title = titleParts.join(' ')
+              if (title.length > 3) setPaperTitle(title)
+            }
           }
         } catch {
           // Title extraction is best-effort
