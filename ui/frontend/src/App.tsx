@@ -214,7 +214,7 @@ export default function App() {
             transition: 'background 0.15s',
           }}
           onMouseEnter={(e) => {
-            (e.target as HTMLDivElement).style.background = 'var(--dn-accent)'
+            (e.target as HTMLDivElement).style.background = '#008080'
           }}
           onMouseLeave={(e) => {
             if (!dragging.current) {
