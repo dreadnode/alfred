@@ -63,7 +63,7 @@ const styles = {
            'var(--dn-text)',
   }),
   prompt: {
-    color: 'var(--dn-accent)',
+    color: '#008080',
     marginRight: '8px',
     lineHeight: '1.5',
   },
