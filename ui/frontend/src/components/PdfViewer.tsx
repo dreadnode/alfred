@@ -26,6 +26,7 @@ const styles = {
     padding: '12px 16px',
     borderBottom: '1px solid var(--dn-border)',
     background: 'var(--dn-black)',
+    flexShrink: 0,
   },
   headerTitle: {
     color: 'var(--dn-text-muted)',

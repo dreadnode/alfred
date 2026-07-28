@@ -115,7 +115,7 @@ export default function App() {
   const activePaper = papers.find(p => p.active)
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', width: '100vw', overflow: 'hidden', background: 'var(--dn-black)' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100dvh', width: '100vw', overflow: 'hidden', background: 'var(--dn-black)' }}>
 
       {/* New paper modal (workspace mode) */}
       {showNewPaper && (
