@@ -404,6 +404,7 @@ export default function TerminalChat({ headerExtra }: TerminalChatProps = {}) {
       setMessages([])
       setIsProcessing(false)
       setInput('')
+      fetch('/api/chat-history', { method: 'DELETE' }).catch(() => {})
       reconnect()
       return
     }

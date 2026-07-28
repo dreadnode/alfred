@@ -450,6 +450,15 @@ async def update_config(body: dict[str, t.Any]) -> dict[str, str]:
     return {"model": _model}
 
 
+@app.delete("/api/chat-history")
+async def clear_chat_history() -> dict[str, str]:
+    """Delete the on-disk chat history backup."""
+    backup_path = os.path.join(_paper_dir, ".chat-history.json")
+    if os.path.isfile(backup_path):
+        os.unlink(backup_path)
+    return {"status": "cleared"}
+
+
 @app.get("/api/pdf", response_model=None)
 async def get_pdf() -> FileResponse | JSONResponse:
     """Serve the loaded PDF (custom or built)."""
