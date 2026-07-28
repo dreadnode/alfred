@@ -79,6 +79,34 @@ def _prune_sessions() -> None:
         del _sessions[sid]
 
 
+def _swap_model(new_model: str) -> None:
+    """Replace agents in all sessions with a new model, preserving history.
+
+    For each session:
+    1. Copies the old agent's thread messages (conversation context)
+    2. Creates a fresh agent with the new model
+    3. Injects the old messages into the new agent's thread
+    4. Appends a status event to the session's UI history
+    """
+    from copy import deepcopy
+
+    for session in _sessions.values():
+        # Preserve the old conversation thread
+        old_messages = deepcopy(session.agent.thread.messages)
+
+        # Create new agent with the new model
+        session.agent = create_agent(new_model, _paper_dir)
+
+        # Inject old conversation into the new agent's thread
+        session.agent.thread.messages = old_messages
+
+        # Record the swap in UI history
+        session.history.append(
+            {"type": "status", "content": f"Model changed to {new_model}."}
+        )
+        session.last_active = time.time()
+
+
 def configure(
     paper_dir: str,
     model: str,
@@ -416,8 +444,8 @@ async def update_config(body: dict[str, t.Any]) -> dict[str, str]:
 
     _model = new_model
 
-    # Kill all sessions so next connect gets a fresh agent with new model.
-    _sessions.clear()
+    # Recreate agents with new model, preserving chat history and thread.
+    _swap_model(new_model)
 
     return {"model": _model}
 
