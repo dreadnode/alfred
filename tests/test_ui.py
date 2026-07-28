@@ -607,3 +607,146 @@ class TestUploadPdfCleanup:
                 asyncio.run(srv.upload_pdf(mock_file))
 
         assert user_pdf.exists(), "User PDF must not be deleted"
+
+
+# ---------------------------------------------------------------------------
+# Model swap — _swap_model
+# ---------------------------------------------------------------------------
+
+
+class TestSwapModel:
+    """Test that _swap_model preserves session history and transfers thread."""
+
+    def _make_session(self, model: str = "old-model") -> _Session:
+        """Create a session with a mock agent that has thread messages and history."""
+        import rigging as rg
+
+        agent = MagicMock()
+        agent.thread.messages = [
+            rg.Message("user", "write an abstract"),
+            rg.Message("assistant", "Here is a draft abstract..."),
+            rg.Message("user", "make it shorter"),
+            rg.Message("assistant", "Shortened abstract..."),
+        ]
+        session = _Session(
+            session_id="test-session",
+            agent=agent,
+            history=[
+                {"type": "user_message", "content": "write an abstract"},
+                {"type": "generation", "content": "Here is a draft abstract..."},
+                {"type": "user_message", "content": "make it shorter"},
+                {"type": "generation", "content": "Shortened abstract..."},
+            ],
+        )
+        return session
+
+    def test_preserves_session_ids(self, tmp_path: t.Any) -> None:
+        """Session IDs must survive a model swap."""
+        (tmp_path / "paper.yaml").write_text('title: "Test"\n')
+        with _paper_dir(str(tmp_path)), _isolated_sessions() as sessions:
+            sessions["s1"] = self._make_session()
+            sessions["s2"] = self._make_session()
+            srv._swap_model("new-model")
+            assert "s1" in sessions
+            assert "s2" in sessions
+
+    def test_preserves_ui_history(self, tmp_path: t.Any) -> None:
+        """UI event history must survive a model swap."""
+        (tmp_path / "paper.yaml").write_text('title: "Test"\n')
+        with _paper_dir(str(tmp_path)), _isolated_sessions() as sessions:
+            sessions["s1"] = self._make_session()
+            original_history_len = len(sessions["s1"].history)
+            srv._swap_model("new-model")
+            # History preserved plus a status message about the swap
+            assert len(sessions["s1"].history) >= original_history_len
+
+    def test_adds_status_event(self, tmp_path: t.Any) -> None:
+        """A status event should be appended indicating the model changed."""
+        (tmp_path / "paper.yaml").write_text('title: "Test"\n')
+        with _paper_dir(str(tmp_path)), _isolated_sessions() as sessions:
+            sessions["s1"] = self._make_session()
+            srv._swap_model("new-model")
+            last = sessions["s1"].history[-1]
+            assert last["type"] == "status"
+            assert "new-model" in last["content"]
+
+    def test_creates_new_agent(self, tmp_path: t.Any) -> None:
+        """The agent object must be replaced (new model), not reused."""
+        (tmp_path / "paper.yaml").write_text('title: "Test"\n')
+        with _paper_dir(str(tmp_path)), _isolated_sessions() as sessions:
+            sessions["s1"] = self._make_session()
+            old_agent = sessions["s1"].agent
+            srv._swap_model("new-model")
+            assert sessions["s1"].agent is not old_agent
+
+    def test_transfers_thread_messages(self, tmp_path: t.Any) -> None:
+        """Old conversation messages must be loaded into the new agent's thread."""
+        (tmp_path / "paper.yaml").write_text('title: "Test"\n')
+        with _paper_dir(str(tmp_path)), _isolated_sessions() as sessions:
+            sessions["s1"] = self._make_session()
+            old_messages = list(sessions["s1"].agent.thread.messages)
+            srv._swap_model("new-model")
+            new_messages = sessions["s1"].agent.thread.messages
+            assert len(new_messages) == len(old_messages)
+            for old, new in zip(old_messages, new_messages):
+                assert old.role == new.role
+                assert old.content == new.content
+
+    def test_empty_sessions_dict(self, tmp_path: t.Any) -> None:
+        """Swap with no active sessions should not error."""
+        (tmp_path / "paper.yaml").write_text('title: "Test"\n')
+        with _paper_dir(str(tmp_path)), _isolated_sessions():
+            srv._swap_model("new-model")  # should not raise
+
+
+# ---------------------------------------------------------------------------
+# Chat history persistence
+# ---------------------------------------------------------------------------
+
+
+class TestChatHistoryPersistence:
+    """Test .chat-history.json backup and restore."""
+
+    def test_clear_deletes_file(self, tmp_path: t.Any) -> None:
+        """DELETE /api/chat-history removes the backup file."""
+        backup = tmp_path / ".chat-history.json"
+        backup.write_text('{"history": [{"type": "test"}]}')
+        with _paper_dir(str(tmp_path)):
+            result = asyncio.run(srv.clear_chat_history())
+        assert result == {"status": "cleared"}
+        assert not backup.exists()
+
+    def test_clear_missing_file(self, tmp_path: t.Any) -> None:
+        """Clearing when no backup exists should not error."""
+        with _paper_dir(str(tmp_path)):
+            result = asyncio.run(srv.clear_chat_history())
+        assert result == {"status": "cleared"}
+
+    @pytest.mark.parametrize(
+        "content, expected_len",
+        [
+            ('{"history": [{"t": 1}, {"t": 2}]}', 2),
+            ("not valid json{{{", 0),
+            ('{"history": "not a list"}', 0),
+            ('{"no_history_key": true}', 0),
+        ],
+        ids=["valid_backup", "corrupt_json", "wrong_type", "missing_key"],
+    )
+    def test_restore_contract(self, tmp_path: t.Any, content: str, expected_len: int) -> None:
+        """Restore logic (replicated from server) handles valid and invalid backups."""
+        backup_path = tmp_path / ".chat-history.json"
+        backup_path.write_text(content)
+
+        session = _Session(session_id="new", agent=MagicMock())
+        # Replicate restore logic from _get_or_create_session (server.py:710-717)
+        try:
+            import json as _json
+
+            with open(str(backup_path)) as f:
+                backup = _json.load(f)
+            if isinstance(backup.get("history"), list):
+                session.history = backup["history"]
+        except Exception:
+            pass
+
+        assert len(session.history) == expected_len

@@ -105,7 +105,8 @@ The reviewer sends notes in natural language. For each note:
 
 **Questions from the reviewer:** Treat questions as feedback. "Why did you choose this baseline?" is a CLR note — the reviewer is saying the choice isn't adequately justified. Record it as-is; the question format IS the feedback.
 
-**Record to the report:**
+**Record to the report (WRITE IMMEDIATELY):**
+- **Write each note to the review file on disk immediately after categorizing it** — do NOT batch notes in memory. The file is the source of truth, not the chat session. If the session is lost (disconnect, model swap, crash), all recorded notes must survive in the file.
 - Append the note to the appropriate severity section (Major Issues / Minor Issues / Nits / Strengths) in the review record
 - Assign a sequential ID (R1, R2, R3, ...)
 - Include the original note text, category, severity, and file:line reference (or page number in PDF mode)
@@ -200,6 +201,6 @@ See `capabilities/shared/output-formats.md` for the full template.
 
 - This capability is **conversational** — the core agent handles it directly, no subagents needed during the note-recording loop.
 - Subagents are only spawned if the reviewer opts into claim verification or source search.
-- The review record is written incrementally (notes appended as they arrive), not all at once at the end. This means the reviewer can stop at any time and still have a partial report.
+- **CRITICAL**: The review record MUST be written to disk after every single note — never hold notes in memory. Session loss (model swap, disconnect, crash) must not lose any recorded feedback. The file on disk is the sole source of truth.
 - The agent should NOT editorialize or add its own opinions about the paper. It records the reviewer's feedback faithfully. The only agent-generated content is the summary (confirmed by the reviewer) and the categorization metadata.
 - Use `python3 scripts/reviews.py` to list all past reviews, filter by reviewer, or get detail on a specific review.

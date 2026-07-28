@@ -1,4 +1,8 @@
 :root {
+  /* Agentic LaTeX brand */
+  --al-brand:       #008080;
+  --al-interactive: #f5c842;
+
   /* Dreadnode palette */
   --dn-black:       #0a0a0a;
   --dn-bg:          #111111;
@@ -114,3 +118,44 @@ html, body, #root {
 }
 .markdown-body th { color: var(--dn-text-bright); background: var(--dn-surface); }
 .markdown-body hr { border: none; border-top: 1px solid var(--dn-border); margin: 0.6em 0; }
+
+/* PDF text layer — extracted from pdfjs-dist/web/pdf_viewer.css */
+.textLayer {
+  position: absolute;
+  text-align: initial;
+  inset: 0;
+  overflow: hidden;
+  overflow: clip;
+  opacity: 1;
+  line-height: 1;
+  -webkit-text-size-adjust: none;
+  -moz-text-size-adjust: none;
+  text-size-adjust: none;
+  forced-color-adjust: none;
+  transform-origin: 0 0;
+  z-index: 0;
+}
+.textLayer :is(span, br) {
+  color: transparent;
+  position: absolute;
+  white-space: pre;
+  cursor: text;
+  transform-origin: 0% 0%;
+}
+.textLayer > :not(.markedContent),
+.textLayer .markedContent span:not(.markedContent) {
+  z-index: 1;
+}
+.textLayer ::selection { background: rgba(0, 128, 128, 0.4); }
+
+/* Animated dots for "Agent working" */
+.agent-working::after {
+  content: '';
+  animation: dots 1.4s steps(4, end) infinite;
+}
+@keyframes dots {
+  0%  { content: ''; }
+  25% { content: '.'; }
+  50% { content: '..'; }
+  75% { content: '...'; }
+}

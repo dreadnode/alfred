@@ -115,87 +115,52 @@ export default function App() {
   const activePaper = papers.find(p => p.active)
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', width: '100vw', overflow: 'hidden', background: 'var(--dn-black)' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', position: 'fixed', inset: 0, overflow: 'hidden', background: 'var(--dn-black)' }}>
 
-      {/* Paper switcher bar (workspace mode only) */}
-      {workspace && (
+      {/* New paper modal (workspace mode) */}
+      {showNewPaper && (
         <div style={{
-          display: 'flex', alignItems: 'center', gap: '10px',
-          padding: '6px 16px',
-          borderBottom: '1px solid var(--dn-border)',
-          background: 'var(--dn-black)',
-          fontFamily: 'var(--font-mono)', fontSize: '11px',
-          flexShrink: 0, position: 'relative',
-        }}>
-          <span style={{ color: 'var(--dn-text-dim)', marginRight: '4px' }}>PAPER</span>
-          <select
-            value={activePaper?.slug || ''}
-            onChange={e => switchPaper(e.target.value)}
-            style={{
-              background: 'var(--dn-bg)', border: '1px solid var(--dn-border)',
-              borderRadius: '3px', color: 'var(--dn-text)', padding: '3px 6px',
-              fontFamily: 'var(--font-mono)', fontSize: '11px', cursor: 'pointer',
-            }}
-          >
-            {papers.map(p => (
-              <option key={p.slug} value={p.slug}>{p.title}</option>
-            ))}
-          </select>
-          <button
-            onClick={() => { setNewPaperTitle(''); setNewPaperError(''); setShowNewPaper(true) }}
-            style={{
-              background: 'transparent', border: '1px solid var(--dn-border-lt, #444)',
-              color: 'var(--dn-accent)', fontFamily: 'var(--font-mono)', fontSize: '11px',
-              padding: '2px 8px', borderRadius: '3px', cursor: 'pointer',
-            }}
-          >+ NEW</button>
-
-          {/* New paper modal */}
-          {showNewPaper && (
-            <div style={{
-              position: 'fixed', inset: 0, zIndex: 200,
-              background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center',
-            }} onClick={() => setShowNewPaper(false)}>
-              <div style={{
-                background: 'var(--dn-bg-lt, #1e1e1e)', border: '1px solid var(--dn-border-lt, #444)',
-                borderRadius: '6px', padding: '20px', width: '340px',
-                fontFamily: 'var(--font-mono)', fontSize: '12px', color: 'var(--dn-text, #ccc)',
-              }} onClick={e => e.stopPropagation()}>
-                <div style={{ fontSize: '13px', fontWeight: 700, marginBottom: '16px', color: 'var(--dn-accent, #4caf50)' }}>
-                  New Paper
-                </div>
-                <label style={{ display: 'block', marginBottom: '4px', color: 'var(--dn-text-dim, #888)' }}>Title</label>
-                <input
-                  style={{
-                    width: '100%', boxSizing: 'border-box', padding: '6px 8px', marginBottom: '16px',
-                    background: 'var(--dn-bg, #121212)', border: '1px solid var(--dn-border, #333)',
-                    borderRadius: '3px', color: 'var(--dn-text, #ccc)', fontFamily: 'var(--font-mono)', fontSize: '12px',
-                  }}
-                  value={newPaperTitle}
-                  onChange={e => setNewPaperTitle(e.target.value)}
-                  onKeyDown={e => { if (e.key === 'Enter') createPaper() }}
-                  placeholder="My New Paper"
-                  autoFocus
-                />
-                {newPaperError && (
-                  <div style={{ color: 'var(--dn-error, #f44336)', marginBottom: '12px', fontSize: '11px' }}>{newPaperError}</div>
-                )}
-                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
-                  <button onClick={() => setShowNewPaper(false)} style={{
-                    background: 'transparent', border: '1px solid var(--dn-border-lt, #444)',
-                    color: 'var(--dn-text-dim, #888)', fontFamily: 'var(--font-mono)', fontSize: '11px',
-                    padding: '4px 12px', borderRadius: '3px', cursor: 'pointer',
-                  }}>CANCEL</button>
-                  <button onClick={createPaper} disabled={newPaperSaving} style={{
-                    background: 'var(--dn-accent, #4caf50)', border: 'none',
-                    color: 'var(--dn-black, #000)', fontFamily: 'var(--font-mono)', fontSize: '11px',
-                    padding: '4px 12px', borderRadius: '3px', cursor: 'pointer', fontWeight: 700,
-                    opacity: newPaperSaving ? 0.6 : 1,
-                  }}>{newPaperSaving ? 'CREATING...' : 'CREATE'}</button>
-                </div>
-              </div>
+          position: 'fixed', inset: 0, zIndex: 200,
+          background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center',
+        }} onClick={() => setShowNewPaper(false)}>
+          <div style={{
+            background: 'var(--dn-bg-lt, #1e1e1e)', border: '1px solid var(--dn-border-lt, #444)',
+            borderRadius: '6px', padding: '20px', width: '340px',
+            fontFamily: 'var(--font-mono)', fontSize: '12px', color: 'var(--dn-text, #ccc)',
+          }} onClick={e => e.stopPropagation()}>
+            <div style={{ fontSize: '13px', fontWeight: 700, marginBottom: '16px', color: 'var(--al-brand)' }}>
+              New Paper
             </div>
-          )}
+            <label style={{ display: 'block', marginBottom: '4px', color: 'var(--dn-text-dim, #888)' }}>Title</label>
+            <input
+              style={{
+                width: '100%', boxSizing: 'border-box', padding: '6px 8px', marginBottom: '16px',
+                background: 'var(--dn-bg, #121212)', border: '1px solid var(--dn-border, #333)',
+                borderRadius: '3px', color: 'var(--dn-text, #ccc)', fontFamily: 'var(--font-mono)', fontSize: '12px',
+              }}
+              value={newPaperTitle}
+              onChange={e => setNewPaperTitle(e.target.value)}
+              onKeyDown={e => { if (e.key === 'Enter') createPaper() }}
+              placeholder="My New Paper"
+              autoFocus
+            />
+            {newPaperError && (
+              <div style={{ color: 'var(--dn-error, #f44336)', marginBottom: '12px', fontSize: '11px' }}>{newPaperError}</div>
+            )}
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
+              <button onClick={() => setShowNewPaper(false)} style={{
+                background: 'transparent', border: '1px solid var(--dn-border-lt, #444)',
+                color: 'var(--dn-text-dim, #888)', fontFamily: 'var(--font-mono)', fontSize: '11px',
+                padding: '4px 12px', borderRadius: '3px', cursor: 'pointer',
+              }}>CANCEL</button>
+              <button onClick={createPaper} disabled={newPaperSaving} style={{
+                background: 'var(--al-brand)', border: 'none',
+                color: 'var(--dn-black, #000)', fontFamily: 'var(--font-mono)', fontSize: '11px',
+                padding: '4px 12px', borderRadius: '3px', cursor: 'pointer', fontWeight: 700,
+                opacity: newPaperSaving ? 0.6 : 1,
+              }}>{newPaperSaving ? 'CREATING...' : 'CREATE'}</button>
+            </div>
+          </div>
         </div>
       )}
 
@@ -210,7 +175,31 @@ export default function App() {
       >
         {/* Chat pane */}
         <div style={{ width: `${chatRatio * 100}%`, minWidth: MIN_CHAT_WIDTH, height: '100%' }}>
-          <TerminalChat key={`chat-${paperKey}`} />
+          <TerminalChat key={`chat-${paperKey}`} headerExtra={workspace ? (
+            <>
+              <select
+                value={activePaper?.slug || ''}
+                onChange={e => switchPaper(e.target.value)}
+                style={{
+                  background: 'var(--dn-bg)', border: '1px solid var(--dn-border)',
+                  borderRadius: '3px', color: 'var(--dn-text)', padding: '3px 6px',
+                  fontFamily: 'var(--font-mono)', fontSize: '11px', cursor: 'pointer',
+                }}
+              >
+                {papers.map(p => (
+                  <option key={p.slug} value={p.slug}>{p.title}</option>
+                ))}
+              </select>
+              <button
+                onClick={() => { setNewPaperTitle(''); setNewPaperError(''); setShowNewPaper(true) }}
+                style={{
+                  background: 'transparent', border: '1px solid var(--dn-border-lt, #444)',
+                  color: 'var(--al-brand)', fontFamily: 'var(--font-mono)', fontSize: '11px',
+                  padding: '2px 8px', borderRadius: '3px', cursor: 'pointer',
+                }}
+              >+ NEW</button>
+            </>
+          ) : undefined} />
         </div>
 
         {/* Resizer */}
@@ -225,7 +214,7 @@ export default function App() {
             transition: 'background 0.15s',
           }}
           onMouseEnter={(e) => {
-            (e.target as HTMLDivElement).style.background = 'var(--dn-accent)'
+            (e.target as HTMLDivElement).style.background = 'var(--al-brand)'
           }}
           onMouseLeave={(e) => {
             if (!dragging.current) {

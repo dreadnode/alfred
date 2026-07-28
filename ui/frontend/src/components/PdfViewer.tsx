@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import * as pdfjsLib from 'pdfjs-dist'
+import { TextLayer } from 'pdfjs-dist'
 import { useWebSocket } from '../hooks/useWebSocket'
 
 // Configure pdf.js worker
@@ -25,6 +26,7 @@ const styles = {
     padding: '12px 16px',
     borderBottom: '1px solid var(--dn-border)',
     background: 'var(--dn-black)',
+    flexShrink: 0,
   },
   headerTitle: {
     color: 'var(--dn-text-muted)',
@@ -33,7 +35,7 @@ const styles = {
     letterSpacing: '0.05em',
   },
   pageInfo: {
-    color: 'var(--dn-accent)',
+    color: 'var(--al-brand)',
     fontSize: '11px',
   },
   viewport: {
@@ -54,14 +56,14 @@ const styles = {
     fontSize: '13px',
   },
   loading: {
-    color: 'var(--dn-accent)',
+    color: 'var(--al-interactive)',
     fontSize: '13px',
   },
 }
 
 // --- Component ---
 
-const MAX_TITLE_CHARS = 74
+const MAX_TITLE_CHARS = 92
 
 export default function PdfViewer() {
   const [pageCount, setPageCount] = useState(0)
@@ -158,6 +160,43 @@ export default function PdfViewer() {
         pdfDocRef.current = pdf
         setPageCount(pdf.numPages)
 
+        // Extract title from PDF metadata or first page text
+        try {
+          const meta = await pdf.getMetadata()
+          const rawTitle = (meta?.info as Record<string, unknown>)?.Title
+          const infoTitle = typeof rawTitle === 'string' ? rawTitle.trim() : ''
+          if (infoTitle) {
+            setPaperTitle(infoTitle)
+          } else {
+            // Fallback: collect all text at the largest font size on page 1
+            const page1 = await pdf.getPage(1)
+            const text = await page1.getTextContent()
+            let maxHeight = 0
+            for (const item of text.items) {
+              if ('height' in item) {
+                const h = (item as { height: number }).height
+                if (h > maxHeight) maxHeight = h
+              }
+            }
+            if (maxHeight > 0) {
+              const titleParts: string[] = []
+              for (const item of text.items) {
+                if ('str' in item && 'height' in item) {
+                  const h = (item as { height: number }).height
+                  const s = (item as { str: string }).str
+                  if (h >= maxHeight * 0.95 && s.trim()) {
+                    titleParts.push(s.trim())
+                  }
+                }
+              }
+              const title = titleParts.join(' ')
+              if (title.length > 3) setPaperTitle(title)
+            }
+          }
+        } catch {
+          // Title extraction is best-effort
+        }
+
         const container = viewportRef.current
         if (!container) return
 
@@ -176,15 +215,34 @@ export default function PdfViewer() {
           const scale = 1.5
           const viewport = page.getViewport({ scale })
 
+          // Page wrapper scales canvas + text layer together
+          const pageDiv = document.createElement('div')
+          pageDiv.style.cssText = `position: relative; display: inline-block; width: ${viewport.width}px; max-width: 100%; box-shadow: 0 2px 12px rgba(0,0,0,0.5);`
+
           const canvas = document.createElement('canvas')
-          canvas.style.cssText = 'box-shadow: 0 2px 12px rgba(0,0,0,0.5); max-width: 100%;'
+          canvas.style.cssText = 'display: block; width: 100%; height: auto;'
           canvas.width = viewport.width
           canvas.height = viewport.height
+          pageDiv.appendChild(canvas)
 
-          container.appendChild(canvas)
+          // Text layer overlay — uses official pdfjs .textLayer class
+          const textDiv = document.createElement('div')
+          textDiv.className = 'textLayer'
+          pageDiv.appendChild(textDiv)
+
+          container.appendChild(pageDiv)
 
           const ctx = canvas.getContext('2d')!
           await page.render({ canvasContext: ctx, viewport }).promise
+
+          // Render selectable text overlay
+          const textContent = await page.getTextContent()
+          const textLayer = new TextLayer({
+            textContentSource: textContent,
+            container: textDiv,
+            viewport,
+          })
+          await textLayer.render()
         }
 
         // Restore scroll position
@@ -282,7 +340,7 @@ export default function PdfViewer() {
             borderRadius: '6px', padding: '20px', width: '340px',
             fontFamily: 'var(--font-mono)', fontSize: '12px', color: 'var(--dn-text, #ccc)',
           }} onClick={e => e.stopPropagation()}>
-            <div style={{ fontSize: '13px', fontWeight: 700, marginBottom: '16px', color: 'var(--dn-accent, #4caf50)' }}>
+            <div style={{ fontSize: '13px', fontWeight: 700, marginBottom: '16px', color: 'var(--al-brand)' }}>
               Paper Title
             </div>
 
@@ -309,7 +367,7 @@ export default function PdfViewer() {
                 padding: '4px 12px', borderRadius: '3px', cursor: 'pointer',
               }}>CANCEL</button>
               <button onClick={saveTitleEdit} disabled={titleSaving} style={{
-                background: 'var(--dn-accent, #4caf50)', border: 'none',
+                background: 'var(--al-brand)', border: 'none',
                 color: 'var(--dn-black, #000)', fontFamily: 'var(--font-mono)', fontSize: '11px',
                 padding: '4px 12px', borderRadius: '3px', cursor: 'pointer', fontWeight: 700,
                 opacity: titleSaving ? 0.6 : 1,

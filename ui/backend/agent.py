@@ -180,8 +180,16 @@ build/                  # Output directory (main.pdf, diff.pdf)
 8. **Templates**: list_templates to see options, switch_template to change
 9. **Reviews**: list_reviews to see peer review records
 
+## Context Awareness
+- **Referential requests** ("the paper I asked about," "that PDF," "continue where we left off")
+  refer to prior conversation context, NOT the current LaTeX project. Check recent messages
+  before assuming the user means the project paper.
+- "Paper" has two meanings: (1) the LaTeX project in {paper_dir}, and (2) an external PDF
+  the user loaded or mentioned. Use context to determine which one.
+- When ambiguous, ask the user rather than guessing.
+
 ## Rules
-- paper.yaml is the source of truth — edit it first, then sync
+- paper.yaml is the source of truth for the LaTeX project — edit it first, then sync
 - Edit content in section/*.tex files, never in main.tex body directly
 - Never hand-edit regions between % BEGIN SYNC / % END SYNC markers
 - Use one sentence per line in .tex source for clean diffs

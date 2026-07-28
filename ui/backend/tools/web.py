@@ -11,7 +11,7 @@ from duckduckgo_search import DDGS
 from dreadnode.agent.tools import tool
 
 _MAX_RESPONSE_BYTES: int = 2 * 1024 * 1024  # 2 MB cap on response body
-_USER_AGENT: str = "agentic-latex/0.1 (research-agent; +https://github.com)"
+_USER_AGENT: str = "agentic-latex/0.2.0 (research-agent; +https://github.com)"
 _TEXT_PREFIXES: tuple[str, ...] = (
     "text/",
     "application/json",

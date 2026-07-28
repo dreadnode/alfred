@@ -43,6 +43,8 @@ if t.TYPE_CHECKING:
 # Module-level configuration (set once via ``configure()`` before server start)
 # ---------------------------------------------------------------------------
 
+VERSION: str = "0.2.0"
+
 _paper_dir: str = ""
 _model: str = ""
 _workspace_root: str | None = None
@@ -77,6 +79,34 @@ def _prune_sessions() -> None:
     ]
     for sid in expired:
         del _sessions[sid]
+
+
+def _swap_model(new_model: str) -> None:
+    """Replace agents in all sessions with a new model, preserving history.
+
+    For each session:
+    1. Copies the old agent's thread messages (conversation context)
+    2. Creates a fresh agent with the new model
+    3. Injects the old messages into the new agent's thread
+    4. Appends a status event to the session's UI history
+    """
+    from copy import deepcopy
+
+    for session in _sessions.values():
+        # Preserve the old conversation thread
+        old_messages = deepcopy(session.agent.thread.messages)
+
+        # Create new agent with the new model
+        session.agent = create_agent(new_model, _paper_dir)
+
+        # Inject old conversation into the new agent's thread
+        session.agent.thread.messages = old_messages
+
+        # Record the swap in UI history
+        session.history.append(
+            {"type": "status", "content": f"Model changed to {new_model}."}
+        )
+        session.last_active = time.time()
 
 
 def configure(
@@ -204,6 +234,7 @@ async def get_config() -> dict[str, t.Any]:
         "model": _model,
         "paper_title": title,
         "workspace": _workspace_root is not None,
+        "version": VERSION,
     }
 
 
@@ -416,10 +447,19 @@ async def update_config(body: dict[str, t.Any]) -> dict[str, str]:
 
     _model = new_model
 
-    # Kill all sessions so next connect gets a fresh agent with new model.
-    _sessions.clear()
+    # Recreate agents with new model, preserving chat history and thread.
+    _swap_model(new_model)
 
     return {"model": _model}
+
+
+@app.delete("/api/chat-history")
+async def clear_chat_history() -> dict[str, str]:
+    """Delete the on-disk chat history backup."""
+    backup_path = os.path.join(_paper_dir, ".chat-history.json")
+    with contextlib.suppress(OSError):
+        os.unlink(backup_path)
+    return {"status": "cleared"}
 
 
 @app.get("/api/pdf", response_model=None)
@@ -654,16 +694,31 @@ async def ws_chat(websocket: WebSocket) -> None:
         """Look up an existing session or create a new one.
 
         Prunes expired sessions on each call and updates ``last_active``.
+        If a backup file exists and no in-memory session matches, restores
+        the session history from disk.
         """
         _prune_sessions()
         if session_id and session_id in _sessions:
             _sessions[session_id].last_active = time.time()
             return _sessions[session_id]
+
         new_id = str(uuid.uuid4())
         new_session = _Session(
             session_id=new_id,
             agent=create_agent(_model, _paper_dir),
         )
+
+        # Restore history from disk backup if available
+        backup_path = os.path.join(_paper_dir, ".chat-history.json")
+        if os.path.isfile(backup_path):
+            try:
+                with open(backup_path) as f:
+                    backup = json.load(f)
+                if isinstance(backup.get("history"), list):
+                    new_session.history = backup["history"]
+            except Exception:
+                pass  # Corrupted backup — start fresh
+
         _sessions[new_id] = new_session
         return new_session
 
@@ -672,6 +727,26 @@ async def ws_chat(websocket: WebSocket) -> None:
         if session:
             session.history.append(event_dict)
         await websocket.send_text(json.dumps(event_dict))
+
+    def _persist_history() -> None:
+        """Write session history to disk as a backup (atomic via rename)."""
+        if not session:
+            return
+        backup_path = os.path.join(_paper_dir, ".chat-history.json")
+        tmp_path = backup_path + ".tmp"
+        try:
+            with open(tmp_path, "w") as f:
+                json.dump(
+                    {
+                        "session_id": session.session_id,
+                        "history": session.history,
+                        "timestamp": time.time(),
+                    },
+                    f,
+                )
+            os.replace(tmp_path, backup_path)
+        except Exception:
+            pass  # Best-effort — don't crash the agent loop
 
     async def _run_agent(user_input: str) -> None:
         """Stream agent events to the WebSocket. Runs inside a cancellable task."""
@@ -708,10 +783,12 @@ async def ws_chat(websocket: WebSocket) -> None:
                                     },
                                 }
                             )
+                            _persist_history()
                             return
                     formatted = _format_event(event)
                     if formatted:
                         await _send_event(formatted)
+            _persist_history()
         except asyncio.CancelledError:
             try:
                 await _send_event(
@@ -729,6 +806,7 @@ async def ws_chat(websocket: WebSocket) -> None:
                 )
             except WebSocketDisconnect:
                 pass  # Client already gone — event is still recorded in history
+            _persist_history()
         except WebSocketDisconnect:
             raise
         except Exception as exc:
@@ -760,6 +838,7 @@ async def ws_chat(websocket: WebSocket) -> None:
                     )
                 except WebSocketDisconnect:
                     raise
+                _persist_history()
                 return
             try:
                 await _send_event(
@@ -783,6 +862,7 @@ async def ws_chat(websocket: WebSocket) -> None:
                 )
             except WebSocketDisconnect:
                 raise
+            _persist_history()
 
     async def _cancel_agent() -> None:
         """Cancel the running agent task and wait for cleanup."""

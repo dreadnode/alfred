@@ -33,7 +33,7 @@ const styles = {
     background: 'var(--dn-black)',
   },
   headerTitle: {
-    color: 'var(--dn-accent)',
+    color: 'var(--al-brand)',
     fontSize: '13px',
     fontWeight: 700,
     letterSpacing: '0.05em',
@@ -63,7 +63,7 @@ const styles = {
            'var(--dn-text)',
   }),
   prompt: {
-    color: 'var(--dn-accent)',
+    color: 'var(--al-interactive)',
     marginRight: '8px',
     lineHeight: '1.5',
   },
@@ -82,6 +82,7 @@ const styles = {
     padding: '12px 16px',
     borderTop: '1px solid var(--dn-border)',
     background: 'var(--dn-black)',
+    position: 'relative' as const,
   },
   input: {
     flex: 1,
@@ -91,7 +92,7 @@ const styles = {
     color: 'var(--dn-text-bright)',
     fontFamily: 'var(--font-mono)',
     fontSize: '13px',
-    caretColor: 'var(--dn-accent)',
+    caretColor: 'var(--al-interactive)',
     resize: 'none' as const,
     overflow: 'hidden',
     lineHeight: '1.5',
@@ -102,7 +103,7 @@ const styles = {
     display: 'inline-block',
     width: '8px',
     height: '15px',
-    background: 'var(--dn-accent)',
+    background: 'var(--al-interactive)',
     animation: 'blink 1s step-end infinite',
     verticalAlign: 'text-bottom',
     marginLeft: '2px',
@@ -182,7 +183,11 @@ interface CommandDef {
   args: string
 }
 
-export default function TerminalChat() {
+interface TerminalChatProps {
+  headerExtra?: React.ReactNode
+}
+
+export default function TerminalChat({ headerExtra }: TerminalChatProps = {}) {
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [input, setInput] = useState('')
   const [promptHistory] = useState<string[]>(() => {
@@ -194,6 +199,7 @@ export default function TerminalChat() {
   const historyIndexRef = useRef(-1)
   const [isProcessing, setIsProcessing] = useState(false)
   const [modelName, setModelName] = useState('')
+  const [appVersion, setAppVersion] = useState('')
   const [showSettings, setShowSettings] = useState(false)
   const [settingsModel, setSettingsModel] = useState('')
   const [settingsApiKey, setSettingsApiKey] = useState('')
@@ -211,7 +217,7 @@ export default function TerminalChat() {
   useEffect(() => {
     fetch('/api/config')
       .then(r => r.json())
-      .then(data => setModelName(data.model || ''))
+      .then(data => { setModelName(data.model || ''); setAppVersion(data.version || '') })
       .catch(() => {})
     fetch('/api/commands')
       .then(r => r.json())
@@ -258,7 +264,7 @@ export default function TerminalChat() {
             web_fetch: a => { const u = String(a.url || ''); return `Fetching: ${u.slice(0, 60)}${u.length > 60 ? '...' : ''}` },
             read_file: a => `Reading ${a.path || a.file_path || 'file'}`,
             write_file: a => `Writing ${a.path || a.file_path || 'file'}`,
-            command: a => { const c = String(a.command || ''); return `Running: ${c.slice(0, 80)}${c.length > 80 ? '...' : ''}` },
+            command: a => { const c = Array.isArray(a.cmd) ? a.cmd.join(' ') : String(a.cmd || ''); return `Running: ${c.slice(0, 80)}${c.length > 80 ? '...' : ''}` },
           }
           summary = labels[tool]?.(args) ?? `${tool}...`
         } catch {
@@ -400,6 +406,7 @@ export default function TerminalChat() {
       setMessages([])
       setIsProcessing(false)
       setInput('')
+      fetch('/api/chat-history', { method: 'DELETE' }).catch(() => {})
       reconnect()
       return
     }
@@ -465,6 +472,15 @@ export default function TerminalChat() {
     addMessage(setMessages, 'status', 'Cancelling...')
   }, [isProcessing, status, send])
 
+  // Global Escape to cancel — textarea is disabled during processing
+  useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isProcessing) handleCancel()
+    }
+    document.addEventListener('keydown', handleEscape)
+    return () => document.removeEventListener('keydown', handleEscape)
+  }, [isProcessing, handleCancel])
+
   // Command autocomplete (merge backend capabilities + client commands)
   const allCommands = useMemo(() => [
     ...commands,
@@ -519,15 +535,12 @@ export default function TerminalChat() {
       }
     }
     if (e.key === 'ArrowDown' && !showCmdDropdown && historyIndexRef.current >= 0) {
+      e.preventDefault()
       const el = inputRef.current
-      // Only navigate history if cursor is on the last line
-      if (el && el.selectionStart !== undefined && el.value.slice(el.selectionStart).indexOf('\n') === -1) {
-        e.preventDefault()
-        const next = historyIndexRef.current - 1
-        historyIndexRef.current = next
-        setInput(next >= 0 ? promptHistory[next] : '')
-        requestAnimationFrame(() => { if (el) { el.style.height = 'auto'; el.style.height = el.scrollHeight + 'px' } })
-      }
+      const next = historyIndexRef.current - 1
+      historyIndexRef.current = next
+      setInput(next >= 0 ? promptHistory[next] : '')
+      requestAnimationFrame(() => { if (el) { el.style.height = 'auto'; el.style.height = el.scrollHeight + 'px' } })
     }
     if (e.key === 'Escape' && isProcessing) {
       handleCancel()
@@ -623,8 +636,13 @@ export default function TerminalChat() {
     >
       {/* Header */}
       <div style={styles.header}>
-        <div style={{ display: 'flex', alignItems: 'baseline', gap: '16px' }}>
-          <span style={styles.headerTitle}>AGENTIC L<span style={{ fontSize: '11px' }}>A</span>T<span style={{ fontSize: '11px' }}>E</span>X</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '24px' }}>
+          <span style={styles.headerTitle}>AGENTIC L<span style={{ fontSize: '11px' }}>A</span>T<span style={{ fontSize: '11px' }}>E</span>X{appVersion && <span style={{ color: '#fff', fontSize: '10px', fontWeight: 400 }}> v{appVersion}</span>}</span>
+          {headerExtra && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginRight: '8px' }}>
+              {headerExtra}
+            </div>
+          )}
           {modelName && (
             <span
               onClick={openSettings}
@@ -667,8 +685,8 @@ export default function TerminalChat() {
             borderRadius: '6px', padding: '20px', width: '340px',
             fontFamily: 'var(--font-mono)', fontSize: '12px', color: 'var(--dn-text, #ccc)',
           }} onClick={e => e.stopPropagation()}>
-            <div style={{ fontSize: '13px', fontWeight: 700, marginBottom: '16px', color: 'var(--dn-accent, #4caf50)' }}>
-              Settings
+            <div style={{ fontSize: '13px', fontWeight: 700, marginBottom: '16px', color: 'var(--al-brand)' }}>
+              Change Model
             </div>
 
             <label style={{ display: 'block', marginBottom: '4px', color: 'var(--dn-text-dim, #888)' }}>Model</label>
@@ -719,7 +737,7 @@ export default function TerminalChat() {
                 padding: '4px 12px', borderRadius: '3px', cursor: 'pointer',
               }}>CANCEL</button>
               <button onClick={saveSettings} disabled={settingsSaving} style={{
-                background: 'var(--dn-accent, #4caf50)', border: 'none',
+                background: 'var(--al-brand)', border: 'none',
                 color: 'var(--dn-black, #000)', fontFamily: 'var(--font-mono)', fontSize: '11px',
                 padding: '4px 12px', borderRadius: '3px', cursor: 'pointer', fontWeight: 700,
                 opacity: settingsSaving ? 0.6 : 1,
@@ -747,7 +765,7 @@ export default function TerminalChat() {
               return (
                 <span key={i}>
                   {i > 0 && '\n'}
-                  {isHeader ? <span style={{ color: '#4caf50' }}>{line}</span>
+                  {isHeader ? <span style={{ color: 'var(--al-interactive)' }}>{line}</span>
                     : cmdMatch ? <>{cmdMatch[1]}<span style={{ color: '#fff' }}>{cmdMatch[2]}</span>{cmdMatch[3]}</>
                     : nlMatch ? <>{nlMatch[1]}<span style={{ color: '#fff' }}>{nlMatch[2]}</span>{nlMatch[3]}</>
                     : line}
@@ -804,7 +822,7 @@ export default function TerminalChat() {
                   return (
                     <span key={i}>
                       {i > 0 && '\n'}
-                      {isHeader ? <span style={{ color: '#4caf50' }}>{line}</span>
+                      {isHeader ? <span style={{ color: 'var(--al-interactive)' }}>{line}</span>
                         : cmdMatch ? <>{cmdMatch[1]}<span style={{ color: '#fff' }}>{cmdMatch[2]}</span>{cmdMatch[3]}</>
                         : nlMatch ? <>{nlMatch[1]}<span style={{ color: '#fff' }}>{nlMatch[2]}</span>{nlMatch[3]}</>
                         : line}
@@ -850,8 +868,8 @@ export default function TerminalChat() {
                   display: 'flex', justifyContent: 'flex-start', alignItems: 'center',
                 }}
               >
-                <span style={{ color: 'var(--dn-accent)', minWidth: '180px' }}>{cmd.name}</span>
-                <span style={{ color: 'var(--dn-text-dim, #888)', fontSize: '11px' }}>{cmd.description}</span>
+                <span style={{ color: 'var(--al-interactive)', minWidth: '180px' }}>{cmd.name}</span>
+                <span style={{ color: '#fff', fontSize: '11px' }}>{cmd.description}</span>
               </div>
             ))}
           </div>
@@ -873,12 +891,16 @@ export default function TerminalChat() {
             e.target.style.height = e.target.scrollHeight + 'px'
           }}
           onKeyDown={handleKeyDown}
-          placeholder={
-            status !== 'connected' ? 'Connecting...' :
-            isProcessing ? 'Agent working...' : ''
-          }
+          placeholder={status !== 'connected' ? 'Connecting...' : ''}
           disabled={status !== 'connected' || isProcessing}
         />
+        {isProcessing && (
+          <span className="agent-working" style={{
+            position: 'absolute', left: '28px', top: '50%', transform: 'translateY(-50%)',
+            color: 'var(--al-interactive)', fontSize: '13px', fontFamily: 'var(--font-mono)',
+            pointerEvents: 'none', opacity: 0.6,
+          }}>Agent working</span>
+        )}
         {isProcessing && (
           <button
             onClick={handleCancel}
