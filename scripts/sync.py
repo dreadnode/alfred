@@ -19,6 +19,9 @@ from typing import Any
 
 import yaml
 
+# Templates live in the repo, not in per-paper directories.
+_REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
 MARKER_BEGIN = "% BEGIN SYNC: {}"
 MARKER_END = "% END SYNC: {}"
 REQUIRED_REGIONS = ["bibliography", "metadata", "macros", "styles", "sections"]
@@ -59,9 +62,9 @@ def get_region_content(tex: str, region: str) -> str | None:
     return match.group(1) if match else None
 
 
-def load_template_config(project_root: str, template_name: str) -> dict[str, Any]:
+def load_template_config(template_name: str) -> dict[str, Any]:
     """Load template.yaml for the given template. Returns {} if not found."""
-    path = os.path.join(project_root, "templates", template_name, "template.yaml")
+    path = os.path.join(_REPO_ROOT, "templates", template_name, "template.yaml")
     if os.path.exists(path):
         return load_yaml(path)
     return {}
@@ -403,7 +406,7 @@ def sync(project_root: str, *, dry_run: bool = False) -> int:
 
     # Load template config
     template_name = manifest.get("template", "article")
-    template_config = load_template_config(project_root, template_name)
+    template_config = load_template_config(template_name)
     author_format = template_config.get("author_format", "article")
     bib_system = template_config.get("bibliography_system", "biblatex")
 
