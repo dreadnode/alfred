@@ -56,7 +56,7 @@ const styles = {
     fontSize: '13px',
   },
   loading: {
-    color: 'var(--dn-accent)',
+    color: 'var(--al-interactive)',
     fontSize: '13px',
   },
 }
