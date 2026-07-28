@@ -858,7 +858,7 @@ export default function TerminalChat({ headerExtra }: TerminalChatProps = {}) {
                 }}
               >
                 <span style={{ color: '#f5c842', minWidth: '180px' }}>{cmd.name}</span>
-                <span style={{ color: 'var(--dn-text-dim, #888)', fontSize: '11px' }}>{cmd.description}</span>
+                <span style={{ color: '#fff', fontSize: '11px' }}>{cmd.description}</span>
               </div>
             ))}
           </div>
