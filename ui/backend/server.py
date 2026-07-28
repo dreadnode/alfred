@@ -43,6 +43,8 @@ if t.TYPE_CHECKING:
 # Module-level configuration (set once via ``configure()`` before server start)
 # ---------------------------------------------------------------------------
 
+VERSION: str = "0.2.0"
+
 _paper_dir: str = ""
 _model: str = ""
 _workspace_root: str | None = None
@@ -232,6 +234,7 @@ async def get_config() -> dict[str, t.Any]:
         "model": _model,
         "paper_title": title,
         "workspace": _workspace_root is not None,
+        "version": VERSION,
     }
 
 

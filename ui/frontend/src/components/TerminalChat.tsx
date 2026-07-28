@@ -199,6 +199,7 @@ export default function TerminalChat({ headerExtra }: TerminalChatProps = {}) {
   const historyIndexRef = useRef(-1)
   const [isProcessing, setIsProcessing] = useState(false)
   const [modelName, setModelName] = useState('')
+  const [appVersion, setAppVersion] = useState('')
   const [showSettings, setShowSettings] = useState(false)
   const [settingsModel, setSettingsModel] = useState('')
   const [settingsApiKey, setSettingsApiKey] = useState('')
@@ -216,7 +217,7 @@ export default function TerminalChat({ headerExtra }: TerminalChatProps = {}) {
   useEffect(() => {
     fetch('/api/config')
       .then(r => r.json())
-      .then(data => setModelName(data.model || ''))
+      .then(data => { setModelName(data.model || ''); setAppVersion(data.version || '') })
       .catch(() => {})
     fetch('/api/commands')
       .then(r => r.json())
@@ -636,7 +637,7 @@ export default function TerminalChat({ headerExtra }: TerminalChatProps = {}) {
       {/* Header */}
       <div style={styles.header}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '24px' }}>
-          <span style={styles.headerTitle}>AGENTIC L<span style={{ fontSize: '11px' }}>A</span>T<span style={{ fontSize: '11px' }}>E</span>X <span style={{ color: '#fff', fontSize: '10px', fontWeight: 400 }}>v0.2</span></span>
+          <span style={styles.headerTitle}>AGENTIC L<span style={{ fontSize: '11px' }}>A</span>T<span style={{ fontSize: '11px' }}>E</span>X{appVersion && <span style={{ color: '#fff', fontSize: '10px', fontWeight: 400 }}> v{appVersion}</span>}</span>
           {headerExtra && (
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginRight: '8px' }}>
               {headerExtra}
