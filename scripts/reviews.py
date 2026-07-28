@@ -253,9 +253,7 @@ def main() -> None:
     )
     args = parser.parse_args()
 
-    root = args.project_root or os.path.dirname(
-        os.path.dirname(os.path.abspath(__file__))
-    )
+    root = args.project_root or os.getcwd()
     reviews_dir = os.path.join(root, "reviews")
 
     if not os.path.isdir(reviews_dir):

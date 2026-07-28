@@ -3,7 +3,13 @@
 # Usage: ./scripts/build.sh [--clean]
 set -uo pipefail
 
-PROJECT_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+PROJECT_ROOT="${PROJECT_ROOT:-$(pwd)}"
+
+if [[ ! -f "$PROJECT_ROOT/main.tex" ]]; then
+  echo "ERROR: main.tex not found in $PROJECT_ROOT" >&2
+  echo "Run from a paper directory or set PROJECT_ROOT." >&2
+  exit 1
+fi
 
 if [[ "${1:-}" == "--clean" ]]; then
   echo "=== Cleaning build artifacts ==="

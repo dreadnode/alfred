@@ -38,6 +38,18 @@ Reports are written to `capabilities/reports/`. Review records and responses are
 
 ## Starting a Paper
 
+Use the web UI or scaffold a paper manually:
+
+```bash
+# Web UI (recommended) — creates papers automatically
+./al --model claude-sonnet-4-20250514 --api-key ANTHROPIC_API_KEY
+
+# Manual scaffold
+python3 scripts/scaffold.py /path/to/my-paper --title "My Paper"
+```
+
+Then work with the agent:
+
 1. **Tell the agent what to write**: Describe your topic, and optionally specify a conference format (e.g., "NeurIPS", "IEEE", "ACM"). The agent sets up the template, defines sections, and starts writing.
 2. **Iterate section by section**: Ask the agent to draft, revise, or expand specific sections. It writes LaTeX content, adds citations from Semantic Scholar, and keeps everything in sync.
 3. **Build and review**: Ask the agent to build the PDF. It compiles to `build/main.pdf` and reports any errors.
@@ -74,18 +86,15 @@ Review records are saved to `reviews/` with YAML frontmatter for machine-readabl
 
 ## Structure
 
+The repo is tooling — paper files are created per-paper via `./al` or `scripts/scaffold.py`.
+
 | Path | Purpose |
 |------|---------|
-| `paper.yaml` | Paper manifest — title, authors, sections, macros, template |
-| `main.tex` | Main document (managed by sync + templates) |
-| `section/` | Ordered section files where content is written |
-| `bibliography.bib` | BibTeX references |
 | `templates/` | Conference template definitions + bundled .cls/.sty files |
 | `styles/` | Optional style packages (messageboxes, codeblocks) |
 | `scripts/` | Build, sync, cite, stats, diff, validate, template scripts |
 | `capabilities/` | Multi-agent research workflows (lit review, claim verification, etc.) |
 | `ui/` | Web UI — FastAPI backend + React/Vite frontend |
-| `reviews/` | Peer review records (YAML frontmatter + markdown) |
 | `Taskfile.yml` | Dev tasks — `task test`, `task lint`, `task check` |
 | `CLAUDE.md` | Agent instructions (workflow + rules) |
 | `AGENT.md` | Detailed how-to for every operation |
