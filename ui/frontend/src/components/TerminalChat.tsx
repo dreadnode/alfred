@@ -126,6 +126,12 @@ function addMessage(
   setter(prev => [...prev, { id: nextId(), type, content, timestamp: Date.now(), meta }])
 }
 
+function formatTokens(n: number): string {
+  if (n >= 1_000_000) return (n / 1_000_000).toFixed(1) + 'M'
+  if (n >= 1_000) return (n / 1_000).toFixed(1) + 'k'
+  return String(n)
+}
+
 const CLIENT_COMMANDS = [
   { name: '/clear', description: 'Reset session and start fresh' },
   { name: '/copy [N]', description: 'Copy last N agent messages (default 10)' },
@@ -198,6 +204,7 @@ export default function TerminalChat({ headerExtra }: TerminalChatProps = {}) {
   })
   const historyIndexRef = useRef(-1)
   const [isProcessing, setIsProcessing] = useState(false)
+  const [sessionTokens, setSessionTokens] = useState({ input: 0, output: 0 })
   const [modelName, setModelName] = useState('')
   const [appVersion, setAppVersion] = useState('')
   const [showSettings, setShowSettings] = useState(false)
@@ -310,6 +317,7 @@ export default function TerminalChat({ headerExtra }: TerminalChatProps = {}) {
         } else if (prevId) {
           // Had a session but it expired — clear stale messages
           setIsProcessing(false)
+          setSessionTokens({ input: 0, output: 0 })
           setMessages([{
             id: nextId(),
             type: 'status',
@@ -330,14 +338,32 @@ export default function TerminalChat({ headerExtra }: TerminalChatProps = {}) {
           timestamp: Date.now(),
         }]
         const lastType = events.length > 0 ? (events[events.length - 1] as Record<string, unknown>).type : null
+        // Restore token counts from history
+        let histInput = 0, histOutput = 0
         for (const histEvent of events) {
           const msg = eventToMessage(histEvent)
           if (msg) restored.push(msg)
+          if ((histEvent as Record<string, unknown>).type === 'generation') {
+            const u = (histEvent as Record<string, unknown>).usage as Record<string, number> | undefined
+            if (u) { histInput += u.input_tokens || 0; histOutput += u.output_tokens || 0 }
+          }
         }
+        setSessionTokens({ input: histInput, output: histOutput })
         setMessages(restored)
         // Sync processing state with whether the agent is still running
         setIsProcessing(lastType !== 'agent_end')
         return
+      }
+
+      // Accumulate tokens from generation events
+      if (type === 'generation') {
+        const u = (event as Record<string, unknown>).usage as Record<string, number> | undefined
+        if (u) {
+          setSessionTokens(prev => ({
+            input: prev.input + (u.input_tokens || 0),
+            output: prev.output + (u.output_tokens || 0),
+          }))
+        }
       }
 
       if (type === 'agent_end') setIsProcessing(false)
@@ -405,6 +431,7 @@ export default function TerminalChat({ headerExtra }: TerminalChatProps = {}) {
       sessionIdRef.current = null
       setMessages([])
       setIsProcessing(false)
+      setSessionTokens({ input: 0, output: 0 })
       setInput('')
       fetch('/api/chat-history', { method: 'DELETE' }).catch(() => {})
       reconnect()
@@ -617,6 +644,7 @@ export default function TerminalChat({ headerExtra }: TerminalChatProps = {}) {
       sessionIdRef.current = null
       setMessages([])
       setIsProcessing(false)
+      setSessionTokens({ input: 0, output: 0 })
       setShowSettings(false)
       reconnect()
     } catch (e) {
@@ -644,11 +672,19 @@ export default function TerminalChat({ headerExtra }: TerminalChatProps = {}) {
             </div>
           )}
           {modelName && (
-            <span
-              onClick={openSettings}
-              style={{ color: '#4fc3f7', fontSize: '11px', cursor: 'pointer', textDecoration: 'underline', textDecorationStyle: 'dotted' as const, textUnderlineOffset: '3px' }}
-              title="Change model settings"
-            >{modelName}</span>
+            <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span
+                onClick={openSettings}
+                style={{ color: '#4fc3f7', fontSize: '11px', cursor: 'pointer', textDecoration: 'underline', textDecorationStyle: 'dotted' as const, textUnderlineOffset: '3px' }}
+                title="Change model settings"
+              >{modelName}</span>
+              {(sessionTokens.input > 0 || sessionTokens.output > 0) && (
+                <span
+                  style={{ color: 'var(--dn-text-dim)', fontSize: '10px', whiteSpace: 'nowrap' }}
+                  title={`Input: ${sessionTokens.input.toLocaleString()} tokens\nOutput: ${sessionTokens.output.toLocaleString()} tokens`}
+                >↑{formatTokens(sessionTokens.input)} ↓{formatTokens(sessionTokens.output)}</span>
+              )}
+            </span>
           )}
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -844,6 +880,31 @@ export default function TerminalChat({ headerExtra }: TerminalChatProps = {}) {
             )}
           </div>
         ))}
+        {isProcessing && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+            <span className="agent-working" style={{
+              color: 'var(--al-interactive)', fontSize: '13px', fontFamily: 'var(--font-mono)',
+              opacity: 0.6,
+            }}>Agent working</span>
+            <button
+              onClick={handleCancel}
+              style={{
+                background: 'transparent',
+                border: '1px solid var(--dn-border-lt)',
+                color: 'var(--dn-error)',
+                fontFamily: 'var(--font-mono)',
+                fontSize: '11px',
+                padding: '2px 8px',
+                borderRadius: '3px',
+                cursor: 'pointer',
+                flexShrink: 0,
+              }}
+              title="Cancel (Esc)"
+            >
+              CANCEL
+            </button>
+          </div>
+        )}
         <div ref={messagesEndRef} />
       </div>
 
@@ -892,35 +953,8 @@ export default function TerminalChat({ headerExtra }: TerminalChatProps = {}) {
           }}
           onKeyDown={handleKeyDown}
           placeholder={status !== 'connected' ? 'Connecting...' : ''}
-          disabled={status !== 'connected' || isProcessing}
+          disabled={status !== 'connected'}
         />
-        {isProcessing && (
-          <span className="agent-working" style={{
-            position: 'absolute', left: '28px', top: '50%', transform: 'translateY(-50%)',
-            color: 'var(--al-interactive)', fontSize: '13px', fontFamily: 'var(--font-mono)',
-            pointerEvents: 'none', opacity: 0.6,
-          }}>Agent working</span>
-        )}
-        {isProcessing && (
-          <button
-            onClick={handleCancel}
-            style={{
-              background: 'transparent',
-              border: '1px solid var(--dn-border-lt)',
-              color: 'var(--dn-error)',
-              fontFamily: 'var(--font-mono)',
-              fontSize: '11px',
-              padding: '2px 8px',
-              borderRadius: '3px',
-              cursor: 'pointer',
-              marginLeft: '8px',
-              flexShrink: 0,
-            }}
-            title="Cancel (Esc)"
-          >
-            CANCEL
-          </button>
-        )}
       </div>
       </div>
 

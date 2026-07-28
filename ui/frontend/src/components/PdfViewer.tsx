@@ -208,19 +208,24 @@ export default function PdfViewer() {
           container.removeChild(container.firstChild)
         }
 
+        // Compute a scale that fits pages within the container width
+        const containerWidth = Math.max(container.clientWidth - 32, 100) // subtract padding, floor at 100
+        const firstPage = await pdf.getPage(1)
+        const baseViewport = firstPage.getViewport({ scale: 1 })
+        const fitScale = Math.min(1.5, containerWidth / baseViewport.width)
+
         for (let i = 1; i <= pdf.numPages; i++) {
           if (cancelled) return
 
           const page = await pdf.getPage(i)
-          const scale = 1.5
-          const viewport = page.getViewport({ scale })
+          const viewport = page.getViewport({ scale: fitScale })
 
-          // Page wrapper scales canvas + text layer together
+          // Page wrapper — exact pixel dimensions so canvas + text layer align 1:1
           const pageDiv = document.createElement('div')
-          pageDiv.style.cssText = `position: relative; display: inline-block; width: ${viewport.width}px; max-width: 100%; box-shadow: 0 2px 12px rgba(0,0,0,0.5);`
+          pageDiv.style.cssText = `position: relative; width: ${viewport.width}px; height: ${viewport.height}px; box-shadow: 0 2px 12px rgba(0,0,0,0.5);`
 
           const canvas = document.createElement('canvas')
-          canvas.style.cssText = 'display: block; width: 100%; height: auto;'
+          canvas.style.cssText = 'display: block;'
           canvas.width = viewport.width
           canvas.height = viewport.height
           pageDiv.appendChild(canvas)
