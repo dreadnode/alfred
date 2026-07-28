@@ -379,15 +379,6 @@ export default function TerminalChat({ headerExtra }: TerminalChatProps = {}) {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
 
-  // Global Escape to cancel — textarea is disabled during processing
-  useEffect(() => {
-    const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && isProcessing) handleCancel()
-    }
-    document.addEventListener('keydown', handleEscape)
-    return () => document.removeEventListener('keydown', handleEscape)
-  }, [isProcessing, handleCancel])
-
   const handleSubmit = useCallback(() => {
     const trimmed = input.trim()
     if (!trimmed || isProcessing || status !== 'connected') return
@@ -478,6 +469,15 @@ export default function TerminalChat({ headerExtra }: TerminalChatProps = {}) {
     send(JSON.stringify({ type: 'cancel' }))
     addMessage(setMessages, 'status', 'Cancelling...')
   }, [isProcessing, status, send])
+
+  // Global Escape to cancel — textarea is disabled during processing
+  useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isProcessing) handleCancel()
+    }
+    document.addEventListener('keydown', handleEscape)
+    return () => document.removeEventListener('keydown', handleEscape)
+  }, [isProcessing, handleCancel])
 
   // Command autocomplete (merge backend capabilities + client commands)
   const allCommands = useMemo(() => [

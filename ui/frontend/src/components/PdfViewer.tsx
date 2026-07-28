@@ -160,6 +160,34 @@ export default function PdfViewer() {
         pdfDocRef.current = pdf
         setPageCount(pdf.numPages)
 
+        // Extract title from PDF metadata or first page text
+        try {
+          const meta = await pdf.getMetadata()
+          const infoTitle = (meta?.info as Record<string, unknown>)?.Title as string
+          if (infoTitle && infoTitle.trim()) {
+            setPaperTitle(infoTitle.trim())
+          } else {
+            // Fallback: largest text item on page 1 is likely the title
+            const page1 = await pdf.getPage(1)
+            const text = await page1.getTextContent()
+            let best = ''
+            let bestHeight = 0
+            for (const item of text.items) {
+              if ('str' in item && 'height' in item) {
+                const h = (item as { height: number }).height
+                const s = (item as { str: string }).str.trim()
+                if (h > bestHeight && s.length > 3) {
+                  bestHeight = h
+                  best = s
+                }
+              }
+            }
+            if (best) setPaperTitle(best)
+          }
+        } catch {
+          // Title extraction is best-effort
+        }
+
         const container = viewportRef.current
         if (!container) return
 
