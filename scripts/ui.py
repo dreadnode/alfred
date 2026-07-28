@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Launch the Agentic LaTeX web UI.
+"""Launch the ALFRED web UI.
 
 Usage::
 
@@ -75,7 +75,7 @@ def _resolve_api_key(value: str | None, model: str) -> str:
 
 def main() -> None:
     """Parse CLI arguments, configure the backend, and start the server."""
-    parser = argparse.ArgumentParser(description="Launch the Agentic LaTeX web UI")
+    parser = argparse.ArgumentParser(description="Launch the ALFRED web UI")
     parser.add_argument(
         "--paper",
         default=os.getcwd(),
@@ -163,7 +163,7 @@ def main() -> None:
 
     url: str = "http://localhost:3000" if args.dev else f"http://localhost:{args.port}"
 
-    print("\n  Agentic LaTeX UI")
+    print("\n  ALFRED")
     if workspace_root:
         print(f"  Workspace: {workspace_root}")
     print(f"  Paper:  {paper_dir}")

@@ -92,7 +92,7 @@ def diff(project_root: str, rev: str = "HEAD") -> int:
         print("ERROR: main.tex not found.", file=sys.stderr)
         return 1
 
-    with tempfile.TemporaryDirectory(prefix="agentic-latex-diff-") as tmpdir:
+    with tempfile.TemporaryDirectory(prefix="alfred-diff-") as tmpdir:
         old_dir = os.path.join(tmpdir, "old")
         diff_dir = os.path.join(tmpdir, "diff")
         os.makedirs(old_dir)

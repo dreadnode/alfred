@@ -1,4 +1,4 @@
-"""Dreadnode agent factory for agentic-latex paper editing."""
+"""Dreadnode agent factory for ALFRED paper editing."""
 
 import os
 import typing as t

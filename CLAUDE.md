@@ -1,4 +1,4 @@
-# Agentic LaTeX
+# ALFRED
 
 ## Workflow
 
@@ -62,18 +62,18 @@ Local web interface with a terminal-style chat (left pane) and live PDF viewer (
 
 ```bash
 # Quick start — pass env var name or raw key
-./al --model claude-sonnet-4-20250514 --api-key ANTHROPIC_API_KEY
-./al --model claude-sonnet-4-20250514 --api-key sk-ant-...
+./alfred --model claude-sonnet-4-20250514 --api-key ANTHROPIC_API_KEY
+./alfred --model claude-sonnet-4-20250514 --api-key sk-ant-...
 
 # Workspace mode — launch in an empty directory for multi-paper support
 mkdir workspace && cd workspace
-/path/to/agentic-latex/al --model claude-sonnet-4-20250514 --api-key ANTHROPIC_API_KEY
+/path/to/alfred/alfred --model claude-sonnet-4-20250514 --api-key ANTHROPIC_API_KEY
 
 # Single-paper mode — point to an existing paper directory
-./al --paper /path/to/paper --model gpt-4o --api-key OPENAI_API_KEY
+./alfred --paper /path/to/paper --model gpt-4o --api-key OPENAI_API_KEY
 
 # Dev mode (frontend hot-reload on port 3000)
-./al --model claude-sonnet-4-20250514 --api-key ANTHROPIC_API_KEY --dev
+./alfred --model claude-sonnet-4-20250514 --api-key ANTHROPIC_API_KEY --dev
 ```
 
 ### Features
