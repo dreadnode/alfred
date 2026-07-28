@@ -1,8 +1,10 @@
-# agentic-latex
+# ALFRED
 
-A scaffold for AI-agent-driven LaTeX document authoring. Clone the repo, point an AI coding agent at it, give it a topic — it writes the paper.
+**A**gentic **L**atex **f**or **R**esearch, **E**diting, and **D**rafting.
 
-![agentic-latex web UI](docs/agentic-latex-ss-2.png)
+Clone the repo, point an AI coding agent at it, give it a topic — it writes the paper.
+
+![ALFRED web UI](docs/agentic-latex-ss-2.png)
 
 ## Features
 
@@ -42,7 +44,7 @@ Use the web UI or scaffold a paper manually:
 
 ```bash
 # Web UI (recommended) — creates papers automatically
-./al --model claude-sonnet-4-20250514 --api-key ANTHROPIC_API_KEY
+./alfred --model claude-sonnet-4-20250514 --api-key ANTHROPIC_API_KEY
 
 # Manual scaffold
 python3 scripts/scaffold.py /path/to/my-paper --title "My Paper"
@@ -105,18 +107,18 @@ A local web interface for interactive paper editing. Terminal-style chat on the 
 
 ```bash
 # Pass an env var name or a raw API key
-./al --model claude-sonnet-4-20250514 --api-key ANTHROPIC_API_KEY
-./al --model claude-sonnet-4-20250514 --api-key sk-ant-...
+./alfred --model claude-sonnet-4-20250514 --api-key ANTHROPIC_API_KEY
+./alfred --model claude-sonnet-4-20250514 --api-key sk-ant-...
 
 # Point at an existing paper directory
-./al --paper /path/to/paper --model gpt-4o --api-key OPENAI_API_KEY
+./alfred --paper /path/to/paper --model gpt-4o --api-key OPENAI_API_KEY
 
 # Workspace mode — launch in an empty directory for multi-paper support
 mkdir workspace && cd workspace
-/path/to/agentic-latex/al --model claude-sonnet-4-20250514 --api-key ANTHROPIC_API_KEY
+/path/to/alfred/alfred --model claude-sonnet-4-20250514 --api-key ANTHROPIC_API_KEY
 
 # Dev mode (frontend hot-reload on port 3000)
-./al --model claude-sonnet-4-20250514 --api-key ANTHROPIC_API_KEY --dev
+./alfred --model claude-sonnet-4-20250514 --api-key ANTHROPIC_API_KEY --dev
 ```
 
 Opens at `http://localhost:8420`. The agent has access to all scripts, file editing, web search, and capabilities — same as the CLI workflow, but with a visual PDF preview that auto-updates on every build.
@@ -154,7 +156,7 @@ task check         # fmt + lint + test
 
 ## Comparison
 
-|  | **agentic-latex** | **OpenAI Prism** | **lmms-lab-writer** | **Underleaf** | **PaperDebugger** |
+|  | **ALFRED** | **OpenAI Prism** | **lmms-lab-writer** | **Underleaf** | **PaperDebugger** |
 |---|---|---|---|---|---|
 | **Approach** | Agent-first — you talk, it writes | Editor with inline AI | Editor with AI agents | Overleaf extension | Overleaf extension |
 | **Autonomy** | Full — writes sections, builds, searches, cites | Inline edits, suggestions | AI-assisted editing | Copilot suggestions | Multi-agent patches |

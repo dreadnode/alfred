@@ -1,4 +1,4 @@
-"""Shared fixtures for agentic-latex tests."""
+"""Shared fixtures for ALFRED tests."""
 
 from __future__ import annotations
 

@@ -326,7 +326,7 @@ export default function TerminalChat({ headerExtra }: TerminalChatProps = {}) {
         const restored: ChatMessage[] = [{
           id: nextId(),
           type: 'status',
-          content: 'Agentic LaTeX — Session restored.',
+          content: 'ALFRED — Session restored.',
           timestamp: Date.now(),
         }]
         const lastType = events.length > 0 ? (events[events.length - 1] as Record<string, unknown>).type : null
@@ -637,7 +637,7 @@ export default function TerminalChat({ headerExtra }: TerminalChatProps = {}) {
       {/* Header */}
       <div style={styles.header}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '24px' }}>
-          <span style={styles.headerTitle}>AGENTIC L<span style={{ fontSize: '11px' }}>A</span>T<span style={{ fontSize: '11px' }}>E</span>X{appVersion && <span style={{ color: '#fff', fontSize: '10px', fontWeight: 400 }}> v{appVersion}</span>}</span>
+          <span style={styles.headerTitle}>ALFRED{appVersion && <span style={{ color: '#fff', fontSize: '10px', fontWeight: 400 }}> v{appVersion}</span>}</span>
           {headerExtra && (
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginRight: '8px' }}>
               {headerExtra}

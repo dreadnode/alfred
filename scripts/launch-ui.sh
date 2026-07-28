@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Convenience launcher for the Agentic LaTeX web UI.
+# Convenience launcher for the ALFRED web UI.
 # Automatically uses the backend venv Python.
 #
 # Usage:
