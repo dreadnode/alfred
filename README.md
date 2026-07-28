@@ -2,7 +2,7 @@
 
 A scaffold for AI-agent-driven LaTeX document authoring. Clone the repo, point an AI coding agent at it, give it a topic — it writes the paper.
 
-![agentic-latex web UI](docs/screenshot.png)
+![agentic-latex web UI](docs/agentic-latex-ss-2.png)
 
 ## Features
 
