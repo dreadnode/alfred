@@ -667,7 +667,7 @@ export default function TerminalChat() {
             borderRadius: '6px', padding: '20px', width: '340px',
             fontFamily: 'var(--font-mono)', fontSize: '12px', color: 'var(--dn-text, #ccc)',
           }} onClick={e => e.stopPropagation()}>
-            <div style={{ fontSize: '13px', fontWeight: 700, marginBottom: '16px', color: 'var(--dn-accent, #4caf50)' }}>
+            <div style={{ fontSize: '13px', fontWeight: 700, marginBottom: '16px', color: '#008080' }}>
               Settings
             </div>
 
@@ -719,7 +719,7 @@ export default function TerminalChat() {
                 padding: '4px 12px', borderRadius: '3px', cursor: 'pointer',
               }}>CANCEL</button>
               <button onClick={saveSettings} disabled={settingsSaving} style={{
-                background: 'var(--dn-accent, #4caf50)', border: 'none',
+                background: '#008080', border: 'none',
                 color: 'var(--dn-black, #000)', fontFamily: 'var(--font-mono)', fontSize: '11px',
                 padding: '4px 12px', borderRadius: '3px', cursor: 'pointer', fontWeight: 700,
                 opacity: settingsSaving ? 0.6 : 1,
@@ -747,7 +747,7 @@ export default function TerminalChat() {
               return (
                 <span key={i}>
                   {i > 0 && '\n'}
-                  {isHeader ? <span style={{ color: '#4caf50' }}>{line}</span>
+                  {isHeader ? <span style={{ color: '#008080' }}>{line}</span>
                     : cmdMatch ? <>{cmdMatch[1]}<span style={{ color: '#fff' }}>{cmdMatch[2]}</span>{cmdMatch[3]}</>
                     : nlMatch ? <>{nlMatch[1]}<span style={{ color: '#fff' }}>{nlMatch[2]}</span>{nlMatch[3]}</>
                     : line}
@@ -804,7 +804,7 @@ export default function TerminalChat() {
                   return (
                     <span key={i}>
                       {i > 0 && '\n'}
-                      {isHeader ? <span style={{ color: '#4caf50' }}>{line}</span>
+                      {isHeader ? <span style={{ color: '#008080' }}>{line}</span>
                         : cmdMatch ? <>{cmdMatch[1]}<span style={{ color: '#fff' }}>{cmdMatch[2]}</span>{cmdMatch[3]}</>
                         : nlMatch ? <>{nlMatch[1]}<span style={{ color: '#fff' }}>{nlMatch[2]}</span>{nlMatch[3]}</>
                         : line}

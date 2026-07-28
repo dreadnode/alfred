@@ -161,7 +161,7 @@ export default function App() {
                 borderRadius: '6px', padding: '20px', width: '340px',
                 fontFamily: 'var(--font-mono)', fontSize: '12px', color: 'var(--dn-text, #ccc)',
               }} onClick={e => e.stopPropagation()}>
-                <div style={{ fontSize: '13px', fontWeight: 700, marginBottom: '16px', color: 'var(--dn-accent, #4caf50)' }}>
+                <div style={{ fontSize: '13px', fontWeight: 700, marginBottom: '16px', color: '#008080' }}>
                   New Paper
                 </div>
                 <label style={{ display: 'block', marginBottom: '4px', color: 'var(--dn-text-dim, #888)' }}>Title</label>
@@ -187,7 +187,7 @@ export default function App() {
                     padding: '4px 12px', borderRadius: '3px', cursor: 'pointer',
                   }}>CANCEL</button>
                   <button onClick={createPaper} disabled={newPaperSaving} style={{
-                    background: 'var(--dn-accent, #4caf50)', border: 'none',
+                    background: '#008080', border: 'none',
                     color: 'var(--dn-black, #000)', fontFamily: 'var(--font-mono)', fontSize: '11px',
                     padding: '4px 12px', borderRadius: '3px', cursor: 'pointer', fontWeight: 700,
                     opacity: newPaperSaving ? 0.6 : 1,
