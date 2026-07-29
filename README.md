@@ -47,7 +47,7 @@ Reports are written to `capabilities/reports/`. Review records and responses are
 - **Python 3.12+**
 - **Node.js 18+**
 - **TeX Live** (basic install works for most templates — includes `latexmk` and `biber`)
-- **[uv](https://docs.astral.sh/uv/)** (recommended for Python venv management)
+- **[uv](https://docs.astral.sh/uv/)** (used by the launcher for venv setup)
 - Optional: `latexdiff` for track-changes PDFs (`brew install latexdiff` on macOS)
 
 ### Setup

@@ -73,11 +73,14 @@ def _resolve_api_key(value: str | None, model: str) -> str:
     return model
 
 
-# ANSI color codes for styled terminal output
-_TEAL = "\033[38;2;0;128;128m"
-_DIM = "\033[2m"
-_BOLD = "\033[1m"
-_RESET = "\033[0m"
+# ANSI color codes for styled terminal output (disabled when piped or NO_COLOR is set)
+if sys.stdout.isatty() and "NO_COLOR" not in os.environ:
+    _TEAL = "\033[38;2;0;128;128m"
+    _DIM = "\033[2m"
+    _BOLD = "\033[1m"
+    _RESET = "\033[0m"
+else:
+    _TEAL = _DIM = _BOLD = _RESET = ""
 
 
 def _print_help() -> None:
