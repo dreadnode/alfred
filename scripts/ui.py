@@ -73,12 +73,15 @@ def _resolve_api_key(value: str | None, model: str) -> str:
     return model
 
 
+# ANSI color codes for styled terminal output
+_TEAL = "\033[38;2;0;128;128m"
+_DIM = "\033[2m"
+_BOLD = "\033[1m"
+_RESET = "\033[0m"
+
+
 def _print_help() -> None:
     """Print styled help and exit."""
-    teal = "\033[38;2;0;128;128m"
-    dim = "\033[2m"
-    bold = "\033[1m"
-    reset = "\033[0m"
     w = 68
 
     options = [
@@ -93,28 +96,28 @@ def _print_help() -> None:
 
     lines = [
         "",
-        f"  {teal}{bold}ALFRED{reset} {dim}— Agentic LaTeX for Research, Editing, and Drafting{reset}",
-        f"  {teal}{'─' * w}{reset}",
+        f"  {_TEAL}{_BOLD}ALFRED{_RESET} {_DIM}— Agentic LaTeX for Research, Editing, and Drafting{_RESET}",
+        f"  {_TEAL}{'─' * w}{_RESET}",
         "",
-        f"  {bold}Usage:{reset}",
-        f"    {dim}${reset} ./alfred --model claude-sonnet-4-20250514 --api-key ANTHROPIC_API_KEY",
-        f"    {dim}${reset} ./alfred --paper /path/to/paper --model gpt-4o --api-key OPENAI_API_KEY",
-        f"    {dim}${reset} ./alfred --model claude-sonnet-4-20250514 --api-key sk-ant-... --dev",
+        f"  {_BOLD}Usage:{_RESET}",
+        f"    {_DIM}${_RESET} ./alfred --model claude-sonnet-4-20250514 --api-key ANTHROPIC_API_KEY",
+        f"    {_DIM}${_RESET} ./alfred --paper /path/to/paper --model gpt-4o --api-key OPENAI_API_KEY",
+        f"    {_DIM}${_RESET} ./alfred --model claude-sonnet-4-20250514 --api-key sk-ant-... --dev",
         "",
-        f"  {bold}Options:{reset}",
+        f"  {_BOLD}Options:{_RESET}",
     ]
 
     for flag, desc in options:
-        lines.append(f"    {teal}{flag:<22}{reset} {desc}")
+        lines.append(f"    {_TEAL}{flag:<22}{_RESET} {desc}")
 
     lines += [
         "",
-        f"  {bold}Notes:{reset}",
-        f"    {dim}•{reset} Launches in workspace mode if --paper has no paper.yaml",
-        f"    {dim}•{reset} API key can be a raw key or an env var name",
-        f"    {dim}•{reset} Works with any model supported by rigging/litellm",
+        f"  {_BOLD}Notes:{_RESET}",
+        f"    {_DIM}•{_RESET} Launches in workspace mode if --paper has no paper.yaml",
+        f"    {_DIM}•{_RESET} API key can be a raw key or an env var name",
+        f"    {_DIM}•{_RESET} Works with any model supported by rigging/litellm",
         "",
-        f"  {teal}{'─' * w}{reset}",
+        f"  {_TEAL}{'─' * w}{_RESET}",
         "",
     ]
     print("\n".join(lines))
@@ -241,27 +244,22 @@ def main() -> None:
     # Import version for banner
     from backend import __version__
 
-    teal = "\033[38;2;0;128;128m"
-    dim = "\033[2m"
-    bold = "\033[1m"
-    reset = "\033[0m"
-
     lines = []
     if workspace_root:
-        lines.append(f"  {dim}workspace{reset}  {workspace_root}")
-    lines.append(f"  {dim}paper{reset}      {paper_dir}")
-    lines.append(f"  {dim}model{reset}      {model}")
-    lines.append(f"  {dim}server{reset}     http://localhost:{args.port}")
+        lines.append(f"  {_DIM}workspace{_RESET}  {workspace_root}")
+    lines.append(f"  {_DIM}paper{_RESET}      {paper_dir}")
+    lines.append(f"  {_DIM}model{_RESET}      {model}")
+    lines.append(f"  {_DIM}server{_RESET}     http://localhost:{args.port}")
     if args.dev:
-        lines.append(f"  {dim}frontend{reset}   {url}")
+        lines.append(f"  {_DIM}frontend{_RESET}   {url}")
 
     banner_width = 52
     print()
-    print(f"  {teal}{bold}ALFRED{reset} {dim}v{__version__}{reset}")
-    print(f"  {teal}{'─' * banner_width}{reset}")
+    print(f"  {_TEAL}{_BOLD}ALFRED{_RESET} {_DIM}v{__version__}{_RESET}")
+    print(f"  {_TEAL}{'─' * banner_width}{_RESET}")
     for line in lines:
         print(line)
-    print(f"  {teal}{'─' * banner_width}{reset}")
+    print(f"  {_TEAL}{'─' * banner_width}{_RESET}")
     print()
 
     if not args.no_browser:
