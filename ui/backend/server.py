@@ -558,7 +558,10 @@ async def load_pdf(body: dict[str, t.Any]) -> dict[str, t.Any]:
             _pdf_clients.discard(ws)
     result: dict[str, t.Any] = {"path": _custom_pdf}
     if paper_info:
-        result["paper_created"] = {"slug": paper_info["slug"], "title": paper_info["title"]}
+        result["paper_created"] = {
+            "slug": paper_info["slug"],
+            "title": paper_info["title"],
+        }
     return result
 
 
