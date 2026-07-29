@@ -73,39 +73,93 @@ def _resolve_api_key(value: str | None, model: str) -> str:
     return model
 
 
+def _print_help() -> None:
+    """Print styled help and exit."""
+    teal = "\033[38;2;0;128;128m"
+    dim = "\033[2m"
+    bold = "\033[1m"
+    reset = "\033[0m"
+    w = 68
+
+    options = [
+        ("--model <id>", "LLM model identifier (required)"),
+        ("--api-key <key|env>", "API key or env var name"),
+        ("--paper <path>", "Paper directory (default: cwd)"),
+        ("--port <n>", "Server port (default: 8420)"),
+        ("--no-browser", "Don't open browser on launch"),
+        ("--dev", "Dev mode (frontend on port 3000)"),
+        ("-h, --help", "Show this help message"),
+    ]
+
+    lines = [
+        "",
+        f"  {teal}{bold}ALFRED{reset} {dim}— Agentic LaTeX for Research, Editing, and Drafting{reset}",
+        f"  {teal}{'─' * w}{reset}",
+        "",
+        f"  {bold}Usage:{reset}",
+        f"    {dim}${reset} ./alfred --model claude-sonnet-4-20250514 --api-key ANTHROPIC_API_KEY",
+        f"    {dim}${reset} ./alfred --paper /path/to/paper --model gpt-4o --api-key OPENAI_API_KEY",
+        f"    {dim}${reset} ./alfred --model claude-sonnet-4-20250514 --api-key sk-ant-... --dev",
+        "",
+        f"  {bold}Options:{reset}",
+    ]
+
+    for flag, desc in options:
+        lines.append(f"    {teal}{flag:<22}{reset} {desc}")
+
+    lines += [
+        "",
+        f"  {bold}Notes:{reset}",
+        f"    {dim}•{reset} Launches in workspace mode if --paper has no paper.yaml",
+        f"    {dim}•{reset} API key can be a raw key or an env var name",
+        f"    {dim}•{reset} Works with any model supported by rigging/litellm",
+        "",
+        f"  {teal}{'─' * w}{reset}",
+        "",
+    ]
+    print("\n".join(lines))
+    sys.exit(0)
+
+
 def main() -> None:
     """Parse CLI arguments, configure the backend, and start the server."""
-    parser = argparse.ArgumentParser(description="Launch the ALFRED web UI")
+    if "--help" in sys.argv or "-h" in sys.argv:
+        _print_help()
+
+    parser = argparse.ArgumentParser(
+        description="Launch the ALFRED web UI",
+        add_help=False,
+    )
     parser.add_argument(
         "--paper",
         default=os.getcwd(),
-        help="Path to the paper directory (default: current directory)",
+        help="Paper directory (default: cwd)",
     )
     parser.add_argument(
         "--model",
         required=True,
-        help="LLM model identifier (e.g. claude-sonnet-4-20250514, gpt-4o)",
+        help="LLM model identifier",
     )
     parser.add_argument(
         "--api-key",
         default=None,
-        help="API key or env var name (e.g. ANTHROPIC_API_KEY or sk-ant-...)",
+        help="API key or env var name",
     )
     parser.add_argument(
         "--port",
         type=int,
         default=8420,
-        help="Port for the backend server (default: 8420)",
+        help="Server port (default: 8420)",
     )
     parser.add_argument(
         "--no-browser",
         action="store_true",
-        help="Don't open browser automatically",
+        help="Don't open browser on launch",
     )
     parser.add_argument(
         "--dev",
         action="store_true",
-        help="Run in dev mode (frontend dev server on port 3000)",
+        help="Dev mode (frontend on port 3000)",
     )
 
     args = parser.parse_args()
@@ -184,14 +238,30 @@ def main() -> None:
 
     url: str = "http://localhost:3000" if args.dev else f"http://localhost:{args.port}"
 
-    print("\n  ALFRED")
+    # Import version for banner
+    from backend import __version__
+
+    teal = "\033[38;2;0;128;128m"
+    dim = "\033[2m"
+    bold = "\033[1m"
+    reset = "\033[0m"
+
+    lines = []
     if workspace_root:
-        print(f"  Workspace: {workspace_root}")
-    print(f"  Paper:  {paper_dir}")
-    print(f"  Model:  {model}")
-    print(f"  Server: http://localhost:{args.port}")
+        lines.append(f"  {dim}workspace{reset}  {workspace_root}")
+    lines.append(f"  {dim}paper{reset}      {paper_dir}")
+    lines.append(f"  {dim}model{reset}      {model}")
+    lines.append(f"  {dim}server{reset}     http://localhost:{args.port}")
     if args.dev:
-        print(f"  Frontend dev: {url}")
+        lines.append(f"  {dim}frontend{reset}   {url}")
+
+    banner_width = 52
+    print()
+    print(f"  {teal}{bold}ALFRED{reset} {dim}v{__version__}{reset}")
+    print(f"  {teal}{'─' * banner_width}{reset}")
+    for line in lines:
+        print(line)
+    print(f"  {teal}{'─' * banner_width}{reset}")
     print()
 
     if not args.no_browser:

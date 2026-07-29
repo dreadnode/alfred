@@ -1,5 +1,7 @@
 # ALFRED
 
+![Version](https://img.shields.io/badge/version-0.3.0-008080) ![Python](https://img.shields.io/badge/python-3.12%2B-008080) ![Node](https://img.shields.io/badge/node-18%2B-008080)
+
 **A**gentic **L**atex **f**or **R**esearch, **E**diting, and **D**rafting.
 
 Clone the repo, point an AI coding agent at it, give it a topic — it writes the paper.
@@ -37,6 +39,51 @@ Multi-agent workflows you can kick off by asking the agent. These run specialize
 | LLM writing detection | "Check if this was written by AI" | Analyzes prose for LLM tells — vocabulary, structure, tone, transitions — produces a per-section detection report |
 
 Reports are written to `capabilities/reports/`. Review records and responses are saved to `reviews/`. See `capabilities/README.md` for full details.
+
+## Installation
+
+### Prerequisites
+
+- **Python 3.12+**
+- **Node.js 18+**
+- **TeX Live** (basic install works for most templates — includes `latexmk` and `biber`)
+- **[uv](https://docs.astral.sh/uv/)** (recommended for Python venv management)
+- Optional: `latexdiff` for track-changes PDFs (`brew install latexdiff` on macOS)
+
+### Setup
+
+```bash
+git clone https://github.com/dreadnode/agentic-latex.git
+cd agentic-latex
+./alfred --model claude-sonnet-4-20250514 --api-key ANTHROPIC_API_KEY
+```
+
+On first run, the launcher automatically:
+1. Creates a Python venv and installs backend dependencies
+2. Installs frontend dependencies (`npm ci`) and builds the UI
+3. Opens the web UI at `http://localhost:8420`
+
+No manual `pip install` or `npm install` needed.
+
+### API Keys
+
+Pass an API key directly or reference an environment variable:
+
+```bash
+# Environment variable name (resolved at startup)
+./alfred --model claude-sonnet-4-20250514 --api-key ANTHROPIC_API_KEY
+
+# Raw key
+./alfred --model claude-sonnet-4-20250514 --api-key sk-ant-api03-...
+
+# OpenAI
+./alfred --model gpt-4o --api-key OPENAI_API_KEY
+
+# OpenRouter (model auto-prefixed with openrouter/)
+./alfred --model openai/gpt-4o --api-key OPENROUTER_API_KEY
+```
+
+Works with any model supported by [rigging](https://rigging.dreadnode.io) — Anthropic, OpenAI, Google, Mistral, local models via Ollama, or any provider via OpenRouter.
 
 ## Starting a Paper
 
@@ -133,14 +180,6 @@ Features:
 - **Session recovery** — reconnects automatically after network drops, restores chat history
 - **Web search** — built-in via DuckDuckGo, no API key needed
 - **Any LLM** — works with any model supported by [rigging](https://rigging.dreadnode.io) (Anthropic, OpenAI, Gemini, local models, etc.)
-
-## Requirements
-
-- TeX Live (basic install works for most templates)
-- `latexmk` and `biber` (included in basic TeX Live)
-- Python 3 with PyYAML (`pip install pyyaml`)
-- Node.js 18+ (for web UI frontend)
-- Optional: `latexdiff` for diff PDFs (`brew install latexdiff`)
 
 ## Development
 
