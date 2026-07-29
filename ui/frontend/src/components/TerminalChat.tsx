@@ -886,28 +886,15 @@ export default function TerminalChat({ headerExtra, onPaperCreated }: TerminalCh
           </div>
         ))}
         {isProcessing && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: '16px', marginBottom: '8px' }}>
             <span className="agent-working" style={{
               color: 'var(--al-interactive)', fontSize: '13px', fontFamily: 'var(--font-mono)',
               opacity: 0.6,
             }}>Agent working</span>
-            <button
-              onClick={handleCancel}
-              style={{
-                background: 'transparent',
-                border: '1px solid var(--dn-border-lt)',
-                color: 'var(--dn-error)',
-                fontFamily: 'var(--font-mono)',
-                fontSize: '11px',
-                padding: '2px 8px',
-                borderRadius: '3px',
-                cursor: 'pointer',
-                flexShrink: 0,
-              }}
-              title="Cancel (Esc)"
-            >
-              CANCEL
-            </button>
+            <span style={{
+              color: 'var(--dn-text-dim)', fontSize: '12px', fontFamily: 'var(--font-mono)',
+              cursor: 'pointer',
+            }} onClick={handleCancel}>Press Esc to cancel</span>
           </div>
         )}
         <div ref={messagesEndRef} />
