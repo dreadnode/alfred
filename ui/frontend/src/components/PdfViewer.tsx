@@ -300,7 +300,9 @@ export default function PdfViewer() {
           <span style={styles.headerTitle}>PDF PREVIEW</span>
           {paperTitle && (
             <span
+              role="button" tabIndex={0}
               onClick={openTitleEdit}
+              onKeyDown={e => { if (e.key === 'Enter') openTitleEdit() }}
               style={{ color: '#4fc3f7', fontSize: '11px', cursor: 'pointer', textDecoration: 'underline', textDecorationStyle: 'dotted' as const, textUnderlineOffset: '3px' }}
               title="Edit paper title"
             >
@@ -321,7 +323,9 @@ export default function PdfViewer() {
           <span style={styles.headerTitle}>PDF PREVIEW</span>
           {paperTitle && (
             <span
+              role="button" tabIndex={0}
               onClick={openTitleEdit}
+              onKeyDown={e => { if (e.key === 'Enter') openTitleEdit() }}
               style={{ color: '#4fc3f7', fontSize: '11px', cursor: 'pointer', textDecoration: 'underline', textDecorationStyle: 'dotted' as const, textUnderlineOffset: '3px' }}
               title="Edit paper title"
             >

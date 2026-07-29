@@ -683,7 +683,9 @@ export default function TerminalChat({ headerExtra, onPaperCreated }: TerminalCh
           {modelName && (
             <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
               <span
+                role="button" tabIndex={0}
                 onClick={openSettings}
+                onKeyDown={e => { if (e.key === 'Enter') openSettings() }}
                 style={{ color: '#4fc3f7', fontSize: '11px', cursor: 'pointer', textDecoration: 'underline', textDecorationStyle: 'dotted' as const, textUnderlineOffset: '3px' }}
                 title="Change model settings"
               >{modelName}</span>
