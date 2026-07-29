@@ -134,14 +134,15 @@ When the reviewer says `/peer-review done`, "done with review", or "finalize the
 1. Read the full review record
 2. Write the **Summary** section — 3-5 sentences capturing the overall assessment, derived from the notes
 3. Count notes by type and severity, update the YAML frontmatter `issues:` fields (major, minor, nit, positive) and `types:` fields with final counts
-4. Propose an overall **Recommendation** with justification (also update the `recommendation:` field in frontmatter):
+4. Append the **Disclaimer** section after Strengths (the last note section) — use the template from `capabilities/shared/output-formats.md`, replacing `<reviewer name>` with the actual reviewer name
+5. Propose an overall **Recommendation** with justification (also update the `recommendation:` field in frontmatter):
    - **Accept**: No major issues, few or no minor issues
    - **Minor Revision**: No major issues, but several minor issues that need attention
    - **Major Revision**: Major issues present, but they appear addressable with additional work
    - **Reject**: Fundamental issues that undermine the paper's core contribution
 
    State the reasoning: "You raised N major issues (focused on methodology and claims) and M minor issues. This suggests Major Revision. Does that match your assessment, or would you like to adjust?"
-5. The reviewer confirms or overrides. Their decision is final — record it as-is.
+6. The reviewer confirms or overrides. Their decision is final — record it as-is.
 
 **Optional — verify flagged claims:**
 If any CLM or REF-type notes question the accuracy of specific claims, offer to verify them. To do this:

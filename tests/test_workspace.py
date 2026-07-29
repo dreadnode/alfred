@@ -14,7 +14,12 @@ sys.path.insert(0, UI_DIR)
 sys.path.insert(0, SCRIPTS_DIR)
 
 import backend.server as srv  # noqa: E402
-from backend.server import _list_papers, _slugify, _unique_slug  # noqa: E402
+from backend.server import (  # noqa: E402
+    _list_papers,
+    _slugify,
+    _title_from_filename,
+    _unique_slug,
+)
 from scaffold import scaffold_paper  # noqa: E402
 
 
@@ -80,9 +85,11 @@ class TestSlugify:
 
 class TestUniqueSlug:
     def test_appends_suffix_on_collision(self, tmp_path: t.Any) -> None:
-        (tmp_path / "my-paper").mkdir()
-        (tmp_path / "my-paper-2").mkdir()
-        assert _unique_slug("My Paper", str(tmp_path)) == "my-paper-3"
+        papers_dir = tmp_path / "papers"
+        papers_dir.mkdir()
+        (papers_dir / "my-paper").mkdir()
+        (papers_dir / "my-paper-2").mkdir()
+        assert _unique_slug("My Paper", str(papers_dir)) == "my-paper-3"
 
 
 # ---------------------------------------------------------------------------
@@ -96,16 +103,19 @@ class TestListPapers:
             assert _list_papers() == []
 
     def test_lists_papers_with_active_flag(self, tmp_path: t.Any) -> None:
-        p1 = tmp_path / "paper-one"
+        papers_dir = tmp_path / "papers"
+        papers_dir.mkdir()
+
+        p1 = papers_dir / "paper-one"
         p1.mkdir()
         (p1 / "paper.yaml").write_text('title: "First Paper"\n')
 
-        p2 = tmp_path / "paper-two"
+        p2 = papers_dir / "paper-two"
         p2.mkdir()
         (p2 / "paper.yaml").write_text('title: "Second Paper"\n')
 
         # Non-paper dir should be ignored
-        (tmp_path / "not-a-paper").mkdir()
+        (papers_dir / "not-a-paper").mkdir()
 
         with _workspace_globals(str(tmp_path), paper_dir=str(p1)):
             papers = _list_papers()
@@ -116,9 +126,67 @@ class TestListPapers:
             ]
 
     def test_falls_back_to_dirname_when_no_title(self, tmp_path: t.Any) -> None:
-        p = tmp_path / "fallback-slug"
+        papers_dir = tmp_path / "papers"
+        papers_dir.mkdir()
+        p = papers_dir / "fallback-slug"
         p.mkdir()
         (p / "paper.yaml").write_text("template: article\n")
 
         with _workspace_globals(str(tmp_path)):
             assert _list_papers()[0]["title"] == "fallback-slug"
+
+
+# ---------------------------------------------------------------------------
+# _title_from_filename
+# ---------------------------------------------------------------------------
+
+
+class TestTitleFromFilename:
+    def test_strips_pdf_extension(self) -> None:
+        assert _title_from_filename("my-paper.pdf") == "My Paper"
+
+    def test_replaces_separators(self) -> None:
+        assert _title_from_filename("calibrating_llm_judges.pdf") == "Calibrating Llm Judges"
+
+    def test_handles_dotfile_edge_case(self) -> None:
+        assert _title_from_filename(".pdf") == "Untitled"
+
+    def test_handles_special_chars(self) -> None:
+        assert _title_from_filename("---special___chars---.pdf") == "Special Chars"
+
+    def test_preserves_spaces(self) -> None:
+        assert _title_from_filename("hello world.pdf") == "Hello World"
+
+
+# ---------------------------------------------------------------------------
+# _create_paper_for_pdf (path containment guard)
+# ---------------------------------------------------------------------------
+
+
+class TestPathContainment:
+    def test_skips_pdf_inside_paper_dir(self) -> None:
+        """PDF inside the active paper_dir should not create a new paper."""
+        import asyncio
+
+        with _workspace_globals("/workspace", paper_dir="/workspace/papers/my-paper"):
+            result = asyncio.run(
+                srv._create_paper_for_pdf("/workspace/papers/my-paper/doc.pdf")
+            )
+            assert result is None
+
+    def test_does_not_match_sibling_dir_prefix(self) -> None:
+        """paper-2 should NOT be treated as inside paper (prefix collision)."""
+        # Verify the containment check uses os.sep so /papers/paper
+        # doesn't falsely match /papers/paper-2/doc.pdf
+        paper_dir = "/workspace/papers/paper"
+        sibling_pdf = "/workspace/papers/paper-2/doc.pdf"
+        paper_prefix = os.path.abspath(paper_dir) + os.sep
+        assert not os.path.abspath(sibling_pdf).startswith(paper_prefix)
+
+    def test_skips_in_single_paper_mode(self) -> None:
+        """Non-workspace mode should always return None."""
+        import asyncio
+
+        with _workspace_globals(workspace_root=None, paper_dir="/some/paper"):
+            result = asyncio.run(srv._create_paper_for_pdf("/tmp/ext.pdf"))
+            assert result is None

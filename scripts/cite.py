@@ -37,7 +37,7 @@ _api_key: str | None = os.environ.get("S2_API_KEY")
 
 def _api_get(url: str) -> dict[str, Any] | None:
     """Make a GET request to the Semantic Scholar API."""
-    headers: dict[str, str] = {"User-Agent": "alfred/0.2.0"}
+    headers: dict[str, str] = {"User-Agent": "alfred"}
     if _api_key:
         headers["x-api-key"] = _api_key
     req = urllib.request.Request(url, headers=headers)
@@ -80,7 +80,7 @@ def get_bibtex(paper_id: str) -> str | None:
     """Fetch the BibTeX entry for a paper from Semantic Scholar."""
     url = f"https://api.semanticscholar.org/graph/v1/paper/{paper_id}"
     headers: dict[str, str] = {
-        "User-Agent": "alfred/0.2.0",
+        "User-Agent": "alfred",
         "Accept": "application/x-bibtex",
     }
     if _api_key:

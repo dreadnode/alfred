@@ -208,21 +208,28 @@ export default function PdfViewer() {
           container.removeChild(container.firstChild)
         }
 
+        // Compute a scale that fits pages within the container width
+        const containerWidth = Math.max(container.clientWidth - 32, 100) // subtract padding, floor at 100
+        const firstPage = await pdf.getPage(1)
+        const baseViewport = firstPage.getViewport({ scale: 1 })
+        const fitScale = Math.min(1.5, containerWidth / baseViewport.width)
+
         for (let i = 1; i <= pdf.numPages; i++) {
           if (cancelled) return
 
           const page = await pdf.getPage(i)
-          const scale = 1.5
-          const viewport = page.getViewport({ scale })
+          const viewport = page.getViewport({ scale: fitScale })
+          const pxWidth = Math.floor(viewport.width)
+          const pxHeight = Math.floor(viewport.height)
 
-          // Page wrapper scales canvas + text layer together
+          // Page wrapper — integer pixel dimensions so canvas + text layer align 1:1
           const pageDiv = document.createElement('div')
-          pageDiv.style.cssText = `position: relative; display: inline-block; width: ${viewport.width}px; max-width: 100%; box-shadow: 0 2px 12px rgba(0,0,0,0.5);`
+          pageDiv.style.cssText = `position: relative; width: ${pxWidth}px; height: ${pxHeight}px; box-shadow: 0 2px 12px rgba(0,0,0,0.5);`
 
           const canvas = document.createElement('canvas')
-          canvas.style.cssText = 'display: block; width: 100%; height: auto;'
-          canvas.width = viewport.width
-          canvas.height = viewport.height
+          canvas.style.cssText = 'display: block;'
+          canvas.width = pxWidth
+          canvas.height = pxHeight
           pageDiv.appendChild(canvas)
 
           // Text layer overlay — uses official pdfjs .textLayer class
@@ -293,7 +300,9 @@ export default function PdfViewer() {
           <span style={styles.headerTitle}>PDF PREVIEW</span>
           {paperTitle && (
             <span
+              role="button" tabIndex={0}
               onClick={openTitleEdit}
+              onKeyDown={e => { if (e.key === 'Enter') openTitleEdit() }}
               style={{ color: '#4fc3f7', fontSize: '11px', cursor: 'pointer', textDecoration: 'underline', textDecorationStyle: 'dotted' as const, textUnderlineOffset: '3px' }}
               title="Edit paper title"
             >
@@ -314,7 +323,9 @@ export default function PdfViewer() {
           <span style={styles.headerTitle}>PDF PREVIEW</span>
           {paperTitle && (
             <span
+              role="button" tabIndex={0}
               onClick={openTitleEdit}
+              onKeyDown={e => { if (e.key === 'Enter') openTitleEdit() }}
               style={{ color: '#4fc3f7', fontSize: '11px', cursor: 'pointer', textDecoration: 'underline', textDecorationStyle: 'dotted' as const, textUnderlineOffset: '3px' }}
               title="Edit paper title"
             >

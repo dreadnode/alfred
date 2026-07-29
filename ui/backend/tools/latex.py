@@ -192,9 +192,19 @@ def make_latex_tools(paper_dir: str) -> list[AnyTool]:
         from .. import server as srv
 
         resolved = _resolve_pdf_path(path)
-        srv._custom_pdf = resolved
+
+        # In workspace mode, create a paper directory for external PDFs
+        paper_info = await srv._create_paper_for_pdf(resolved)
+        if paper_info:
+            srv._custom_pdf = os.path.abspath(paper_info["pdf_path"])
+        else:
+            srv._custom_pdf = resolved
+
         await _notify_viewer()
-        return f"Viewer now showing: {resolved}"
+        msg = f"Viewer now showing: {srv._custom_pdf}"
+        if paper_info:
+            msg += f"\nCreated paper directory: {paper_info['title']}"
+        return msg
 
     @tool(catch=True)
     async def show_project_pdf() -> str:

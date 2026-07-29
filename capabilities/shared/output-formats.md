@@ -244,7 +244,15 @@ types:
 **Location**: `<file>:<line>`
 
 <reviewer's note>
+
+## Disclaimer
+
+---
+
+> **Disclaimer:** This peer review was conducted by *<reviewer name>* with the assistance of ALFRED (Agentic LaTeX for Research, Editing, and Drafting). While all observations, judgments, and recommendations reflect the reviewer's assessment, AI was used to structure and enrich the reviewer's notes, verify claims against cited sources, cross-reference prior work, and check data consistency. The reviewer has reviewed and approved the final record.
 ```
+
+The Disclaimer section is appended after all note sections (Strengths is the last note section). It is written at finalization, with `<reviewer name>` replaced by the actual reviewer name from the frontmatter.
 
 Notes are appended incrementally to the appropriate severity section as they arrive. The YAML frontmatter fields (`recommendation`, `issues`, `types`) are zeroed at creation and updated during finalization. The file is valid markdown at all times.
 

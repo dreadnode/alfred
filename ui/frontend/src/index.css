@@ -148,14 +148,21 @@ html, body, #root {
 }
 .textLayer ::selection { background: rgba(0, 128, 128, 0.4); }
 
-/* Animated dots for "Agent working" */
-.agent-working::after {
-  content: '';
-  animation: dots 1.4s steps(4, end) infinite;
+/* Braille spinner for "Agent working" */
+.agent-working::before {
+  content: '⠋';
+  animation: braille-spin 0.8s steps(1) infinite;
+  margin-right: 6px;
 }
-@keyframes dots {
-  0%  { content: ''; }
-  25% { content: '.'; }
-  50% { content: '..'; }
-  75% { content: '...'; }
+@keyframes braille-spin {
+  0%    { content: '⠋'; }
+  10%   { content: '⠙'; }
+  20%   { content: '⠹'; }
+  30%   { content: '⠸'; }
+  40%   { content: '⠼'; }
+  50%   { content: '⠴'; }
+  60%   { content: '⠦'; }
+  70%   { content: '⠧'; }
+  80%   { content: '⠇'; }
+  90%   { content: '⠏'; }
 }

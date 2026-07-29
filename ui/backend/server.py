@@ -5,6 +5,7 @@ import contextlib
 import json
 import os
 import re
+import shutil
 import tempfile
 import time
 import typing as t
@@ -43,7 +44,7 @@ if t.TYPE_CHECKING:
 # Module-level configuration (set once via ``configure()`` before server start)
 # ---------------------------------------------------------------------------
 
-VERSION: str = "0.2.0"
+from . import __version__ as VERSION
 
 _paper_dir: str = ""
 _model: str = ""
@@ -309,13 +310,22 @@ def _unique_slug(title: str, workspace: str) -> str:
     return slug
 
 
+def _papers_dir() -> str:
+    """Return the ``papers/`` subdirectory inside the workspace root."""
+    assert _workspace_root is not None
+    return os.path.join(_workspace_root, "papers")
+
+
 def _list_papers() -> list[dict[str, t.Any]]:
     """Scan the workspace for paper subdirectories."""
     if not _workspace_root:
         return []
+    pdir = _papers_dir()
+    if not os.path.isdir(pdir):
+        return []
     papers: list[dict[str, t.Any]] = []
-    for name in sorted(os.listdir(_workspace_root)):
-        subdir = os.path.join(_workspace_root, name)
+    for name in sorted(os.listdir(pdir)):
+        subdir = os.path.join(pdir, name)
         manifest = os.path.join(subdir, "paper.yaml")
         if not os.path.isdir(subdir) or not os.path.isfile(manifest):
             continue
@@ -356,8 +366,10 @@ async def create_paper(body: dict[str, t.Any]) -> dict[str, t.Any]:
     if not title:
         return {"error": "title is required"}
 
-    slug = _unique_slug(title, _workspace_root)
-    new_dir = os.path.join(_workspace_root, slug)
+    pdir = _papers_dir()
+    os.makedirs(pdir, exist_ok=True)
+    slug = _unique_slug(title, pdir)
+    new_dir = os.path.join(pdir, slug)
 
     # Scaffold the new paper.
     import sys
@@ -385,7 +397,7 @@ async def switch_paper(body: dict[str, t.Any]) -> dict[str, t.Any]:
     if not slug:
         return {"error": "slug is required"}
 
-    target = os.path.join(_workspace_root, slug)
+    target = os.path.join(_papers_dir(), slug)
     if not os.path.isfile(os.path.join(target, "paper.yaml")):
         return {"error": f"Paper '{slug}' not found"}
 
@@ -471,8 +483,52 @@ async def get_pdf() -> FileResponse | JSONResponse:
     return FileResponse(pdf_path, media_type="application/pdf")
 
 
+async def _create_paper_for_pdf(
+    pdf_path: str, filename: str | None = None
+) -> dict[str, str] | None:
+    """In workspace mode, create a paper directory for an external PDF.
+
+    Args:
+        pdf_path: Path to the PDF file on disk.
+        filename: Original filename (for title derivation). Falls back to basename of pdf_path.
+
+    Returns ``{"slug": ..., "title": ..., "pdf_path": ...}`` if created, else ``None``.
+    """
+    if not _workspace_root:
+        return None
+    # Skip if the PDF is already inside the active paper directory
+    paper_prefix = os.path.abspath(_paper_dir) + os.sep
+    if os.path.abspath(pdf_path).startswith(paper_prefix):
+        return None
+
+    display_name = os.path.basename(filename or pdf_path)
+    title = _title_from_filename(display_name)
+    pdir = _papers_dir()
+    os.makedirs(pdir, exist_ok=True)
+    slug = _unique_slug(title, pdir)
+    new_dir = os.path.join(pdir, slug)
+
+    import sys
+    from pathlib import Path
+
+    repo_root = str(Path(__file__).resolve().parent.parent.parent)
+    scripts_dir = os.path.join(repo_root, "scripts")
+    if scripts_dir not in sys.path:
+        sys.path.insert(0, scripts_dir)
+    from scaffold import scaffold_paper
+
+    scaffold_paper(new_dir, title=title)
+
+    # Copy the PDF into the new paper directory
+    dest = os.path.join(new_dir, display_name)
+    shutil.copy2(pdf_path, dest)
+
+    await _switch_paper(new_dir)
+    return {"slug": slug, "title": title, "pdf_path": dest}
+
+
 @app.post("/api/load-pdf")
-async def load_pdf(body: dict[str, t.Any]) -> dict[str, str]:
+async def load_pdf(body: dict[str, t.Any]) -> dict[str, t.Any]:
     """Load an external PDF into the viewer."""
     global _custom_pdf
     path: str = body.get("path", "").strip()
@@ -485,7 +541,15 @@ async def load_pdf(body: dict[str, t.Any]) -> dict[str, str]:
         return {"error": f"File not found: {path}"}
     if not expanded.lower().endswith(".pdf"):
         return {"error": "File must be a PDF"}
-    _custom_pdf = os.path.abspath(expanded)
+    expanded = os.path.abspath(expanded)
+
+    # In workspace mode, create a paper directory for external PDFs
+    paper_info = await _create_paper_for_pdf(expanded)
+    if paper_info:
+        _custom_pdf = os.path.abspath(paper_info["pdf_path"])
+    else:
+        _custom_pdf = expanded
+
     # Notify PDF clients so the viewer reloads
     msg = json.dumps({"type": "pdf_updated", "timestamp": time.time()})
     for ws in list(_pdf_clients):
@@ -493,7 +557,13 @@ async def load_pdf(body: dict[str, t.Any]) -> dict[str, str]:
             await ws.send_text(msg)
         except Exception:
             _pdf_clients.discard(ws)
-    return {"path": _custom_pdf}
+    result: dict[str, t.Any] = {"path": _custom_pdf}
+    if paper_info:
+        result["paper_created"] = {
+            "slug": paper_info["slug"],
+            "title": paper_info["title"],
+        }
+    return result
 
 
 @app.post("/api/reset-pdf")
@@ -508,6 +578,17 @@ async def reset_pdf() -> dict[str, str]:
         except Exception:
             _pdf_clients.discard(ws)
     return {"status": "reset"}
+
+
+def _title_from_filename(filename: str) -> str:
+    """Derive a human-readable title from a PDF filename."""
+    # Strip .pdf extension (handles ".pdf" edge case where splitext treats it as stem)
+    name = filename
+    if name.lower().endswith(".pdf"):
+        name = name[:-4]
+    # Replace common separators with spaces
+    name = re.sub(r"[-_.]+", " ", name)
+    return name.strip().title() or "Untitled"
 
 
 @app.post("/api/upload-pdf")
@@ -530,6 +611,16 @@ async def upload_pdf(file: UploadFile) -> dict[str, t.Any]:
 
     _custom_pdf = tmp.name
 
+    # In workspace mode, create a paper directory for this PDF
+    paper_info = await _create_paper_for_pdf(tmp.name, filename=file.filename)
+    paper_created = None
+    if paper_info:
+        _custom_pdf = os.path.abspath(paper_info["pdf_path"])
+        # Clean up the temp file — PDF has been copied into the paper directory
+        with contextlib.suppress(OSError):
+            os.unlink(tmp.name)
+        paper_created = {"slug": paper_info["slug"], "title": paper_info["title"]}
+
     # Notify PDF clients
     msg = json.dumps({"type": "pdf_updated", "timestamp": time.time()})
     for ws in list(_pdf_clients):
@@ -544,7 +635,7 @@ async def upload_pdf(file: UploadFile) -> dict[str, t.Any]:
     try:
         proc = await asyncio.create_subprocess_exec(
             "pdftotext",
-            tmp.name,
+            _custom_pdf or tmp.name,
             "-",
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.PIPE,
@@ -561,12 +652,15 @@ async def upload_pdf(file: UploadFile) -> dict[str, t.Any]:
     except Exception as exc:
         extracted = f"Text extraction failed: {exc}"
 
-    return {
+    result: dict[str, t.Any] = {
         "filename": file.filename,
-        "path": tmp.name,
+        "path": _custom_pdf or tmp.name,
         "text": extracted,
         "text_ok": text_ok,
     }
+    if paper_created:
+        result["paper_created"] = paper_created
+    return result
 
 
 # ---------------------------------------------------------------------------
