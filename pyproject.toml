@@ -1,0 +1,26 @@
+[project]
+name = "alfred"
+version = "0.3.0"
+description = "Agentic LaTeX for Research, Editing, and Drafting"
+requires-python = ">=3.10"
+dependencies = [
+    "fastapi>=0.115.0",
+    "uvicorn[standard]>=0.30.0",
+    "websockets>=12.0",
+    "watchfiles>=0.20.0",
+    "dreadnode>=1.17.0",
+    "rigging>=3.0.0",
+    "aiohttp>=3.9.0",
+    "duckduckgo-search>=7.0.0",
+    "pyyaml>=6.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0.0",
+    "ruff>=0.1.0",
+    "pyright>=1.1.0",
+]
+
+[tool.pyright]
+pythonVersion = "3.10"

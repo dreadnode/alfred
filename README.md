@@ -1,6 +1,6 @@
 # ALFRED
 
-![Version](https://img.shields.io/badge/version-0.3.0-008080) ![Python](https://img.shields.io/badge/python-3.12%2B-008080) ![Node](https://img.shields.io/badge/node-18%2B-008080)
+![Version](https://img.shields.io/badge/version-0.3.0-008080) ![Python](https://img.shields.io/badge/python-3.10%2B-008080) ![Node](https://img.shields.io/badge/node-18%2B-008080)
 
 **A**gentic **L**atex **f**or **R**esearch, **E**diting, and **D**rafting.
 
