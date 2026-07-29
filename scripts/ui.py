@@ -125,21 +125,21 @@ def main() -> None:
         papers_dir = os.path.join(workspace_root, "papers")
 
         # Migrate legacy layout: move paper subdirs from root into papers/
-        if not os.path.isdir(papers_dir):
-            legacy = [
-                d
-                for d in os.listdir(workspace_root)
-                if os.path.isdir(os.path.join(workspace_root, d))
-                and os.path.isfile(os.path.join(workspace_root, d, "paper.yaml"))
-            ]
-            if legacy:
-                os.makedirs(papers_dir, exist_ok=True)
-                for d in legacy:
-                    os.rename(
-                        os.path.join(workspace_root, d),
-                        os.path.join(papers_dir, d),
-                    )
-                print(f"  Migrated {len(legacy)} paper(s) into papers/")
+        legacy = [
+            d
+            for d in os.listdir(workspace_root)
+            if d != "papers"
+            and os.path.isdir(os.path.join(workspace_root, d))
+            and os.path.isfile(os.path.join(workspace_root, d, "paper.yaml"))
+        ]
+        if legacy:
+            os.makedirs(papers_dir, exist_ok=True)
+            for d in legacy:
+                os.rename(
+                    os.path.join(workspace_root, d),
+                    os.path.join(papers_dir, d),
+                )
+            print(f"  Migrated {len(legacy)} paper(s) into papers/")
 
         os.makedirs(papers_dir, exist_ok=True)
 

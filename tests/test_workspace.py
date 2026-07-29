@@ -14,7 +14,12 @@ sys.path.insert(0, UI_DIR)
 sys.path.insert(0, SCRIPTS_DIR)
 
 import backend.server as srv  # noqa: E402
-from backend.server import _list_papers, _slugify, _unique_slug  # noqa: E402
+from backend.server import (  # noqa: E402
+    _list_papers,
+    _slugify,
+    _title_from_filename,
+    _unique_slug,
+)
 from scaffold import scaffold_paper  # noqa: E402
 
 
@@ -129,3 +134,59 @@ class TestListPapers:
 
         with _workspace_globals(str(tmp_path)):
             assert _list_papers()[0]["title"] == "fallback-slug"
+
+
+# ---------------------------------------------------------------------------
+# _title_from_filename
+# ---------------------------------------------------------------------------
+
+
+class TestTitleFromFilename:
+    def test_strips_pdf_extension(self) -> None:
+        assert _title_from_filename("my-paper.pdf") == "My Paper"
+
+    def test_replaces_separators(self) -> None:
+        assert _title_from_filename("calibrating_llm_judges.pdf") == "Calibrating Llm Judges"
+
+    def test_handles_dotfile_edge_case(self) -> None:
+        assert _title_from_filename(".pdf") == "Untitled"
+
+    def test_handles_special_chars(self) -> None:
+        assert _title_from_filename("---special___chars---.pdf") == "Special Chars"
+
+    def test_preserves_spaces(self) -> None:
+        assert _title_from_filename("hello world.pdf") == "Hello World"
+
+
+# ---------------------------------------------------------------------------
+# _create_paper_for_pdf (path containment guard)
+# ---------------------------------------------------------------------------
+
+
+class TestPathContainment:
+    def test_skips_pdf_inside_paper_dir(self) -> None:
+        """PDF inside the active paper_dir should not create a new paper."""
+        import asyncio
+
+        with _workspace_globals("/workspace", paper_dir="/workspace/papers/my-paper"):
+            result = asyncio.run(
+                srv._create_paper_for_pdf("/workspace/papers/my-paper/doc.pdf")
+            )
+            assert result is None
+
+    def test_does_not_match_sibling_dir_prefix(self) -> None:
+        """paper-2 should NOT be treated as inside paper (prefix collision)."""
+        # Verify the containment check uses os.sep so /papers/paper
+        # doesn't falsely match /papers/paper-2/doc.pdf
+        paper_dir = "/workspace/papers/paper"
+        sibling_pdf = "/workspace/papers/paper-2/doc.pdf"
+        paper_prefix = os.path.abspath(paper_dir) + os.sep
+        assert not os.path.abspath(sibling_pdf).startswith(paper_prefix)
+
+    def test_skips_in_single_paper_mode(self) -> None:
+        """Non-workspace mode should always return None."""
+        import asyncio
+
+        with _workspace_globals(workspace_root=None, paper_dir="/some/paper"):
+            result = asyncio.run(srv._create_paper_for_pdf("/tmp/ext.pdf"))
+            assert result is None

@@ -219,15 +219,17 @@ export default function PdfViewer() {
 
           const page = await pdf.getPage(i)
           const viewport = page.getViewport({ scale: fitScale })
+          const pxWidth = Math.floor(viewport.width)
+          const pxHeight = Math.floor(viewport.height)
 
-          // Page wrapper — exact pixel dimensions so canvas + text layer align 1:1
+          // Page wrapper — integer pixel dimensions so canvas + text layer align 1:1
           const pageDiv = document.createElement('div')
-          pageDiv.style.cssText = `position: relative; width: ${viewport.width}px; height: ${viewport.height}px; box-shadow: 0 2px 12px rgba(0,0,0,0.5);`
+          pageDiv.style.cssText = `position: relative; width: ${pxWidth}px; height: ${pxHeight}px; box-shadow: 0 2px 12px rgba(0,0,0,0.5);`
 
           const canvas = document.createElement('canvas')
           canvas.style.cssText = 'display: block;'
-          canvas.width = viewport.width
-          canvas.height = viewport.height
+          canvas.width = pxWidth
+          canvas.height = pxHeight
           pageDiv.appendChild(canvas)
 
           // Text layer overlay — uses official pdfjs .textLayer class

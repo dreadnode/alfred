@@ -127,8 +127,8 @@ function addMessage(
 }
 
 function formatTokens(n: number): string {
-  if (n >= 1_000_000) return (n / 1_000_000).toFixed(1) + 'M'
-  if (n >= 1_000) return (n / 1_000).toFixed(1) + 'k'
+  if (n >= 1_000_000) { const v = n / 1_000_000; return (v >= 10 ? Math.round(v) : +v.toFixed(1)) + 'M' }
+  if (n >= 1_000) { const v = n / 1_000; return (v >= 10 ? Math.round(v) : +v.toFixed(1)) + 'k' }
   return String(n)
 }
 
@@ -473,8 +473,12 @@ export default function TerminalChat({ headerExtra, onPaperCreated }: TerminalCh
       })
         .then(r => r.json())
         .then(data => {
-          if (data.error) addMessage(setMessages, 'error', data.error)
-          else addMessage(setMessages, 'status', `Loaded: ${data.path}`)
+          if (data.error) { addMessage(setMessages, 'error', data.error); return }
+          addMessage(setMessages, 'status', `Loaded: ${data.path}`)
+          if (data.paper_created) {
+            addMessage(setMessages, 'status', `Created paper: ${data.paper_created.title}`)
+            onPaperCreated?.()
+          }
         })
         .catch(() => addMessage(setMessages, 'error', 'Failed to load PDF.'))
       setInput('')
@@ -891,10 +895,10 @@ export default function TerminalChat({ headerExtra, onPaperCreated }: TerminalCh
               color: 'var(--al-interactive)', fontSize: '13px', fontFamily: 'var(--font-mono)',
               opacity: 0.6,
             }}>Agent working</span>
-            <span style={{
+            <span role="button" tabIndex={0} style={{
               color: 'var(--dn-text-dim)', fontSize: '12px', fontFamily: 'var(--font-mono)',
               cursor: 'pointer',
-            }} onClick={handleCancel}>Press Esc to cancel</span>
+            }} onClick={handleCancel} onKeyDown={e => { if (e.key === 'Enter') handleCancel() }}>Press Esc to cancel</span>
           </div>
         )}
         <div ref={messagesEndRef} />

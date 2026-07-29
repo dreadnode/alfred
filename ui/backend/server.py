@@ -497,7 +497,8 @@ async def _create_paper_for_pdf(
     if not _workspace_root:
         return None
     # Skip if the PDF is already inside the active paper directory
-    if os.path.abspath(pdf_path).startswith(os.path.abspath(_paper_dir)):
+    paper_prefix = os.path.abspath(_paper_dir) + os.sep
+    if os.path.abspath(pdf_path).startswith(paper_prefix):
         return None
 
     display_name = os.path.basename(filename or pdf_path)
@@ -615,6 +616,9 @@ async def upload_pdf(file: UploadFile) -> dict[str, t.Any]:
     paper_created = None
     if paper_info:
         _custom_pdf = os.path.abspath(paper_info["pdf_path"])
+        # Clean up the temp file — PDF has been copied into the paper directory
+        with contextlib.suppress(OSError):
+            os.unlink(tmp.name)
         paper_created = {"slug": paper_info["slug"], "title": paper_info["title"]}
 
     # Notify PDF clients
