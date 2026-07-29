@@ -44,7 +44,7 @@ if t.TYPE_CHECKING:
 # Module-level configuration (set once via ``configure()`` before server start)
 # ---------------------------------------------------------------------------
 
-VERSION: str = "0.2.0"
+from . import __version__ as VERSION
 
 _paper_dir: str = ""
 _model: str = ""
