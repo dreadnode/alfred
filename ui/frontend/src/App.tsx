@@ -199,7 +199,7 @@ export default function App() {
                 }}
               >+ NEW</button>
             </>
-          ) : undefined} />
+          ) : undefined} onPaperCreated={() => setPaperKey(k => k + 1)} />
         </div>
 
         {/* Resizer */}

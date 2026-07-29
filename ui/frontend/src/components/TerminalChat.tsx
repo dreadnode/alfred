@@ -191,9 +191,10 @@ interface CommandDef {
 
 interface TerminalChatProps {
   headerExtra?: React.ReactNode
+  onPaperCreated?: () => void
 }
 
-export default function TerminalChat({ headerExtra }: TerminalChatProps = {}) {
+export default function TerminalChat({ headerExtra, onPaperCreated }: TerminalChatProps = {}) {
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [input, setInput] = useState('')
   const [promptHistory] = useState<string[]>(() => {
@@ -595,6 +596,10 @@ export default function TerminalChat({ headerExtra }: TerminalChatProps = {}) {
           return
         }
         addMessage(setMessages, 'status', `Loaded ${data.filename} into viewer.`)
+        if (data.paper_created) {
+          addMessage(setMessages, 'status', `Created paper: ${data.paper_created.title}`)
+          onPaperCreated?.()
+        }
         // Send extracted text to the agent as context
         if (data.text_ok && data.text && status === 'connected' && !isProcessing) {
           const maxChars = 50000
@@ -607,7 +612,7 @@ export default function TerminalChat({ headerExtra }: TerminalChatProps = {}) {
         }
       })
       .catch(() => addMessage(setMessages, 'error', 'Failed to upload PDF.'))
-  }, [status, isProcessing, send])
+  }, [status, isProcessing, send, onPaperCreated])
 
   const openSettings = useCallback(() => {
     setSettingsModel(modelName)

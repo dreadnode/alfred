@@ -80,9 +80,11 @@ class TestSlugify:
 
 class TestUniqueSlug:
     def test_appends_suffix_on_collision(self, tmp_path: t.Any) -> None:
-        (tmp_path / "my-paper").mkdir()
-        (tmp_path / "my-paper-2").mkdir()
-        assert _unique_slug("My Paper", str(tmp_path)) == "my-paper-3"
+        papers_dir = tmp_path / "papers"
+        papers_dir.mkdir()
+        (papers_dir / "my-paper").mkdir()
+        (papers_dir / "my-paper-2").mkdir()
+        assert _unique_slug("My Paper", str(papers_dir)) == "my-paper-3"
 
 
 # ---------------------------------------------------------------------------
@@ -96,16 +98,19 @@ class TestListPapers:
             assert _list_papers() == []
 
     def test_lists_papers_with_active_flag(self, tmp_path: t.Any) -> None:
-        p1 = tmp_path / "paper-one"
+        papers_dir = tmp_path / "papers"
+        papers_dir.mkdir()
+
+        p1 = papers_dir / "paper-one"
         p1.mkdir()
         (p1 / "paper.yaml").write_text('title: "First Paper"\n')
 
-        p2 = tmp_path / "paper-two"
+        p2 = papers_dir / "paper-two"
         p2.mkdir()
         (p2 / "paper.yaml").write_text('title: "Second Paper"\n')
 
         # Non-paper dir should be ignored
-        (tmp_path / "not-a-paper").mkdir()
+        (papers_dir / "not-a-paper").mkdir()
 
         with _workspace_globals(str(tmp_path), paper_dir=str(p1)):
             papers = _list_papers()
@@ -116,7 +121,9 @@ class TestListPapers:
             ]
 
     def test_falls_back_to_dirname_when_no_title(self, tmp_path: t.Any) -> None:
-        p = tmp_path / "fallback-slug"
+        papers_dir = tmp_path / "papers"
+        papers_dir.mkdir()
+        p = papers_dir / "fallback-slug"
         p.mkdir()
         (p / "paper.yaml").write_text("template: article\n")
 

@@ -122,17 +122,38 @@ def main() -> None:
     else:
         # Workspace mode — paper_dir is the workspace root.
         workspace_root = paper_dir
+        papers_dir = os.path.join(workspace_root, "papers")
+
+        # Migrate legacy layout: move paper subdirs from root into papers/
+        if not os.path.isdir(papers_dir):
+            legacy = [
+                d
+                for d in os.listdir(workspace_root)
+                if os.path.isdir(os.path.join(workspace_root, d))
+                and os.path.isfile(os.path.join(workspace_root, d, "paper.yaml"))
+            ]
+            if legacy:
+                os.makedirs(papers_dir, exist_ok=True)
+                for d in legacy:
+                    os.rename(
+                        os.path.join(workspace_root, d),
+                        os.path.join(papers_dir, d),
+                    )
+                print(f"  Migrated {len(legacy)} paper(s) into papers/")
+
+        os.makedirs(papers_dir, exist_ok=True)
+
         # Find first existing paper subdir, or scaffold one.
         subdirs = sorted(
             d
-            for d in os.listdir(paper_dir)
-            if os.path.isdir(os.path.join(paper_dir, d))
-            and os.path.isfile(os.path.join(paper_dir, d, "paper.yaml"))
+            for d in os.listdir(papers_dir)
+            if os.path.isdir(os.path.join(papers_dir, d))
+            and os.path.isfile(os.path.join(papers_dir, d, "paper.yaml"))
         )
         if subdirs:
-            paper_dir = os.path.join(workspace_root, subdirs[0])
+            paper_dir = os.path.join(papers_dir, subdirs[0])
         else:
-            paper_dir = os.path.join(workspace_root, "untitled-paper")
+            paper_dir = os.path.join(papers_dir, "untitled-paper")
             _scaffold_paper(paper_dir)
 
     model: str = _resolve_api_key(args.api_key, args.model)
