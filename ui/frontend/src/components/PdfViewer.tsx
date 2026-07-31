@@ -69,6 +69,7 @@ export default function PdfViewer() {
   const [pageCount, setPageCount] = useState(0)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [darkMode, setDarkMode] = useState(() => localStorage.getItem('pdf-dark-mode') === '1')
   const [pdfVersion, setPdfVersion] = useState(0)
   const [paperTitle, setPaperTitle] = useState('')
   const [showTitleEdit, setShowTitleEdit] = useState(false)
@@ -338,6 +339,13 @@ export default function PdfViewer() {
           {pageCount > 0 && (
             <span style={styles.pageInfo}>{pageCount} page{pageCount !== 1 ? 's' : ''}</span>
           )}
+          <span
+            role="button" tabIndex={0}
+            onClick={() => { const next = !darkMode; setDarkMode(next); localStorage.setItem('pdf-dark-mode', next ? '1' : '0') }}
+            onKeyDown={e => { if (e.key === 'Enter') { const next = !darkMode; setDarkMode(next); localStorage.setItem('pdf-dark-mode', next ? '1' : '0') } }}
+            style={{ cursor: 'pointer', fontSize: '14px', opacity: 0.7, userSelect: 'none' }}
+            title={darkMode ? 'Switch to light mode' : 'Switch to dark mode'}
+          >{darkMode ? '☀️' : '🌙'}</span>
         </div>
       </div>
       {/* Title Edit Modal */}
@@ -388,7 +396,7 @@ export default function PdfViewer() {
         </div>
       )}
 
-      <div style={styles.viewport} ref={viewportRef} />
+      <div style={{ ...styles.viewport, ...(darkMode ? { filter: 'invert(1) hue-rotate(180deg)' } : {}) }} ref={viewportRef} />
     </div>
   )
 }
