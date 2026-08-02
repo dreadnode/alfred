@@ -676,7 +676,7 @@ export default function TerminalChat({ headerExtra, onPaperCreated }: TerminalCh
       onDrop={handleDrop}
     >
       {/* Header */}
-      <div style={styles.header}>
+      <div style={styles.header} onClick={e => e.stopPropagation()}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '24px' }}>
           <span style={styles.headerTitle}>ALFRED{appVersion && <span style={{ color: '#fff', fontSize: '10px', fontWeight: 400 }}> v{appVersion}</span>}</span>
           {headerExtra && (

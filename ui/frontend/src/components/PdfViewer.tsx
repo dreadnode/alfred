@@ -266,6 +266,7 @@ export default function PdfViewer() {
           setError(`PDF load error: ${msg}`)
         }
         setPageCount(0)
+        setPaperTitle('')
       } finally {
         if (!cancelled) {
           setLoading(false)
@@ -311,6 +312,13 @@ export default function PdfViewer() {
             </span>
           )}
         </div>
+          <span
+            role="button" tabIndex={0}
+            onClick={() => { const next = !darkMode; setDarkMode(next); localStorage.setItem('pdf-dark-mode', next ? '1' : '0') }}
+            onKeyDown={e => { if (e.key === 'Enter') { const next = !darkMode; setDarkMode(next); localStorage.setItem('pdf-dark-mode', next ? '1' : '0') } }}
+            style={{ cursor: 'pointer', fontSize: '14px', opacity: 0.7, userSelect: 'none' }}
+            title={darkMode ? 'Switch to light mode' : 'Switch to dark mode'}
+          >{darkMode ? '☀️' : '🌙'}</span>
         </div>
         <div style={styles.empty}>{error}</div>
       </div>

@@ -191,9 +191,21 @@ async def _restart_pdf_watcher() -> None:
 
 async def _switch_paper(new_paper_dir: str) -> None:
     """Switch the active paper directory at runtime."""
-    global _paper_dir
+    global _paper_dir, _custom_pdf
     _paper_dir = os.path.abspath(new_paper_dir)
     _sessions.clear()
+
+    # If the paper dir has a PDF file (e.g. from upload), show it automatically.
+    # Otherwise reset to built PDF.
+    _custom_pdf = None
+    built_pdf = os.path.join(_paper_dir, "build", "main.pdf")
+    if not os.path.isfile(built_pdf):
+        # Look for a .pdf file in the paper directory root
+        for fname in os.listdir(_paper_dir):
+            if fname.lower().endswith(".pdf"):
+                _custom_pdf = os.path.join(_paper_dir, fname)
+                break
+
     await _restart_pdf_watcher()
 
 

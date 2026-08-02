@@ -190,3 +190,154 @@ class TestPathContainment:
         with _workspace_globals(workspace_root=None, paper_dir="/some/paper"):
             result = asyncio.run(srv._create_paper_for_pdf("/tmp/ext.pdf"))
             assert result is None
+
+
+# ---------------------------------------------------------------------------
+# switch_paper endpoint
+# ---------------------------------------------------------------------------
+
+
+class TestSwitchPaper:
+    def test_switches_to_valid_paper(self, tmp_path: t.Any) -> None:
+        """Switching to a valid paper updates _paper_dir and returns title."""
+        import asyncio
+        from unittest.mock import AsyncMock, patch
+
+        papers = tmp_path / "papers"
+        papers.mkdir()
+        p1 = papers / "paper-one"
+        p1.mkdir()
+        (p1 / "paper.yaml").write_text('title: "First Paper"\n')
+
+        p2 = papers / "paper-two"
+        p2.mkdir()
+        (p2 / "paper.yaml").write_text('title: "Second Paper"\n')
+
+        with _workspace_globals(str(tmp_path), paper_dir=str(p1)):
+            with patch.object(srv, "_restart_pdf_watcher", new_callable=AsyncMock):
+                result = asyncio.run(srv.switch_paper({"slug": "paper-two"}))
+            assert result["slug"] == "paper-two"
+            assert result["title"] == "Second Paper"
+            assert srv._paper_dir == str(p2)
+
+    def test_auto_loads_pdf_when_no_build(self, tmp_path: t.Any) -> None:
+        """Switching to a paper with an uploaded PDF but no build auto-sets _custom_pdf."""
+        import asyncio
+        from unittest.mock import AsyncMock, patch
+
+        papers = tmp_path / "papers"
+        papers.mkdir()
+        p1 = papers / "paper-one"
+        p1.mkdir()
+        (p1 / "paper.yaml").write_text('title: "First"\n')
+
+        p2 = papers / "uploaded-paper"
+        p2.mkdir()
+        (p2 / "paper.yaml").write_text('title: "Uploaded"\n')
+        (p2 / "build").mkdir()  # empty build dir, no main.pdf
+        (p2 / "my-doc.pdf").write_bytes(b"%PDF-fake")
+
+        with _workspace_globals(str(tmp_path), paper_dir=str(p1)):
+            with patch.object(srv, "_restart_pdf_watcher", new_callable=AsyncMock):
+                asyncio.run(srv.switch_paper({"slug": "uploaded-paper"}))
+            assert srv._custom_pdf == str(p2 / "my-doc.pdf")
+
+    def test_resets_custom_pdf_when_build_exists(self, tmp_path: t.Any) -> None:
+        """Switching to a paper with build/main.pdf should NOT set _custom_pdf."""
+        import asyncio
+        from unittest.mock import AsyncMock, patch
+
+        papers = tmp_path / "papers"
+        papers.mkdir()
+        p1 = papers / "built-paper"
+        p1.mkdir()
+        (p1 / "paper.yaml").write_text('title: "Built"\n')
+        build = p1 / "build"
+        build.mkdir()
+        (build / "main.pdf").write_bytes(b"%PDF-fake")
+
+        with _workspace_globals(str(tmp_path), paper_dir=str(tmp_path)):
+            srv._custom_pdf = "/old/stale.pdf"
+            with patch.object(srv, "_restart_pdf_watcher", new_callable=AsyncMock):
+                asyncio.run(srv.switch_paper({"slug": "built-paper"}))
+            assert srv._custom_pdf is None
+
+    def test_rejects_nonexistent_paper(self, tmp_path: t.Any) -> None:
+        """Switching to a paper that doesn't exist returns an error."""
+        import asyncio
+        from unittest.mock import AsyncMock, patch
+
+        papers = tmp_path / "papers"
+        papers.mkdir()
+
+        with _workspace_globals(str(tmp_path), paper_dir=str(tmp_path)):
+            with patch.object(srv, "_restart_pdf_watcher", new_callable=AsyncMock):
+                result = asyncio.run(srv.switch_paper({"slug": "nope"}))
+            assert "error" in result
+
+    def test_rejects_when_not_workspace(self) -> None:
+        """Switching is not allowed in single-paper mode."""
+        import asyncio
+
+        with _workspace_globals(workspace_root=None):
+            result = asyncio.run(srv.switch_paper({"slug": "any"}))
+            assert "error" in result
+
+
+# ---------------------------------------------------------------------------
+# create_paper endpoint
+# ---------------------------------------------------------------------------
+
+
+class TestCreatePaper:
+    def test_creates_paper_under_papers_dir(self, tmp_path: t.Any) -> None:
+        """Creating a paper scaffolds it under papers/ and switches to it."""
+        import asyncio
+        from unittest.mock import AsyncMock, patch
+
+        papers = tmp_path / "papers"
+        papers.mkdir()
+
+        with _workspace_globals(str(tmp_path), paper_dir=str(tmp_path)):
+            with patch.object(srv, "_restart_pdf_watcher", new_callable=AsyncMock):
+                result = asyncio.run(srv.create_paper({"title": "My New Paper"}))
+
+            assert result["slug"] == "my-new-paper"
+            assert result["title"] == "My New Paper"
+            new_dir = papers / "my-new-paper"
+            assert new_dir.is_dir()
+            assert (new_dir / "paper.yaml").is_file()
+            assert srv._paper_dir == str(new_dir)
+
+    def test_rejects_empty_title(self, tmp_path: t.Any) -> None:
+        """Empty title is rejected."""
+        import asyncio
+
+        with _workspace_globals(str(tmp_path)):
+            result = asyncio.run(srv.create_paper({"title": ""}))
+            assert "error" in result
+
+    def test_rejects_when_not_workspace(self) -> None:
+        """Creating is not allowed in single-paper mode."""
+        import asyncio
+
+        with _workspace_globals(workspace_root=None):
+            result = asyncio.run(srv.create_paper({"title": "Test"}))
+            assert "error" in result
+
+    def test_deduplicates_slug(self, tmp_path: t.Any) -> None:
+        """Duplicate title gets a unique slug."""
+        import asyncio
+        from unittest.mock import AsyncMock, patch
+
+        papers = tmp_path / "papers"
+        papers.mkdir()
+        (papers / "my-paper").mkdir()
+        (papers / "my-paper" / "paper.yaml").write_text('title: "My Paper"\n')
+
+        with _workspace_globals(str(tmp_path), paper_dir=str(tmp_path)):
+            with patch.object(srv, "_restart_pdf_watcher", new_callable=AsyncMock):
+                result = asyncio.run(srv.create_paper({"title": "My Paper"}))
+
+            assert result["slug"] == "my-paper-2"
+            assert (papers / "my-paper-2").is_dir()
