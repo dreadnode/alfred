@@ -219,18 +219,20 @@ export default function PdfViewer() {
           if (cancelled) return
 
           const page = await pdf.getPage(i)
+          const dpr = window.devicePixelRatio || 1
           const viewport = page.getViewport({ scale: fitScale })
-          const pxWidth = Math.floor(viewport.width)
-          const pxHeight = Math.floor(viewport.height)
+          const cssWidth = Math.floor(viewport.width)
+          const cssHeight = Math.floor(viewport.height)
 
-          // Page wrapper — integer pixel dimensions so canvas + text layer align 1:1
+          // Page wrapper — CSS dimensions for layout
           const pageDiv = document.createElement('div')
-          pageDiv.style.cssText = `position: relative; width: ${pxWidth}px; height: ${pxHeight}px; box-shadow: 0 2px 12px rgba(0,0,0,0.5);`
+          pageDiv.style.cssText = `position: relative; width: ${cssWidth}px; height: ${cssHeight}px; box-shadow: 0 2px 12px rgba(0,0,0,0.5);`
 
+          // Canvas renders at dpr×  resolution for crisp text on high-DPI screens
           const canvas = document.createElement('canvas')
-          canvas.style.cssText = 'display: block;'
-          canvas.width = pxWidth
-          canvas.height = pxHeight
+          canvas.width = Math.floor(viewport.width * dpr)
+          canvas.height = Math.floor(viewport.height * dpr)
+          canvas.style.cssText = `display: block; width: ${cssWidth}px; height: ${cssHeight}px;`
           pageDiv.appendChild(canvas)
 
           // Text layer overlay — uses official pdfjs .textLayer class
@@ -240,10 +242,12 @@ export default function PdfViewer() {
 
           container.appendChild(pageDiv)
 
+          // Render at high resolution
           const ctx = canvas.getContext('2d')!
-          await page.render({ canvasContext: ctx, viewport }).promise
+          const hiResViewport = page.getViewport({ scale: fitScale * dpr })
+          await page.render({ canvasContext: ctx, viewport: hiResViewport }).promise
 
-          // Render selectable text overlay
+          // Text layer uses 1x viewport for CSS positioning
           const textContent = await page.getTextContent()
           const textLayer = new TextLayer({
             textContentSource: textContent,
