@@ -22,6 +22,12 @@ The agent handles these automatically as part of the writing workflow — just t
 - **Validation** — checks refs, markers, braces, sync status before building
 - **Statistics** — word count per section, pages, figures, tables, citations
 - **Track changes** — diff PDF with additions/deletions highlighted against any git revision
+- **PDF dark mode** — toggle for comfortable nighttime reading
+- **PDF zoom** — Ctrl/Cmd + scroll to zoom independently of the split pane
+- **LaTeX math rendering** — formulas in agent responses render with KaTeX
+- **Token usage tracker** — live input/output token counts in the header
+- **Workspace mode** — multi-paper support with paper switcher and auto-creation from uploaded PDFs
+- **Session persistence** — chat history survives refreshes and reconnects
 
 ### Capabilities
 
@@ -44,7 +50,7 @@ Reports are written to `capabilities/reports/`. Review records and responses are
 
 ### Prerequisites
 
-- **Python 3.12+**
+- **Python 3.10+**
 - **Node.js 18+**
 - **TeX Live** (basic install works for most templates — includes `latexmk` and `biber`)
 - **[uv](https://docs.astral.sh/uv/)** (used by the launcher for venv setup)
@@ -132,54 +138,6 @@ Review records are saved to `reviews/` with YAML frontmatter for machine-readabl
 | `usenix` | USENIX Security / OSDI / ATC | Basic |
 | `acl` | ACL / EMNLP / NAACL | Basic |
 | `acm` | ACM conference (acmart sigconf) | Full |
-
-## Structure
-
-The repo is tooling — paper files are created per-paper via `./al` or `scripts/scaffold.py`.
-
-| Path | Purpose |
-|------|---------|
-| `templates/` | Conference template definitions + bundled .cls/.sty files |
-| `styles/` | Optional style packages (messageboxes, codeblocks) |
-| `scripts/` | Build, sync, cite, stats, diff, validate, template scripts |
-| `capabilities/` | Multi-agent research workflows (lit review, claim verification, etc.) |
-| `ui/` | Web UI — FastAPI backend + React/Vite frontend |
-| `Taskfile.yml` | Dev tasks — `task test`, `task lint`, `task check` |
-| `CLAUDE.md` | Agent instructions (workflow + rules) |
-| `AGENT.md` | Detailed how-to for every operation |
-
-## Web UI
-
-A local web interface for interactive paper editing. Terminal-style chat on the left, live PDF preview on the right.
-
-```bash
-# Pass an env var name or a raw API key
-./alfred --model claude-sonnet-4-20250514 --api-key ANTHROPIC_API_KEY
-./alfred --model claude-sonnet-4-20250514 --api-key sk-ant-...
-
-# Point at an existing paper directory
-./alfred --paper /path/to/paper --model gpt-4o --api-key OPENAI_API_KEY
-
-# Workspace mode — launch in an empty directory for multi-paper support
-mkdir workspace && cd workspace
-/path/to/alfred/alfred --model claude-sonnet-4-20250514 --api-key ANTHROPIC_API_KEY
-
-# Dev mode (frontend hot-reload on port 3000)
-./alfred --model claude-sonnet-4-20250514 --api-key ANTHROPIC_API_KEY --dev
-```
-
-Opens at `http://localhost:8420`. The agent has access to all scripts, file editing, web search, and capabilities — same as the CLI workflow, but with a visual PDF preview that auto-updates on every build.
-
-Features:
-- **Slash commands** — type `/` to see autocomplete for all capabilities and client commands
-- **Workspace mode** — paper switcher bar with dropdown and "+ NEW" button when launched without `--paper`
-- **Settings popup** — click the model name to change model and API key at runtime
-- **Paper title editing** — click the title above the PDF viewer to rename
-- **Drag-and-drop PDF** — drop an external PDF onto the viewer to load it (useful for reviewing other papers)
-- **Cancel** — press Esc or click CANCEL to stop the agent mid-run
-- **Session recovery** — reconnects automatically after network drops, restores chat history
-- **Web search** — built-in via DuckDuckGo, no API key needed
-- **Any LLM** — works with any model supported by [rigging](https://rigging.dreadnode.io) (Anthropic, OpenAI, Gemini, local models, etc.)
 
 ## Development
 
