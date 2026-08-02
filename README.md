@@ -4,7 +4,7 @@
 
 **A**gentic **L**atex **f**or **R**esearch, **E**diting, and **D**rafting.
 
-![ALFRED web UI](docs/agentic-latex-ss-2.png)
+![ALFRED web UI](docs/alfred-ss.png)
 
 ## Features
 
@@ -57,8 +57,8 @@ Reports are written to `capabilities/reports/`. Review records are saved to `rev
 ### Setup
 
 ```bash
-git clone https://github.com/dreadnode/agentic-latex.git
-cd agentic-latex
+git clone https://github.com/dreadnode/alfred.git
+cd alfred
 ./alfred --model claude-sonnet-4-20250514 --api-key ANTHROPIC_API_KEY
 ```
 
