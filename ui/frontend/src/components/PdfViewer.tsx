@@ -70,6 +70,7 @@ export default function PdfViewer() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [darkMode, setDarkMode] = useState(() => localStorage.getItem('pdf-dark-mode') === '1')
+  const [zoomLevel, setZoomLevel] = useState(1.0)
   const [pdfVersion, setPdfVersion] = useState(0)
   const [paperTitle, setPaperTitle] = useState('')
   const [showTitleEdit, setShowTitleEdit] = useState(false)
@@ -118,6 +119,7 @@ export default function PdfViewer() {
     }
   }, [editTitle])
 
+  const scrollRef = useRef<HTMLDivElement>(null)
   const viewportRef = useRef<HTMLDivElement>(null)
   const pdfDocRef = useRef<pdfjsLib.PDFDocumentProxy | null>(null)
 
@@ -199,10 +201,11 @@ export default function PdfViewer() {
         }
 
         const container = viewportRef.current
-        if (!container) return
+        const scrollContainer = scrollRef.current
+        if (!container || !scrollContainer) return
 
         // Preserve scroll position across reloads
-        const scrollTop = container.scrollTop
+        const scrollTop = scrollContainer.scrollTop
 
         // Remove old canvases
         while (container.firstChild) {
@@ -210,7 +213,7 @@ export default function PdfViewer() {
         }
 
         // Compute a scale that fits pages within the container width
-        const containerWidth = Math.max(container.clientWidth - 32, 100) // subtract padding, floor at 100
+        const containerWidth = Math.max(scrollContainer.clientWidth - 32, 100) // subtract padding, floor at 100
         const firstPage = await pdf.getPage(1)
         const baseViewport = firstPage.getViewport({ scale: 1 })
         const fitScale = Math.min(1.5, containerWidth / baseViewport.width)
@@ -259,7 +262,7 @@ export default function PdfViewer() {
 
         // Restore scroll position
         if (!cancelled) {
-          container.scrollTop = scrollTop
+          scrollContainer.scrollTop = scrollTop
         }
       } catch (e) {
         if (cancelled) return
@@ -351,6 +354,15 @@ export default function PdfViewer() {
           {pageCount > 0 && (
             <span style={styles.pageInfo}>{pageCount} page{pageCount !== 1 ? 's' : ''}</span>
           )}
+          {zoomLevel !== 1.0 && (
+            <span
+              role="button" tabIndex={0}
+              onClick={() => setZoomLevel(1.0)}
+              onKeyDown={e => { if (e.key === 'Enter') setZoomLevel(1.0) }}
+              style={{ ...styles.pageInfo, cursor: 'pointer', textDecoration: 'underline', textDecorationStyle: 'dotted' as const, textUnderlineOffset: '3px' }}
+              title="Reset zoom to 100%"
+            >{Math.round(zoomLevel * 100)}%</span>
+          )}
           <span
             role="button" tabIndex={0}
             onClick={() => { const next = !darkMode; setDarkMode(next); localStorage.setItem('pdf-dark-mode', next ? '1' : '0') }}
@@ -408,7 +420,25 @@ export default function PdfViewer() {
         </div>
       )}
 
-      <div style={{ ...styles.viewport, ...(darkMode ? { filter: 'invert(1) hue-rotate(180deg)' } : {}) }} ref={viewportRef} />
+      <div
+        ref={scrollRef}
+        style={styles.viewport}
+        onWheel={e => {
+          if (e.ctrlKey || e.metaKey) {
+            e.preventDefault()
+            setZoomLevel(z => {
+              const next = z + (e.deltaY < 0 ? 0.05 : -0.05)
+              return Math.round(Math.min(3.0, Math.max(0.5, next)) * 20) / 20
+            })
+          }
+        }}
+      >
+        <div ref={viewportRef} style={{
+          transform: `scale(${zoomLevel})`,
+          transformOrigin: 'top center',
+          ...(darkMode ? { filter: 'invert(1) hue-rotate(180deg)' } : {}),
+        }} />
+      </div>
     </div>
   )
 }
