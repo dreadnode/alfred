@@ -1,6 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import Markdown from 'react-markdown'
+import rehypeKatex from 'rehype-katex'
 import remarkGfm from 'remark-gfm'
+import remarkMath from 'remark-math'
+import 'katex/dist/katex.min.css'
 import { useWebSocket, ConnectionStatus } from '../hooks/useWebSocket'
 
 // --- Types ---
@@ -134,7 +137,7 @@ function formatTokens(n: number): string {
 
 const CLIENT_COMMANDS = [
   { name: '/clear', description: 'Reset session and start fresh' },
-  { name: '/copy [N]', description: 'Copy last N agent messages (default 10)' },
+  { name: '/copy [N|all]', description: 'Copy last N agent messages (default 1, "all" for entire chat)' },
   { name: '/help', description: 'Show this guide' },
   { name: '/load-pdf <path>', description: 'Load an external PDF into viewer' },
   { name: '/reset-pdf', description: 'Reset viewer to built paper' },
@@ -441,10 +444,11 @@ export default function TerminalChat({ headerExtra, onPaperCreated }: TerminalCh
 
     if (trimmed.startsWith('/copy')) {
       const countArg = trimmed.slice(5).trim()
-      const parsed = countArg ? parseInt(countArg, 10) : 10
-      const count = isNaN(parsed) || parsed <= 0 ? 10 : parsed
       const all = messages.filter(m => m.type === 'assistant')
-      const selected = all.slice(-count)
+      const copyAll = countArg.toLowerCase() === 'all'
+      const parsed = countArg && !copyAll ? parseInt(countArg, 10) : 1
+      const count = isNaN(parsed) || parsed <= 0 ? 1 : parsed
+      const selected = copyAll ? all : all.slice(-count)
       const text = selected.map(m => m.content).join('\n\n')
       if (selected.length === 0) {
         addMessage(setMessages, 'status', 'No agent messages to copy.')
@@ -672,7 +676,7 @@ export default function TerminalChat({ headerExtra, onPaperCreated }: TerminalCh
       onDrop={handleDrop}
     >
       {/* Header */}
-      <div style={styles.header}>
+      <div style={styles.header} onClick={e => e.stopPropagation()}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '24px' }}>
           <span style={styles.headerTitle}>ALFRED{appVersion && <span style={{ color: '#fff', fontSize: '10px', fontWeight: 400 }}> v{appVersion}</span>}</span>
           {headerExtra && (
@@ -838,7 +842,10 @@ export default function TerminalChat({ headerExtra, onPaperCreated }: TerminalCh
             )}
             {msg.type === 'assistant' && (
               <div className="markdown-body" style={{ fontFamily: 'inherit', fontSize: '13px', lineHeight: '1.5' }}>
-                <Markdown remarkPlugins={[remarkGfm]}>{msg.content}</Markdown>
+                <Markdown remarkPlugins={[remarkGfm, remarkMath]} rehypePlugins={[rehypeKatex]}>{
+                  msg.content.replace(/```[\s\S]*?```|`[^`]+`|\\\[([\s\S]*?)\\\]|\\\((.*?)\\\)/g,
+                    (m, display, inline) => display !== undefined ? `$$${display}$$` : inline !== undefined ? `$${inline}$` : m)
+                }</Markdown>
               </div>
             )}
             {msg.type === 'tool_start' && (

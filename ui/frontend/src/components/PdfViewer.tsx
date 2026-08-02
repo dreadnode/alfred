@@ -69,6 +69,8 @@ export default function PdfViewer() {
   const [pageCount, setPageCount] = useState(0)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [darkMode, setDarkMode] = useState(() => { try { return localStorage.getItem('pdf-dark-mode') === '1' } catch { return false } })
+  const [zoomLevel, setZoomLevel] = useState(1.0)
   const [pdfVersion, setPdfVersion] = useState(0)
   const [paperTitle, setPaperTitle] = useState('')
   const [showTitleEdit, setShowTitleEdit] = useState(false)
@@ -117,6 +119,7 @@ export default function PdfViewer() {
     }
   }, [editTitle])
 
+  const scrollRef = useRef<HTMLDivElement>(null)
   const viewportRef = useRef<HTMLDivElement>(null)
   const pdfDocRef = useRef<pdfjsLib.PDFDocumentProxy | null>(null)
 
@@ -198,10 +201,11 @@ export default function PdfViewer() {
         }
 
         const container = viewportRef.current
-        if (!container) return
+        const scrollContainer = scrollRef.current
+        if (!container || !scrollContainer) return
 
         // Preserve scroll position across reloads
-        const scrollTop = container.scrollTop
+        const scrollTop = scrollContainer.scrollTop
 
         // Remove old canvases
         while (container.firstChild) {
@@ -209,7 +213,7 @@ export default function PdfViewer() {
         }
 
         // Compute a scale that fits pages within the container width
-        const containerWidth = Math.max(container.clientWidth - 32, 100) // subtract padding, floor at 100
+        const containerWidth = Math.max(scrollContainer.clientWidth - 32, 100) // subtract padding, floor at 100
         const firstPage = await pdf.getPage(1)
         const baseViewport = firstPage.getViewport({ scale: 1 })
         const fitScale = Math.min(1.5, containerWidth / baseViewport.width)
@@ -218,18 +222,20 @@ export default function PdfViewer() {
           if (cancelled) return
 
           const page = await pdf.getPage(i)
+          const dpr = window.devicePixelRatio || 1
           const viewport = page.getViewport({ scale: fitScale })
-          const pxWidth = Math.floor(viewport.width)
-          const pxHeight = Math.floor(viewport.height)
+          const cssWidth = Math.floor(viewport.width)
+          const cssHeight = Math.floor(viewport.height)
 
-          // Page wrapper — integer pixel dimensions so canvas + text layer align 1:1
+          // Page wrapper — CSS dimensions for layout
           const pageDiv = document.createElement('div')
-          pageDiv.style.cssText = `position: relative; width: ${pxWidth}px; height: ${pxHeight}px; box-shadow: 0 2px 12px rgba(0,0,0,0.5);`
+          pageDiv.style.cssText = `position: relative; width: ${cssWidth}px; height: ${cssHeight}px; box-shadow: 0 2px 12px rgba(0,0,0,0.5);`
 
+          // Canvas renders at dpr×  resolution for crisp text on high-DPI screens
           const canvas = document.createElement('canvas')
-          canvas.style.cssText = 'display: block;'
-          canvas.width = pxWidth
-          canvas.height = pxHeight
+          canvas.width = Math.floor(viewport.width * dpr)
+          canvas.height = Math.floor(viewport.height * dpr)
+          canvas.style.cssText = `display: block; width: ${cssWidth}px; height: ${cssHeight}px;`
           pageDiv.appendChild(canvas)
 
           // Text layer overlay — uses official pdfjs .textLayer class
@@ -239,10 +245,12 @@ export default function PdfViewer() {
 
           container.appendChild(pageDiv)
 
+          // Render at high resolution
           const ctx = canvas.getContext('2d')!
-          await page.render({ canvasContext: ctx, viewport }).promise
+          const hiResViewport = page.getViewport({ scale: fitScale * dpr })
+          await page.render({ canvasContext: ctx, viewport: hiResViewport }).promise
 
-          // Render selectable text overlay
+          // Text layer uses 1x viewport for CSS positioning
           const textContent = await page.getTextContent()
           const textLayer = new TextLayer({
             textContentSource: textContent,
@@ -254,7 +262,7 @@ export default function PdfViewer() {
 
         // Restore scroll position
         if (!cancelled) {
-          container.scrollTop = scrollTop
+          scrollContainer.scrollTop = scrollTop
         }
       } catch (e) {
         if (cancelled) return
@@ -265,6 +273,7 @@ export default function PdfViewer() {
           setError(`PDF load error: ${msg}`)
         }
         setPageCount(0)
+        setPaperTitle('')
       } finally {
         if (!cancelled) {
           setLoading(false)
@@ -310,6 +319,14 @@ export default function PdfViewer() {
             </span>
           )}
         </div>
+          <span
+            role="button" tabIndex={0}
+            onClick={() => { const next = !darkMode; setDarkMode(next); localStorage.setItem('pdf-dark-mode', next ? '1' : '0') }}
+            onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); const next = !darkMode; setDarkMode(next); localStorage.setItem('pdf-dark-mode', next ? '1' : '0') } }}
+            style={{ cursor: 'pointer', fontSize: '14px', opacity: 0.7, userSelect: 'none' }}
+            aria-label={darkMode ? 'Switch to light mode' : 'Switch to dark mode'}
+            title={darkMode ? 'Switch to light mode' : 'Switch to dark mode'}
+          >{darkMode ? '☀️' : '🌙'}</span>
         </div>
         <div style={styles.empty}>{error}</div>
       </div>
@@ -338,6 +355,24 @@ export default function PdfViewer() {
           {pageCount > 0 && (
             <span style={styles.pageInfo}>{pageCount} page{pageCount !== 1 ? 's' : ''}</span>
           )}
+          {zoomLevel !== 1.0 && (
+            <span
+              role="button" tabIndex={0}
+              onClick={() => setZoomLevel(1.0)}
+              onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setZoomLevel(1.0) } }}
+              style={{ ...styles.pageInfo, cursor: 'pointer', textDecoration: 'underline', textDecorationStyle: 'dotted' as const, textUnderlineOffset: '3px' }}
+              aria-label="Reset zoom to 100%"
+              title="Reset zoom to 100%"
+            >{Math.round(zoomLevel * 100)}%</span>
+          )}
+          <span
+            role="button" tabIndex={0}
+            onClick={() => { const next = !darkMode; setDarkMode(next); localStorage.setItem('pdf-dark-mode', next ? '1' : '0') }}
+            onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); const next = !darkMode; setDarkMode(next); localStorage.setItem('pdf-dark-mode', next ? '1' : '0') } }}
+            style={{ cursor: 'pointer', fontSize: '14px', opacity: 0.7, userSelect: 'none' }}
+            aria-label={darkMode ? 'Switch to light mode' : 'Switch to dark mode'}
+            title={darkMode ? 'Switch to light mode' : 'Switch to dark mode'}
+          >{darkMode ? '☀️' : '🌙'}</span>
         </div>
       </div>
       {/* Title Edit Modal */}
@@ -388,7 +423,25 @@ export default function PdfViewer() {
         </div>
       )}
 
-      <div style={styles.viewport} ref={viewportRef} />
+      <div
+        ref={scrollRef}
+        style={styles.viewport}
+        onWheel={e => {
+          if (e.ctrlKey || e.metaKey) {
+            e.preventDefault()
+            setZoomLevel(z => {
+              const next = z + (e.deltaY < 0 ? 0.05 : -0.05)
+              return Math.round(Math.min(3.0, Math.max(0.5, next)) * 20) / 20
+            })
+          }
+        }}
+      >
+        <div ref={viewportRef} style={{
+          transform: `scale(${zoomLevel})`,
+          transformOrigin: 'top center',
+          ...(darkMode ? { filter: 'invert(1) hue-rotate(180deg)' } : {}),
+        }} />
+      </div>
     </div>
   )
 }
