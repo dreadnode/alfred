@@ -31,20 +31,20 @@ The agent handles these automatically as part of the writing workflow — just t
 
 ### Capabilities
 
-Multi-agent workflows you can kick off by asking the agent. These run specialized subagents for research-heavy tasks.
+Multi-agent research workflows — type `/` in the chat to see all commands.
 
-| Capability | What to ask | What it does |
-|------------|-------------|--------------|
-| Literature review | "Do a lit review on X" | Searches for sources, deep-reads each, synthesizes a themed report with must-cite rankings |
-| Claim verification | "Verify the claims in the introduction" | Extracts claims from LaTeX, checks each against prior work, produces per-claim verdicts |
-| Source discovery | "Find papers on X" | Quick search — returns a ranked list of relevant sources |
-| Source analysis | "Analyze this paper: [URL]" | Deep-reads a single source into a structured card with findings and methodology |
-| Peer review | "Start a peer review session" | Interactive — you send notes as you read, agent categorizes and builds a structured feedback report |
-| Process peer review | `/process-peer-review reviews/file.md` | Reads a review record, confirms or refutes each item against the paper, applies fixes |
-| Spellcheck | `/spellcheck` or `/spellcheck section/01_introduction.tex` | Spelling, grammar, and style check across all sections or a specific file |
-| LLM writing detection | "Check if this was written by AI" | Analyzes prose for LLM tells — vocabulary, structure, tone, transitions — produces a per-section detection report |
+| Command | Description |
+|---------|-------------|
+| `/lit-review "topic"` | Search for sources, deep-read each, synthesize a themed report with must-cite rankings |
+| `/search-sources "query"` | Quick source discovery — ranked list of relevant papers |
+| `/analyze-source <URL>` | Deep-read a single source into a structured card with findings and methodology |
+| `/verify-claims section/file.tex` | Extract claims from LaTeX, check each against prior work, produce per-claim verdicts |
+| `/peer-review` | Interactive review session — send notes as you read, agent categorizes and builds a structured report |
+| `/process-peer-review [file]` | Process a peer review record — confirm or refute each item, apply fixes |
+| `/spellcheck [file]` | Spelling, grammar, and style check across all sections or a specific file |
+| `/detect-llm-writing [file]` | Analyze prose for LLM writing indicators — vocabulary, structure, tone, transitions |
 
-Reports are written to `capabilities/reports/`. Review records and responses are saved to `reviews/`. See `capabilities/README.md` for full details.
+Reports are written to `capabilities/reports/`. Review records are saved to `reviews/`.
 
 ## Installation
 

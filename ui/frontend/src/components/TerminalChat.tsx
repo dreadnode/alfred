@@ -843,9 +843,8 @@ export default function TerminalChat({ headerExtra, onPaperCreated }: TerminalCh
             {msg.type === 'assistant' && (
               <div className="markdown-body" style={{ fontFamily: 'inherit', fontSize: '13px', lineHeight: '1.5' }}>
                 <Markdown remarkPlugins={[remarkGfm, remarkMath]} rehypePlugins={[rehypeKatex]}>{
-                  msg.content
-                    .replace(/\\\[([\s\S]*?)\\\]/g, (_m, p1) => `$$${p1}$$`)
-                    .replace(/\\\((.*?)\\\)/g, (_m, p1) => `$${p1}$`)
+                  msg.content.replace(/```[\s\S]*?```|`[^`]+`|\\\[([\s\S]*?)\\\]|\\\((.*?)\\\)/g,
+                    (m, display, inline) => display !== undefined ? `$$${display}$$` : inline !== undefined ? `$${inline}$` : m)
                 }</Markdown>
               </div>
             )}

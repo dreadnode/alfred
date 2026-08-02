@@ -201,7 +201,7 @@ async def _switch_paper(new_paper_dir: str) -> None:
     built_pdf = os.path.join(_paper_dir, "build", "main.pdf")
     if not os.path.isfile(built_pdf):
         # Look for a .pdf file in the paper directory root
-        for fname in os.listdir(_paper_dir):
+        for fname in sorted(os.listdir(_paper_dir)):
             if fname.lower().endswith(".pdf"):
                 _custom_pdf = os.path.join(_paper_dir, fname)
                 break

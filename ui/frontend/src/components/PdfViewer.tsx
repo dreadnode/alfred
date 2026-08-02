@@ -69,7 +69,7 @@ export default function PdfViewer() {
   const [pageCount, setPageCount] = useState(0)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [darkMode, setDarkMode] = useState(() => localStorage.getItem('pdf-dark-mode') === '1')
+  const [darkMode, setDarkMode] = useState(() => { try { return localStorage.getItem('pdf-dark-mode') === '1' } catch { return false } })
   const [zoomLevel, setZoomLevel] = useState(1.0)
   const [pdfVersion, setPdfVersion] = useState(0)
   const [paperTitle, setPaperTitle] = useState('')
@@ -322,8 +322,9 @@ export default function PdfViewer() {
           <span
             role="button" tabIndex={0}
             onClick={() => { const next = !darkMode; setDarkMode(next); localStorage.setItem('pdf-dark-mode', next ? '1' : '0') }}
-            onKeyDown={e => { if (e.key === 'Enter') { const next = !darkMode; setDarkMode(next); localStorage.setItem('pdf-dark-mode', next ? '1' : '0') } }}
+            onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); const next = !darkMode; setDarkMode(next); localStorage.setItem('pdf-dark-mode', next ? '1' : '0') } }}
             style={{ cursor: 'pointer', fontSize: '14px', opacity: 0.7, userSelect: 'none' }}
+            aria-label={darkMode ? 'Switch to light mode' : 'Switch to dark mode'}
             title={darkMode ? 'Switch to light mode' : 'Switch to dark mode'}
           >{darkMode ? '☀️' : '🌙'}</span>
         </div>
@@ -358,16 +359,18 @@ export default function PdfViewer() {
             <span
               role="button" tabIndex={0}
               onClick={() => setZoomLevel(1.0)}
-              onKeyDown={e => { if (e.key === 'Enter') setZoomLevel(1.0) }}
+              onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setZoomLevel(1.0) } }}
               style={{ ...styles.pageInfo, cursor: 'pointer', textDecoration: 'underline', textDecorationStyle: 'dotted' as const, textUnderlineOffset: '3px' }}
+              aria-label="Reset zoom to 100%"
               title="Reset zoom to 100%"
             >{Math.round(zoomLevel * 100)}%</span>
           )}
           <span
             role="button" tabIndex={0}
             onClick={() => { const next = !darkMode; setDarkMode(next); localStorage.setItem('pdf-dark-mode', next ? '1' : '0') }}
-            onKeyDown={e => { if (e.key === 'Enter') { const next = !darkMode; setDarkMode(next); localStorage.setItem('pdf-dark-mode', next ? '1' : '0') } }}
+            onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); const next = !darkMode; setDarkMode(next); localStorage.setItem('pdf-dark-mode', next ? '1' : '0') } }}
             style={{ cursor: 'pointer', fontSize: '14px', opacity: 0.7, userSelect: 'none' }}
+            aria-label={darkMode ? 'Switch to light mode' : 'Switch to dark mode'}
             title={darkMode ? 'Switch to light mode' : 'Switch to dark mode'}
           >{darkMode ? '☀️' : '🌙'}</span>
         </div>
