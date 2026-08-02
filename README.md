@@ -4,8 +4,6 @@
 
 **A**gentic **L**atex **f**or **R**esearch, **E**diting, and **D**rafting.
 
-Clone the repo, point an AI coding agent at it, give it a topic — it writes the paper.
-
 ![ALFRED web UI](docs/agentic-latex-ss-2.png)
 
 ## Features
