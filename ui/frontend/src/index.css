@@ -148,9 +148,50 @@ html, body, #root {
 }
 .textLayer ::selection { background: rgba(0, 128, 128, 0.4); }
 
-/* Braille spinner for "Agent working" */
+/* "Agent working" shimmer: a bright band swept left→right across the label.
+   The gradient is twice the element's width and clipped to the glyphs, so
+   animating background-position alone moves the highlight — nothing is laid
+   out or composited per frame. 100%→0% seats the image's right edge at the
+   right, then its left, giving the left-to-right sweep. */
+.agent-working {
+  /* 0.60, not the console's 0.45: gold is a lighter hue than the console's
+     coral, but on #111 it still lands at 3.25:1 at that alpha — under the
+     4.5:1 floor. 0.60 holds the dim end of the sweep at 4.90:1, exactly the
+     contrast this label had before the shimmer. Peak is 18.49:1, so the
+     sweep stays obvious. */
+  --shine-base: rgba(245, 200, 66, 0.60);  /* --al-interactive, held back */
+  --shine-peak: #fffdf0;                   /* gold pushed to a warm white */
+  /* 100deg, not 90: the band leans, so it crosses a glyph's top slightly
+     before its bottom and reads as a highlight travelling over the text. */
+  background-image: linear-gradient(
+    100deg,
+    var(--shine-base) 38%,
+    var(--shine-peak) 50%,
+    var(--shine-base) 62%
+  );
+  background-size: 200% 100%;
+  background-repeat: no-repeat;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  /* Chrome/Safari paint -webkit-text-fill-color over `color`, so the glyphs
+     stay opaque and hide the gradient unless this is cleared too. */
+  -webkit-text-fill-color: transparent;
+  /* 3.2s against the spinner's 0.8s: faster and the two read as one busy
+     flicker rather than a background signal plus a beat. */
+  animation: agent-shine 3.2s linear infinite;
+}
+@keyframes agent-shine {
+  from { background-position: 100% 0; }
+  to   { background-position: 0% 0; }
+}
+
+/* Braille spinner for "Agent working". The colour is restated because the
+   parent clears its fill for the gradient and this would inherit it. */
 .agent-working::before {
   content: '⠋';
+  color: var(--al-interactive);
+  -webkit-text-fill-color: var(--al-interactive);
   animation: braille-spin 0.8s steps(1) infinite;
   margin-right: 6px;
 }
@@ -165,4 +206,20 @@ html, body, #root {
   70%   { content: '⠧'; }
   80%   { content: '⠇'; }
   90%   { content: '⠏'; }
+}
+
+/* Keep the glyph and the label, drop both animations. The gradient goes with
+   the shimmer — frozen, it would park the bright band over one end of the
+   label and read as a rendering fault rather than a deliberate still. */
+@media (prefers-reduced-motion: reduce) {
+  .agent-working {
+    background-image: none;
+    color: var(--al-interactive);
+    -webkit-text-fill-color: var(--al-interactive);
+    opacity: 0.6;
+    animation: none;
+  }
+  .agent-working::before {
+    animation: none;
+  }
 }

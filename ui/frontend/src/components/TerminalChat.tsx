@@ -900,9 +900,12 @@ export default function TerminalChat({ headerExtra, onPaperCreated }: TerminalCh
         ))}
         {isProcessing && (
           <div style={{ display: 'flex', alignItems: 'baseline', gap: '16px', marginBottom: '8px' }}>
+            {/* Colour and opacity live in the stylesheet, not here: the shimmer
+                paints the text with a clipped gradient, which an inline `color`
+                would override and an inline `opacity` would fade along with the
+                highlight, flattening the sweep. */}
             <span className="agent-working" style={{
-              color: 'var(--al-interactive)', fontSize: '13px', fontFamily: 'var(--font-mono)',
-              opacity: 0.6,
+              fontSize: '13px', fontFamily: 'var(--font-mono)',
             }}>Agent working</span>
             <span role="button" tabIndex={0} style={{
               color: 'var(--dn-text-dim)', fontSize: '12px', fontFamily: 'var(--font-mono)',
