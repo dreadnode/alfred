@@ -190,8 +190,13 @@ html, body, #root {
    parent clears its fill for the gradient and this would inherit it. */
 .agent-working::before {
   content: '⠋';
-  color: var(--al-interactive);
-  -webkit-text-fill-color: var(--al-interactive);
+  /* Pre-mixed to the sweep's dim end (4.90:1), which is where this glyph sat
+     before the shimmer. It must be opaque rather than `opacity: 0.6`: the
+     parent's gradient is clipped to text and this glyph counts as text in
+     that box, so any transparency lets the highlight bleed through and the
+     spinner pulses with the sweep instead of holding steady against it. */
+  color: color-mix(in srgb, var(--al-interactive) 60%, var(--dn-bg));
+  -webkit-text-fill-color: color-mix(in srgb, var(--al-interactive) 60%, var(--dn-bg));
   animation: braille-spin 0.8s steps(1) infinite;
   margin-right: 6px;
 }
@@ -221,5 +226,10 @@ html, body, #root {
   }
   .agent-working::before {
     animation: none;
+    /* The rule above dims the whole label, this glyph included, so take the
+       undimmed colour here and let that single opacity do the work -- the
+       base rule's pre-mixed colour would compound with it. */
+    color: var(--al-interactive);
+    -webkit-text-fill-color: var(--al-interactive);
   }
 }
