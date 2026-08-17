@@ -1,0 +1,6 @@
+name: "USENIX"
+description: "USENIX conference proceedings (Security, OSDI, ATC)"
+author_format: usenix
+bibliography_system: bibtex
+extra_files:
+  - usenix-2020-09.sty

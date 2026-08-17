@@ -1,0 +1,8 @@
+name: "ACM Conference"
+description: "ACM conference proceedings (acmart sigconf)"
+author_format: acm
+bibliography_system: bibtex
+bibtex_style: ACM-Reference-Format
+extra_files:
+  - acmart.cls
+  - ACM-Reference-Format.bst

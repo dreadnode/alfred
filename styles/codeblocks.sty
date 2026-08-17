@@ -1,0 +1,68 @@
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{codeblocks}[2025/01/01 Enhanced code block environments]
+
+\RequirePackage[dvipsnames]{xcolor}
+\RequirePackage{listings}
+\RequirePackage{tcolorbox}
+\tcbuselibrary{listings}
+
+% ============================================================================
+% CODE COLORS
+% ============================================================================
+
+\definecolor{codebg}{HTML}{F5F5F5}
+\definecolor{codeframe}{HTML}{CCCCCC}
+\definecolor{codekw}{HTML}{0000CC}
+\definecolor{codecomment}{HTML}{228B22}
+\definecolor{codestring}{HTML}{B22222}
+\definecolor{codenum}{HTML}{999999}
+
+% ============================================================================
+% CODE BLOCK ENVIRONMENT
+% ============================================================================
+
+% Styled code listing inside a tcolorbox
+\newtcblisting{codeblock}[1][]{
+  colback=codebg,
+  colframe=codeframe,
+  boxrule=0.4pt,
+  left=2pt, right=2pt, top=2pt, bottom=2pt,
+  listing only,
+  listing options={
+    basicstyle=\ttfamily\small,
+    breaklines=true,
+    numbers=left,
+    numberstyle=\tiny\color{codenum},
+    keywordstyle=\color{codekw}\bfseries,
+    commentstyle=\color{codecomment}\itshape,
+    stringstyle=\color{codestring},
+    showstringspaces=false,
+    tabsize=2,
+    #1
+  },
+}
+
+% Inline code command
+\newcommand{\inlinecode}[1]{\colorbox{codebg}{\texttt{\small #1}}}
+
+% ============================================================================
+% LANGUAGE PRESETS
+% ============================================================================
+
+\lstdefinestyle{pythonstyle}{
+  language=Python,
+  morekeywords={self,True,False,None,yield,async,await},
+}
+
+\lstdefinestyle{bashstyle}{
+  language=bash,
+  morekeywords={sudo,apt,pip,conda,docker},
+}
+
+\lstdefinestyle{jsonstyle}{
+  string=[s]{"}{"},
+  comment=[l]{//},
+  morecomment=[s]{/*}{*/},
+}
+
+\endinput

@@ -1,0 +1,8 @@
+name: "Springer LNCS"
+description: "Springer Lecture Notes in Computer Science proceedings"
+author_format: lncs
+bibliography_system: bibtex
+bibtex_style: splncs04
+extra_files:
+  - llncs.cls
+  - splncs04.bst

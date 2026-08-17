@@ -1,0 +1,58 @@
+\documentclass{article}
+
+% Submission mode is anonymous. Use [preprint] for a non-anonymous draft or
+% [accepted] after acceptance.
+\usepackage{icml2026}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath,amssymb,amsfonts}
+\usepackage{booktabs}
+\usepackage{graphicx}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\usepackage{url}
+
+% BEGIN SYNC: bibliography
+\bibliographystyle{icml2026}
+% END SYNC: bibliography
+
+% BEGIN SYNC: metadata
+% Paper metadata
+\newcommand{\papertitle}{Paper Title}
+\newcommand{\paperauthors}{Author One, Author Two}
+% END SYNC: metadata
+
+\icmltitlerunning{\papertitle}
+
+\newcommand{\tbd}[1]{\textcolor{red}{\textbf{[TBD: #1]}}}
+\newcommand{\note}[1]{\textcolor{orange}{\textbf{[Note: #1]}}}
+\newcommand{\todo}[1]{\textcolor{purple}{\textbf{[TODO: #1]}}}
+
+% BEGIN SYNC: macros
+% END SYNC: macros
+
+% BEGIN SYNC: styles
+% END SYNC: styles
+
+\begin{document}
+
+% BEGIN SYNC: author-block
+\twocolumn[
+  \icmltitle{\papertitle}
+  \begin{icmlauthorlist}
+    \icmlauthor{Author One}{aff0}
+  \end{icmlauthorlist}
+  \icmlaffiliation{aff0}{Affiliation}
+  \vskip 0.3in
+]
+\printAffiliationsAndNotice{}
+% END SYNC: author-block
+
+% BEGIN SYNC: sections
+\input{section/00_abstract}
+% END SYNC: sections
+
+\bibliography{bibliography}
+
+\end{document}

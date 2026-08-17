@@ -1,0 +1,49 @@
+version: "3"
+
+vars:
+  VENV_PYTHON: ui/backend/.venv/bin/python3
+
+tasks:
+  test:
+    desc: Run all unit tests
+    cmds:
+      - "{{.VENV_PYTHON}} -m pytest tests/ -v"
+
+  test:workspace:
+    desc: Run workspace tests only
+    cmds:
+      - "{{.VENV_PYTHON}} -m pytest tests/test_workspace.py -v"
+
+  test:ui:
+    desc: Run UI backend tests only
+    cmds:
+      - "{{.VENV_PYTHON}} -m pytest tests/test_ui.py -v"
+
+  lint:
+    desc: Run ruff format check and lint
+    cmds:
+      - ruff format --check scripts/ ui/backend/
+      - ruff check scripts/ ui/backend/
+
+  typecheck:
+    desc: Run pyright and tsc
+    cmds:
+      - pyright scripts/ ui/backend/
+      - npx tsc --noEmit --project ui/frontend/tsconfig.json
+
+  fmt:
+    desc: Auto-format Python files
+    cmds:
+      - ruff format scripts/ ui/backend/
+
+  build:
+    desc: Build the frontend
+    cmds:
+      - npm run build --prefix ui/frontend
+
+  check:
+    desc: Run all checks (fmt, lint, test)
+    cmds:
+      - task: fmt
+      - task: lint
+      - task: test

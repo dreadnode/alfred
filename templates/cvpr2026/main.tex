@@ -1,0 +1,56 @@
+\documentclass[10pt,twocolumn,letterpaper]{article}
+
+% Review mode is anonymous and includes line numbers. Use \usepackage{cvpr}
+% after acceptance, or [pagenumbers] for a non-anonymous preprint.
+\usepackage[review]{cvpr}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath,amssymb,amsfonts}
+\usepackage{booktabs}
+\usepackage{graphicx}
+\usepackage{microtype}
+\definecolor{cvprblue}{rgb}{0.21,0.49,0.74}
+\usepackage[pagebackref,breaklinks,colorlinks,allcolors=cvprblue]{hyperref}
+
+\def\paperID{*****}
+\def\confName{CVPR}
+\def\confYear{2026}
+
+% BEGIN SYNC: bibliography
+\bibliographystyle{ieeenat_fullname}
+% END SYNC: bibliography
+
+% BEGIN SYNC: metadata
+% Paper metadata
+\newcommand{\papertitle}{Paper Title}
+\newcommand{\paperauthors}{Author One, Author Two}
+% END SYNC: metadata
+
+\newcommand{\tbd}[1]{\textcolor{red}{\textbf{[TBD: #1]}}}
+\newcommand{\note}[1]{\textcolor{orange}{\textbf{[Note: #1]}}}
+\newcommand{\todo}[1]{\textcolor{purple}{\textbf{[TODO: #1]}}}
+
+% BEGIN SYNC: macros
+% END SYNC: macros
+
+% BEGIN SYNC: styles
+% END SYNC: styles
+
+\begin{document}
+
+% BEGIN SYNC: author-block
+\title{\papertitle}
+\author{\paperauthors}
+\maketitle
+% END SYNC: author-block
+
+% BEGIN SYNC: sections
+\input{section/00_abstract}
+% END SYNC: sections
+
+{\small
+\bibliography{bibliography}
+}
+
+\end{document}

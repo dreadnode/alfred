@@ -1,0 +1,55 @@
+\documentclass[letterpaper]{article}
+
+% Submission mode hides authors and the copyright notice. Replace
+% [submission] with [draft] for a non-anonymous working copy.
+\usepackage[submission]{aaai2026}
+\usepackage{times}
+\usepackage{helvet}
+\usepackage{courier}
+\usepackage[hyphens]{url}
+\usepackage{graphicx}
+\urlstyle{rm}
+\def\UrlFont{\rm}
+\usepackage{natbib}
+\usepackage{caption}
+\frenchspacing
+\setlength{\pdfpagewidth}{8.5in}
+\setlength{\pdfpageheight}{11in}
+
+% BEGIN SYNC: bibliography
+% END SYNC: bibliography
+
+% BEGIN SYNC: metadata
+% Paper metadata
+\newcommand{\papertitle}{Paper Title}
+\newcommand{\paperauthors}{Author One, Author Two}
+% END SYNC: metadata
+
+\newcommand{\tbd}[1]{\textbf{[TBD: #1]}}
+\newcommand{\note}[1]{\textbf{[Note: #1]}}
+\newcommand{\todo}[1]{\textbf{[TODO: #1]}}
+
+% BEGIN SYNC: macros
+% END SYNC: macros
+
+% BEGIN SYNC: styles
+% END SYNC: styles
+
+\begin{document}
+
+% BEGIN SYNC: author-block
+\title{\papertitle}
+\author{\paperauthors}
+\affiliations{}
+\maketitle
+% END SYNC: author-block
+
+% BEGIN SYNC: sections
+\input{section/00_abstract}
+% END SYNC: sections
+
+\bibliography{bibliography}
+
+\input{reproducibility_checklist.tex}
+
+\end{document}

@@ -1,0 +1,15 @@
+capabilities/reports/*.md
+.chat-history.json
+
+# Local ALFRED runtime and paper workspaces
+.alfred/
+papers/
+
+# Python/editor artifacts
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.venv/
+uv.lock
+.DS_Store

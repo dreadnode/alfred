@@ -1,0 +1,8 @@
+name: "NDSS 2026"
+description: "Network and Distributed System Security Symposium 2026"
+author_format: ndss
+bibliography_system: bibtex
+bibtex_style: IEEEtran
+extra_files:
+  - IEEEtran.cls
+  - IEEEtran.bst
