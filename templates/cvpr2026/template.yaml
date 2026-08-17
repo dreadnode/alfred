@@ -1,0 +1,8 @@
+name: "CVPR 2026"
+description: "IEEE/CVF Conference on Computer Vision and Pattern Recognition 2026"
+author_format: cvpr
+bibliography_system: natbib
+natbib_style: ieeenat_fullname
+extra_files:
+  - cvpr.sty
+  - ieeenat_fullname.bst

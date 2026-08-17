@@ -1,0 +1,8 @@
+name: "NeurIPS 2026"
+description: "Conference on Neural Information Processing Systems 2026"
+author_format: neurips
+bibliography_system: natbib
+natbib_style: unsrtnat
+extra_files:
+  - neurips_2026.sty
+  - checklist.tex

@@ -1,0 +1,8 @@
+name: "NeurIPS 2026"
+description: "Current NeurIPS conference format (stable alias)"
+author_format: neurips
+bibliography_system: natbib
+natbib_style: unsrtnat
+extra_files:
+  - neurips_2026.sty
+  - checklist.tex

@@ -1,0 +1,10 @@
+name: "ICML 2026"
+description: "International Conference on Machine Learning 2026"
+author_format: icml
+bibliography_system: natbib
+natbib_style: icml2026
+extra_files:
+  - icml2026.sty
+  - icml2026.bst
+  - algorithm.sty
+  - algorithmic.sty

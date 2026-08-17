@@ -1,0 +1,40 @@
+[project]
+name = "alfred"
+version = "0.5.0"
+description = "Agentic LaTeX for Research, Editing, and Drafting"
+license = "MIT"
+requires-python = ">=3.10"
+dependencies = [
+    "fastapi>=0.115.0",
+    "uvicorn[standard]>=0.30.0",
+    "websockets>=12.0",
+    "watchfiles>=0.20.0",
+    "dreadnode>=1.17.0",
+    "rigging>=3.0.0",
+    "aiohttp>=3.9.0",
+    "duckduckgo-search>=7.0.0",
+    "tavily-python>=0.5.0",
+    "pyyaml>=6.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0.0",
+    "ruff>=0.1.0",
+    "pyright>=1.1.0",
+]
+
+[tool.ruff.lint]
+ignore = [
+    "BLE001",   # blind except Exception — intentional in server/tool error handling
+    "S110",     # try-except-pass — intentional suppression patterns
+    "ASYNC230", # blocking open() in async — small config file reads
+    "PLW1510",  # subprocess.run without check — output inspected manually
+    "PLW0602",  # global without assignment — valid pattern
+    "TRY004",   # prefer TypeError — style preference
+    "EXE001",   # shebang without exec — scripts invoked via python3
+]
+
+[tool.pyright]
+pythonVersion = "3.10"
+extraPaths = ["ui", "scripts"]

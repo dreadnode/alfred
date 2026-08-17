@@ -1,0 +1,5 @@
+name: "Article"
+description: "Plain LaTeX article class — generic academic paper"
+author_format: article
+bibliography_system: biblatex
+extra_files: []

@@ -1,0 +1,247 @@
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+  src: url('./fonts/JetBrainsMono-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+:root {
+  /* ALFRED brand */
+  --al-brand:       #008080;
+  --al-interactive: #f5c842;
+
+  /* Dreadnode palette */
+  --dn-black:       #0a0a0a;
+  --dn-bg:          #111111;
+  --dn-surface:     #1a1a1a;
+  --dn-surface-alt: #151515;
+  --dn-border:      #1f1f1f;
+  --dn-border-lt:   #2a2a2a;
+  --dn-accent:      #ef562f;
+  --dn-accent-dim:  rgba(239, 86, 47, 0.15);
+  --dn-accent-glow: rgba(239, 86, 47, 0.3);
+  --dn-text:        #e0e0e0;
+  --dn-text-bright: #ffffff;
+  --dn-text-muted:  #666666;
+  --dn-text-dim:    #444444;
+  --dn-success:     #3ecf6a;
+  --dn-warning:     #f0a830;
+  --dn-error:       #ef4444;
+
+  --font-mono: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body, #root {
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+  background: var(--dn-black);
+  color: var(--dn-text);
+  font-family: var(--font-mono);
+  font-size: 14px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+::selection {
+  background: var(--dn-accent-dim);
+  color: var(--dn-text-bright);
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--dn-black);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--dn-border-lt);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--dn-text-dim);
+}
+
+@keyframes blink {
+  50% { opacity: 0; }
+}
+
+/* Markdown in chat */
+.markdown-body p { margin: 0.4em 0; }
+.markdown-body p:first-child { margin-top: 0; }
+.markdown-body p:last-child { margin-bottom: 0; }
+.markdown-body h1, .markdown-body h2, .markdown-body h3,
+.markdown-body h4, .markdown-body h5, .markdown-body h6 {
+  color: var(--dn-text-bright);
+  margin: 0.8em 0 0.3em;
+  font-size: inherit;
+  font-weight: 700;
+}
+.markdown-body h1 { font-size: 1.15em; }
+.markdown-body h2 { font-size: 1.1em; }
+.markdown-body ul, .markdown-body ol { margin: 0.3em 0; padding-left: 1.5em; }
+.markdown-body li { margin: 0.15em 0; }
+.markdown-body li::marker { color: var(--dn-warning, #e5c07b); }
+.markdown-body code {
+  background: var(--dn-surface);
+  padding: 1px 4px;
+  border-radius: 3px;
+  font-size: 0.92em;
+}
+.markdown-body pre {
+  background: var(--dn-surface);
+  padding: 8px 10px;
+  border-radius: 4px;
+  overflow-x: auto;
+  margin: 0.4em 0;
+}
+.markdown-body pre code {
+  background: none;
+  padding: 0;
+}
+.markdown-body strong { color: var(--dn-text-bright); }
+.markdown-body a { color: var(--dn-accent); text-decoration: none; }
+.markdown-body a:hover { text-decoration: underline; }
+.markdown-body blockquote {
+  border-left: 3px solid var(--dn-border-lt);
+  padding-left: 10px;
+  color: var(--dn-text-muted);
+  margin: 0.4em 0;
+}
+.markdown-body table { border-collapse: collapse; margin: 0.4em 0; }
+.markdown-body th, .markdown-body td {
+  border: 1px solid var(--dn-border-lt);
+  padding: 4px 8px;
+  font-size: 0.92em;
+}
+.markdown-body th { color: var(--dn-text-bright); background: var(--dn-surface); }
+.markdown-body hr { border: none; border-top: 1px solid var(--dn-border); margin: 0.6em 0; }
+
+/* PDF text layer — extracted from pdfjs-dist/web/pdf_viewer.css */
+.textLayer {
+  position: absolute;
+  text-align: initial;
+  inset: 0;
+  overflow: hidden;
+  overflow: clip;
+  opacity: 1;
+  line-height: 1;
+  -webkit-text-size-adjust: none;
+  -moz-text-size-adjust: none;
+  text-size-adjust: none;
+  forced-color-adjust: none;
+  transform-origin: 0 0;
+  z-index: 0;
+}
+.textLayer :is(span, br) {
+  color: transparent;
+  position: absolute;
+  white-space: pre;
+  cursor: text;
+  transform-origin: 0% 0%;
+}
+.textLayer > :not(.markedContent),
+.textLayer .markedContent span:not(.markedContent) {
+  z-index: 1;
+}
+.textLayer ::selection { background: rgba(0, 128, 128, 0.4); }
+
+/* "Agent <verb>" shimmer: a bright band swept left→right across the label.
+   The verb varies per turn (agentVerbs.ts); the 200% below is a percentage, so
+   the sweep resizes with the word and no width is baked in here.
+   The gradient is twice the element's width and clipped to the glyphs, so
+   animating background-position alone moves the highlight — nothing is laid
+   out or composited per frame. 100%→0% seats the image's right edge at the
+   right, then its left, giving the left-to-right sweep. */
+.agent-working {
+  /* 0.60, not the console's 0.45: gold is a lighter hue than the console's
+     coral, but on #111 it still lands at 3.25:1 at that alpha — under the
+     4.5:1 floor. 0.60 holds the dim end of the sweep at 4.90:1, exactly the
+     contrast this label had before the shimmer. Peak is 18.49:1, so the
+     sweep stays obvious. */
+  --shine-base: rgba(245, 200, 66, 0.60);  /* --al-interactive, held back */
+  --shine-peak: #fffdf0;                   /* gold pushed to a warm white */
+  /* 100deg, not 90: the band leans, so it crosses a glyph's top slightly
+     before its bottom and reads as a highlight travelling over the text. */
+  background-image: linear-gradient(
+    100deg,
+    var(--shine-base) 38%,
+    var(--shine-peak) 50%,
+    var(--shine-base) 62%
+  );
+  background-size: 200% 100%;
+  background-repeat: no-repeat;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  /* Chrome/Safari paint -webkit-text-fill-color over `color`, so the glyphs
+     stay opaque and hide the gradient unless this is cleared too. */
+  -webkit-text-fill-color: transparent;
+  /* 3.2s against the spinner's 0.8s: faster and the two read as one busy
+     flicker rather than a background signal plus a beat. */
+  animation: agent-shine 3.2s linear infinite;
+}
+@keyframes agent-shine {
+  from { background-position: 100% 0; }
+  to   { background-position: 0% 0; }
+}
+
+/* Braille spinner for the "Agent <verb>" label. The colour is restated because the
+   parent clears its fill for the gradient and this would inherit it. */
+.agent-working::before {
+  content: '⠋';
+  /* Pre-mixed to the sweep's dim end (4.90:1), which is where this glyph sat
+     before the shimmer. It must be opaque rather than `opacity: 0.6`: the
+     parent's gradient is clipped to text and this glyph counts as text in
+     that box, so any transparency lets the highlight bleed through and the
+     spinner pulses with the sweep instead of holding steady against it. */
+  color: color-mix(in srgb, var(--al-interactive) 60%, var(--dn-bg));
+  -webkit-text-fill-color: color-mix(in srgb, var(--al-interactive) 60%, var(--dn-bg));
+  animation: braille-spin 0.8s steps(1) infinite;
+  margin-right: 6px;
+}
+@keyframes braille-spin {
+  0%    { content: '⠋'; }
+  10%   { content: '⠙'; }
+  20%   { content: '⠹'; }
+  30%   { content: '⠸'; }
+  40%   { content: '⠼'; }
+  50%   { content: '⠴'; }
+  60%   { content: '⠦'; }
+  70%   { content: '⠧'; }
+  80%   { content: '⠇'; }
+  90%   { content: '⠏'; }
+}
+
+/* Keep the glyph and the label, drop both animations. The gradient goes with
+   the shimmer — frozen, it would park the bright band over one end of the
+   label and read as a rendering fault rather than a deliberate still. */
+@media (prefers-reduced-motion: reduce) {
+  .agent-working {
+    background-image: none;
+    color: var(--al-interactive);
+    -webkit-text-fill-color: var(--al-interactive);
+    opacity: 0.6;
+    animation: none;
+  }
+  .agent-working::before {
+    animation: none;
+    /* The rule above dims the whole label, this glyph included, so take the
+       undimmed colour here and let that single opacity do the work -- the
+       base rule's pre-mixed colour would compound with it. */
+    color: var(--al-interactive);
+    -webkit-text-fill-color: var(--al-interactive);
+  }
+}

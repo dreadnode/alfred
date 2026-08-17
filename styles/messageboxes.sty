@@ -1,0 +1,76 @@
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{messageboxes}[2025/01/01 Colored message box environments]
+
+\RequirePackage[dvipsnames]{xcolor}
+\RequirePackage{tcolorbox}
+
+% ============================================================================
+% COLOR PALETTE (colorblind-safe, Wong palette inspired)
+% ============================================================================
+
+\definecolor{msgblue}{HTML}{0072B2}
+\definecolor{msgorange}{HTML}{E69F00}
+\definecolor{msggreen}{HTML}{009E73}
+\definecolor{msgred}{HTML}{D55E00}
+\definecolor{msgpurple}{HTML}{CC79A7}
+\definecolor{msggray}{HTML}{666666}
+
+% ============================================================================
+% MESSAGE BOX ENVIRONMENTS
+% ============================================================================
+
+% Generic message box — base for all others
+\newtcolorbox{messagebox}[2][]{
+  colback=#2!5,
+  colframe=#2!80!black,
+  coltitle=white,
+  fonttitle=\bfseries\small,
+  left=6pt, right=6pt, top=4pt, bottom=4pt,
+  boxrule=0.5pt,
+  #1
+}
+
+% System prompt / instruction
+\newenvironment{systemprompt}[1][System]{%
+  \begin{messagebox}[title=#1]{msgblue}%
+}{%
+  \end{messagebox}%
+}
+
+% User message
+\newenvironment{userprompt}[1][User]{%
+  \begin{messagebox}[title=#1]{msggreen}%
+}{%
+  \end{messagebox}%
+}
+
+% Assistant / model response
+\newenvironment{assistantresponse}[1][Assistant]{%
+  \begin{messagebox}[title=#1]{msgorange}%
+}{%
+  \end{messagebox}%
+}
+
+% Warning / alert box
+\newenvironment{warningbox}[1][Warning]{%
+  \begin{messagebox}[title=#1]{msgred}%
+}{%
+  \end{messagebox}%
+}
+
+% Info / note box
+\newenvironment{infobox}[1][Note]{%
+  \begin{messagebox}[title=#1]{msggray}%
+}{%
+  \end{messagebox}%
+}
+
+% Gray highlighted box (no title)
+\newtcolorbox{graybox}{
+  colback=gray!8,
+  colframe=gray!40,
+  boxrule=0.4pt,
+  left=6pt, right=6pt, top=4pt, bottom=4pt,
+}
+
+\endinput

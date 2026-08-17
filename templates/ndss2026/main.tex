@@ -1,0 +1,60 @@
+\documentclass[conference]{IEEEtran}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath,amssymb,amsfonts}
+\usepackage{booktabs}
+\usepackage{graphicx}
+\usepackage{xcolor}
+\usepackage{cite}
+\usepackage{hyperref}
+\usepackage{url}
+\pagestyle{plain}
+
+% Initial submissions must be anonymous. Change to \ndssanonymousfalse only
+% for the camera-ready paper.
+\newif\ifndssanonymous
+\ndssanonymoustrue
+
+% BEGIN SYNC: bibliography
+\bibliographystyle{IEEEtran}
+% END SYNC: bibliography
+
+% BEGIN SYNC: metadata
+% Paper metadata
+\newcommand{\papertitle}{Paper Title}
+\newcommand{\paperauthors}{Author One, Author Two}
+% END SYNC: metadata
+
+\newcommand{\tbd}[1]{\textcolor{red}{\textbf{[TBD: #1]}}}
+\newcommand{\note}[1]{\textcolor{orange}{\textbf{[Note: #1]}}}
+\newcommand{\todo}[1]{\textcolor{purple}{\textbf{[TODO: #1]}}}
+
+% BEGIN SYNC: macros
+% END SYNC: macros
+
+% BEGIN SYNC: styles
+% END SYNC: styles
+
+\begin{document}
+
+% BEGIN SYNC: author-block
+\title{\papertitle}
+\ifndssanonymous
+  \author{\IEEEauthorblockN{Anonymous Submission}}
+\else
+  \author{\paperauthors}
+\fi
+\maketitle
+% END SYNC: author-block
+
+% Add the official NDSS publication ID block after acceptance, once the
+% conference provides the paper-specific DOI.
+
+% BEGIN SYNC: sections
+\input{section/00_abstract}
+% END SYNC: sections
+
+\bibliography{bibliography}
+
+\end{document}

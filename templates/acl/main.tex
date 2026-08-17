@@ -1,0 +1,69 @@
+\documentclass[11pt]{article}
+
+\usepackage{acl}
+
+% ============================================================================
+% CORE PACKAGES
+% ============================================================================
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath,amssymb,amsfonts}
+\usepackage{mathtools}
+\usepackage{booktabs}
+\usepackage{graphicx}
+\usepackage{float}
+\usepackage[dvipsnames,table]{xcolor}
+\usepackage{tikz}
+\usepackage{pgfplots}
+\pgfplotsset{compat=1.18}
+
+% Bibliography
+% BEGIN SYNC: bibliography
+\bibliographystyle{acl_natbib}
+% END SYNC: bibliography
+
+% ============================================================================
+% CUSTOM COMMANDS
+% ============================================================================
+
+% BEGIN SYNC: metadata
+% Paper metadata
+\newcommand{\papertitle}{Paper Title}
+\newcommand{\paperauthors}{Author One, Author Two}
+% END SYNC: metadata
+
+% Convenience macros
+\newcommand{\tbd}[1]{\textcolor{red}{\textbf{[TBD: #1]}}}
+\newcommand{\note}[1]{\textcolor{orange}{\textbf{[Note: #1]}}}
+\newcommand{\todo}[1]{\textcolor{purple}{\textbf{[TODO: #1]}}}
+
+% BEGIN SYNC: macros
+% END SYNC: macros
+
+% ============================================================================
+% OPTIONAL STYLE PACKAGES
+% ============================================================================
+
+% BEGIN SYNC: styles
+% END SYNC: styles
+
+% ============================================================================
+% DOCUMENT
+% ============================================================================
+
+\begin{document}
+
+% BEGIN SYNC: author-block
+\title{\papertitle}
+\author{\paperauthors}
+\maketitle
+% END SYNC: author-block
+
+% BEGIN SYNC: sections
+\input{section/00_abstract}
+% END SYNC: sections
+
+\bibliography{bibliography}
+
+\end{document}

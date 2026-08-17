@@ -1,0 +1,89 @@
+# Third-party license manifest
+
+ALFRED's templates directory contains conference style files vendored from
+their official sources (listed in SOURCES.md). These files are NOT covered
+by the project's root MIT license. Each file retains its original license
+as documented below.
+
+A copy of the LaTeX Project Public License (LPPL) v1.3c is included at
+templates/LPPL-1.3c.txt.
+
+## LPPL-licensed files
+
+### ACM (templates/acm/)
+- acmart.cls — LPPL 1.3c+, Copyright ACM. Generated from acmart.dtx
+  (bundled alongside per LPPL distribution requirements).
+- ACM-Reference-Format.bst — Public domain.
+
+### ICLR 2026 (templates/iclr2026/)
+- iclr2026_conference.bst — LPPL 1+, generated from merlin.mbs.
+
+### ICML 2026 (templates/icml2026/)
+- icml2026.bst — LPPL 1+, generated from merlin.mbs.
+
+### AAAI 2026 (templates/aaai2026/)
+- aaai2026.bst — LPPL 1+, generated from merlin.mbs.
+
+### ACL (templates/acl/)
+- acl_natbib.bst — LPPL 1+, generated from merlin.mbs. urlbst
+  modifications Copyright 2002-2023 Norman Gray, also LPPL.
+
+### CVPR 2026 (templates/cvpr2026/)
+- ieeenat_fullname.bst — LPPL 1+.
+
+### IEEE / NDSS (templates/ieee/, templates/ndss2026/)
+- IEEEtran.cls — LPPL 1.3, Copyright 2001-2015 Michael Shell.
+- IEEEtran.bst — LPPL 1.3, Copyright 2003-2008 Michael Shell.
+
+## Venue-specific files (distributed by conferences for author use)
+
+These files are provided by their respective conferences as part of
+official author kits intended for paper preparation and submission.
+They are redistributed here from the sources documented in SOURCES.md.
+
+### NeurIPS (templates/neurips/, templates/neurips2024/, templates/neurips2026/)
+- neurips_20*.sty — NeurIPS formatting instructions. No explicit license
+  stated. Distributed by NeurIPS for author use.
+
+### CVPR 2026 (templates/cvpr2026/)
+- cvpr.sty — CVPR author kit. No explicit license stated.
+
+### ICLR 2026 (templates/iclr2026/)
+- iclr2026_conference.sty — ICLR master template. No explicit license stated.
+
+### ICML 2026 (templates/icml2026/)
+- icml2026.sty — ICML style file. No explicit license stated.
+- algorithm.sty, algorithmic.sty — Copyright 1994 Peter Williams.
+  No explicit license stated.
+
+### AAAI 2026 (templates/aaai2026/)
+- aaai2026.sty — AAAI author kit. States "may not modify this file."
+
+### ACL (templates/acl/)
+- acl.sty — ACL style file. No explicit license stated.
+
+### NDSS 2026 (templates/ndss2026/)
+- ndss2026.cls — NDSS template. No explicit license stated.
+
+### USENIX (templates/usenix/)
+- usenix-2020-09.sty — USENIX style file. No explicit license stated.
+
+### Springer LNCS (templates/lncs/)
+- llncs.cls — Springer Verlag. Distributed as part of the official
+  LNCS proceedings template. No explicit open-source license stated.
+- splncs04.bst — Springer Verlag. No explicit license stated.
+
+## Fonts (ui/frontend/src/fonts/)
+
+### JetBrains Mono
+- JetBrainsMono-latin.woff2 — SIL Open Font License 1.1 (OFL-1.1).
+  Copyright 2020 The JetBrains Mono Project Authors.
+  License file: ui/frontend/src/fonts/LICENSE
+
+## System packages (not vendored)
+
+The following standard LaTeX packages are required by some templates but
+are NOT bundled in this repository. They are available in TeX Live:
+
+- natbib.sty (LPPL) — used by iclr2026, acl
+- fancyhdr.sty (LPPL) — used by iclr2026, icml2026

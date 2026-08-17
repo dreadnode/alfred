@@ -1,0 +1,548 @@
+"""LaTeX script tools — each closes over paper_dir."""
+
+import asyncio
+import os
+import re
+import tempfile
+import typing as t
+
+from dreadnode.agent.tools import AnyTool, tool
+
+from ..db import MAX_ARTIFACT_BYTES
+from .subprocess import run_script
+
+_REPO_ROOT = os.path.dirname(
+    os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+)
+
+
+def _read_artifact_content(path: str) -> str:
+    """Read a UTF-8 artifact without allowing an oversized snapshot."""
+    size_bytes = os.path.getsize(path)
+    if size_bytes > MAX_ARTIFACT_BYTES:
+        raise ValueError(
+            f"Artifact is {size_bytes} bytes; maximum is "
+            f"{MAX_ARTIFACT_BYTES} bytes (1 MiB)"
+        )
+    with open(path, encoding="utf-8") as f:
+        content = f.read()
+    encoded_size = len(content.encode("utf-8"))
+    if encoded_size > MAX_ARTIFACT_BYTES:
+        raise ValueError(
+            f"Artifact is {encoded_size} bytes; maximum is "
+            f"{MAX_ARTIFACT_BYTES} bytes (1 MiB)"
+        )
+    return content
+
+
+def make_latex_tools(paper_dir: str, session_id: str | None = None) -> list[AnyTool]:
+    """Create LaTeX-specific tools that close over ``paper_dir``.
+
+    Each returned tool captures ``paper_dir`` and ``session_id`` in its
+    closure so the LLM never needs to supply them as arguments.
+
+    Args:
+        paper_dir: Absolute path to the paper working directory.
+        session_id: Session ID for per-session PDF viewer state.
+
+    Returns:
+        List of tool objects ready to be passed to an Agent.
+    """
+
+    def _script(name: str) -> str:
+        """Return absolute path to a script in the repo root's scripts/ dir."""
+        return os.path.join(_REPO_ROOT, "scripts", name)
+
+    async def _do_build() -> str:
+        """Shared build logic used by build_paper and build_paper_and_show."""
+        try:
+            return await run_script(
+                "bash", _script("build.sh"), cwd=paper_dir, timeout=120
+            )
+        except RuntimeError as exc:
+            log_path = os.path.join(paper_dir, "build", "main.log")
+            extra = ""
+            if os.path.exists(log_path):
+                with open(log_path) as f:
+                    lines = f.readlines()
+                errors = [
+                    line.rstrip()
+                    for line in lines
+                    if line.startswith("!") or "Error" in line
+                ]
+                if errors:
+                    extra = "\n\n--- Build Errors ---\n" + "\n".join(errors[:20])
+            raise RuntimeError(f"{exc}{extra}") from exc
+
+    @tool(catch=True)
+    async def build_paper() -> str:
+        """Build the LaTeX paper to PDF.
+
+        Runs ``scripts/build.sh`` and returns the build output.
+        If the build fails, appends relevant error lines from ``build/main.log``.
+        """
+        return await _do_build()
+
+    @tool(catch=True)
+    async def sync_paper() -> str:
+        """Sync ``paper.yaml`` to ``main.tex`` — run after editing paper.yaml."""
+        return await run_script("python3", _script("sync.py"), cwd=paper_dir)
+
+    @tool(catch=True)
+    async def validate_paper() -> str:
+        """Validate the paper — checks refs, markers, braces, sync status.
+
+        Returns output regardless of exit code because the script reports
+        validation issues via non-zero return codes, not failures.
+        """
+        proc = await asyncio.create_subprocess_exec(
+            "bash",
+            _script("validate.sh"),
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.STDOUT,
+            cwd=paper_dir,
+        )
+        try:
+            stdout, _ = await asyncio.wait_for(proc.communicate(), timeout=30)
+        except asyncio.TimeoutError:
+            proc.kill()
+            await proc.wait()
+            return "Validation timed out after 30 seconds."
+        return stdout.decode(errors="replace")
+
+    @tool(catch=True)
+    async def search_citations(
+        query: t.Annotated[str, "Search query for Semantic Scholar"],
+    ) -> str:
+        """Search for academic citations using Semantic Scholar."""
+        return await run_script(
+            "python3", _script("cite.py"), "search", query, cwd=paper_dir
+        )
+
+    @tool(catch=True)
+    async def add_citation(
+        citation_id: t.Annotated[str, "Citation ID from search results to add"],
+    ) -> str:
+        """Add a citation to ``bibliography.bib`` by its ID."""
+        return await run_script(
+            "python3", _script("cite.py"), "add", citation_id, cwd=paper_dir
+        )
+
+    @tool(catch=True)
+    async def paper_stats() -> str:
+        """Get paper statistics — word count, pages, figures, tables."""
+        return await run_script(
+            "python3", _script("stats.py"), cwd=paper_dir, timeout=15
+        )
+
+    @tool(catch=True)
+    async def generate_diff(
+        revision: t.Annotated[
+            str, "Git revision to diff against (e.g. HEAD, HEAD~3, commit hash)"
+        ] = "HEAD",
+    ) -> str:
+        """Generate a track-changes PDF diffing current source against a git revision.
+
+        Output is written to ``build/diff.pdf`` with additions in blue and
+        deletions in red strikethrough. Requires ``latexdiff`` to be installed.
+        """
+        return await run_script(
+            "python3", _script("diff.py"), revision, cwd=paper_dir, timeout=120
+        )
+
+    @tool(catch=True)
+    async def switch_template(
+        template_name: t.Annotated[
+            str,
+            "Template name (use list_templates; e.g. neurips, icml2026, cvpr2026, acm)",
+        ],
+    ) -> str:
+        """Switch the paper to a different conference template.
+
+        Copies template files, updates ``paper.yaml``, and runs sync.
+        Use ``list_templates`` first to see available options.
+        """
+        return await run_script(
+            "python3", _script("init_template.py"), template_name, cwd=paper_dir
+        )
+
+    @tool(catch=True)
+    async def list_templates() -> str:
+        """List all available conference templates."""
+        return await run_script(
+            "python3", _script("init_template.py"), "--list", cwd=paper_dir
+        )
+
+    @tool(catch=True)
+    async def list_reviews() -> str:
+        """List and summarize peer review records from the ``reviews/`` directory."""
+        return await run_script(
+            "python3", _script("reviews.py"), cwd=paper_dir, timeout=15
+        )
+
+    async def _notify_viewer() -> None:
+        """Push a pdf_updated event to all connected viewer clients."""
+        import json
+        import time as _time
+
+        from .. import server as srv
+
+        msg = json.dumps(
+            {
+                "type": "pdf_updated",
+                "session_id": session_id or "",
+                "timestamp": _time.time(),
+            }
+        )
+        for ws in list(srv._pdf_clients):
+            try:
+                await ws.send_text(msg)
+            except Exception:
+                srv._pdf_clients.discard(ws)
+
+    def _resolve_pdf_path(path: str) -> str:
+        """Expand and resolve a PDF path, raising on invalid input."""
+        expanded = os.path.expanduser(path)
+        if not os.path.isabs(expanded):
+            expanded = os.path.join(paper_dir, expanded)
+        expanded = os.path.abspath(expanded)
+        if not os.path.isfile(expanded):
+            raise FileNotFoundError(f"PDF not found: {path}")
+        if not expanded.lower().endswith(".pdf"):
+            raise ValueError(f"Not a PDF file: {path}")
+        return expanded
+
+    @tool(catch=True)
+    async def show_pdf(
+        path: t.Annotated[
+            str,
+            "Path to a PDF file to display (absolute, ~/relative, or relative to paper dir)",
+        ],
+    ) -> str:
+        """Display a PDF in the user's viewer pane (right side of the web UI).
+
+        This ONLY changes what the user sees — it does NOT read the PDF text.
+        To also read the content, call ``read_pdf`` separately.
+
+        The viewer stays on this PDF until you call ``show_project_pdf``
+        or ``build_paper_and_show``.
+        """
+        from .. import server as srv
+
+        resolved = _resolve_pdf_path(path)
+        if session_id:
+            srv._clear_custom_pdf(session_id)
+            srv._custom_pdfs[session_id] = resolved
+        await _notify_viewer()
+        return f"Viewer now showing: {resolved}"
+
+    @tool(catch=True)
+    async def show_project_pdf() -> str:
+        """Switch the viewer back to the project's built PDF (build/main.pdf).
+
+        Call this after you're done working with an external PDF and want
+        the user to see their own paper again.
+        """
+        from .. import server as srv
+
+        if session_id:
+            srv._clear_custom_pdf(session_id)
+        await _notify_viewer()
+        return "Viewer now showing: build/main.pdf"
+
+    @tool(catch=True)
+    async def read_pdf(
+        path: t.Annotated[
+            str, "Path to a PDF file (absolute, ~/relative, or relative to paper dir)"
+        ],
+        pages: t.Annotated[
+            str, "Page range to extract, e.g. '1-5' or '3'. Omit for all pages."
+        ] = "",
+    ) -> str:
+        """Extract text content from a PDF file and return it.
+
+        This ONLY reads the text — it does NOT display the PDF in the viewer.
+        To also show it to the user, call ``show_pdf`` separately.
+
+        Typical workflow for an external paper:
+          1. show_pdf(path)   — user sees it in the viewer
+          2. read_pdf(path)   — you get the text to work with
+        """
+        resolved = _resolve_pdf_path(path)
+
+        cmd = ["pdftotext"]
+        if pages:
+            if "-" in pages:
+                first, last = pages.split("-", 1)
+                cmd.extend(["-f", first.strip(), "-l", last.strip()])
+            else:
+                cmd.extend(["-f", pages.strip(), "-l", pages.strip()])
+        cmd.extend([resolved, "-"])
+
+        proc = await asyncio.create_subprocess_exec(
+            *cmd,
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE,
+        )
+        try:
+            stdout, stderr = await asyncio.wait_for(proc.communicate(), timeout=30)
+        except asyncio.TimeoutError:
+            proc.kill()
+            await proc.wait()
+            return "PDF text extraction timed out after 30 seconds."
+
+        if proc.returncode != 0:
+            err = stderr.decode(errors="replace").strip()
+            raise RuntimeError(f"pdftotext failed: {err}")
+
+        text = stdout.decode("utf-8", errors="replace")
+        if not text.strip():
+            return "No text extracted (PDF may be image-only or empty)."
+        return text
+
+    @tool(catch=True)
+    async def build_paper_and_show() -> str:
+        """Build the paper AND switch the viewer to show the result.
+
+        Use this instead of ``build_paper`` when an external PDF is loaded
+        in the viewer and you want the user to see the build output.
+        It resets the viewer to build/main.pdf, runs the build, and
+        notifies the viewer to reload.
+
+        If no external PDF is loaded, ``build_paper`` is sufficient.
+        """
+        from .. import server as srv
+
+        if session_id:
+            srv._clear_custom_pdf(session_id)
+        result = await _do_build()
+        await _notify_viewer()
+        return result
+
+    @tool(catch=True)
+    async def create_paper(
+        title: t.Annotated[str, "Title for the new paper"],
+    ) -> str:
+        """Create a new paper project and bind it to this session.
+
+        Scaffolds a full paper directory (paper.yaml, main.tex, sections,
+        bibliography) under the papers root, assigns it to this session,
+        and rebuilds the agent so all subsequent tools operate on the new
+        paper. The PDF viewer will also point to the new paper.
+
+        Use this when the user asks to start a new paper. The agent will
+        be rebuilt for the next turn with the new paper directory.
+        """
+        if not session_id:
+            raise RuntimeError("No session — cannot create paper")
+
+        from .. import server as srv
+
+        svc = srv.app.state.svc
+        db = srv.app.state.db
+
+        session = await svc.get_session(session_id)
+        if session is None:
+            raise RuntimeError("Session not found")
+        if session.get("paper_dir"):
+            raise RuntimeError("Session already has a paper")
+
+        slug = svc.unique_paper_slug(title)
+        new_dir = os.path.join(srv._papers_root, slug)
+
+        import sys
+
+        scripts_dir = os.path.join(_REPO_ROOT, "scripts")
+        if scripts_dir not in sys.path:
+            sys.path.insert(0, scripts_dir)
+        from scaffold import scaffold_paper
+
+        scaffold_paper(new_dir, title=title)
+
+        session = await svc.set_paper(session_id, new_dir)
+        if session is None:
+            raise RuntimeError("Session not found after paper creation")
+        session = await svc.set_label(session_id, title)
+        if session is None:
+            raise RuntimeError("Session not found after paper creation")
+        await srv._rebuild_agent(session, db)
+        await srv._restart_pdf_watcher(db)
+
+        build_result = ""
+        try:
+            await run_script("bash", _script("build.sh"), cwd=new_dir, timeout=120)
+            build_result = " PDF built and shown in viewer."
+        except Exception:
+            build_result = " Warning: initial build failed — you may need to build manually after editing."
+        srv._clear_custom_pdf(session_id)
+        await _notify_viewer()
+
+        return f"Created paper '{title}' at {new_dir}. Agent rebuilt — all tools now target the new paper.{build_result}"
+
+    @tool(catch=True)
+    async def open_paper(
+        path: t.Annotated[
+            str,
+            "Path to an existing paper directory containing paper.yaml",
+        ],
+    ) -> str:
+        """Bind an existing paper directory to this session.
+
+        Points this session at an existing paper so all tools (build, sync,
+        validate, etc.) and the PDF viewer operate on it. The directory must
+        contain a paper.yaml file.
+        """
+        if not session_id:
+            raise RuntimeError("No session — cannot open paper")
+
+        from .. import server as srv
+
+        expanded = os.path.expanduser(path)
+        if not os.path.isabs(expanded):
+            expanded = os.path.join(srv._papers_root, expanded)
+        expanded = os.path.abspath(expanded)
+
+        if not os.path.isfile(os.path.join(expanded, "paper.yaml")):
+            raise FileNotFoundError(f"No paper.yaml found at {expanded}")
+
+        svc = srv.app.state.svc
+        db = srv.app.state.db
+
+        session = await svc.set_paper(session_id, expanded)
+        if session is None:
+            raise RuntimeError("Session not found")
+
+        import yaml
+
+        try:
+            with open(os.path.join(expanded, "paper.yaml")) as f:
+                data = yaml.safe_load(f)
+            if isinstance(data, dict) and data.get("title"):
+                await svc.set_label(session_id, data["title"])
+        except Exception:
+            pass
+
+        await srv._rebuild_agent(session, db)
+        await srv._restart_pdf_watcher(db)
+
+        build_result = ""
+        pdf_path = os.path.join(expanded, "build", "main.pdf")
+        if not os.path.isfile(pdf_path):
+            try:
+                await run_script("bash", _script("build.sh"), cwd=expanded, timeout=120)
+                build_result = " PDF built and shown in viewer."
+            except Exception:
+                build_result = (
+                    " Warning: build failed — you may need to build manually."
+                )
+        else:
+            build_result = " Existing PDF found in viewer."
+        srv._clear_custom_pdf(session_id)
+        await _notify_viewer()
+
+        return f"Session now bound to paper at {expanded}. Agent rebuilt — all tools target this paper.{build_result}"
+
+    @tool(catch=True)
+    async def emit_file_artifact(
+        path: t.Annotated[
+            str,
+            "Path to the file to surface as a clickable artifact in the chat "
+            "(absolute, ~/relative, or relative to paper dir)",
+        ],
+        label: t.Annotated[
+            str,
+            "Short display label for the artifact, e.g. 'Peer Review Record'",
+        ] = "",
+    ) -> str:
+        """Surface a file as a clickable artifact card in the user's chat.
+
+        The file contents are read and sent to the frontend. When the user
+        clicks the card, the contents are copied to their clipboard.
+
+        Call this after producing a deliverable file the user should keep
+        (peer review records, response documents, reports, etc.).
+        """
+        if not session_id:
+            raise RuntimeError("No session — cannot emit artifact")
+
+        expanded = os.path.expanduser(path)
+        if not os.path.isabs(expanded):
+            expanded = os.path.join(paper_dir, expanded)
+        expanded = os.path.abspath(expanded)
+
+        if not os.path.isfile(expanded):
+            raise FileNotFoundError(f"File not found: {path}")
+
+        from .. import server as srv
+
+        content = await asyncio.to_thread(_read_artifact_content, expanded)
+        db = srv.app.state.db
+        filename = os.path.basename(expanded)
+        await srv._store_and_emit_artifact(
+            db,
+            session_id,
+            filename=filename,
+            path=expanded,
+            content=content,
+            label=label or filename,
+        )
+
+        return f"Artifact surfaced in chat: {filename}"
+
+    @tool(catch=True)
+    async def save_capability_report(
+        filename: t.Annotated[
+            str,
+            "Markdown filename only, e.g. lit-review_topic_2026-08-16.md",
+        ],
+        content: t.Annotated[str, "Complete Markdown report contents"],
+    ) -> str:
+        """Save a capability report to the repository's report directory safely.
+
+        Use this whenever capability instructions request a path under
+        ``capabilities/reports/``. The filename must be a simple Markdown
+        basename; directories and absolute paths are rejected.
+        """
+        if (
+            os.path.basename(filename) != filename
+            or not filename.endswith(".md")
+            or not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_.-]*\.md", filename)
+        ):
+            raise ValueError("filename must be a simple .md basename")
+
+        reports_dir = os.path.join(_REPO_ROOT, "capabilities", "reports")
+        os.makedirs(reports_dir, exist_ok=True)
+        output_path = os.path.join(reports_dir, filename)
+        fd, tmp_path = tempfile.mkstemp(prefix=f".{filename}.", dir=reports_dir)
+        try:
+            with os.fdopen(fd, "w", encoding="utf-8") as f:
+                f.write(content)
+                f.flush()
+                os.fsync(f.fileno())
+            os.replace(tmp_path, output_path)
+        except BaseException:
+            if os.path.exists(tmp_path):
+                os.unlink(tmp_path)
+            raise
+        return f"Report saved: {output_path}"
+
+    return [
+        build_paper,
+        build_paper_and_show,
+        sync_paper,
+        validate_paper,
+        search_citations,
+        add_citation,
+        paper_stats,
+        generate_diff,
+        switch_template,
+        list_templates,
+        list_reviews,
+        show_pdf,
+        show_project_pdf,
+        read_pdf,
+        create_paper,
+        open_paper,
+        emit_file_artifact,
+        save_capability_report,
+    ]

@@ -1,0 +1,8 @@
+name: "AAAI 2026"
+description: "AAAI Conference on Artificial Intelligence 2026"
+author_format: aaai
+bibliography_system: builtin
+extra_files:
+  - aaai2026.sty
+  - aaai2026.bst
+  - reproducibility_checklist.tex
