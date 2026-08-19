@@ -33,17 +33,18 @@ _SENSITIVE_EXACT = frozenset(
 _PASSTHROUGH_KEYS = frozenset({"S2_API_KEY"})
 
 
+def _is_sensitive_key(k: str) -> bool:
+    """Return True if *k* looks like a credential variable name."""
+    if k in _PASSTHROUGH_KEYS:
+        return False
+    return k in _SENSITIVE_EXACT or any(
+        k.upper().endswith(s) for s in _SENSITIVE_SUFFIXES
+    )
+
+
 def _scrub_env() -> dict[str, str]:
     """Copy os.environ with credential-shaped variables removed."""
-    return {
-        k: v
-        for k, v in os.environ.items()
-        if k in _PASSTHROUGH_KEYS
-        or (
-            k not in _SENSITIVE_EXACT
-            and not any(k.upper().endswith(s) for s in _SENSITIVE_SUFFIXES)
-        )
-    }
+    return {k: v for k, v in os.environ.items() if not _is_sensitive_key(k)}
 
 
 _DENIED_COMMANDS: frozenset[str] = frozenset(
@@ -116,7 +117,7 @@ async def command(
 
     process_env = _scrub_env()
     if env:
-        process_env.update(env)
+        process_env.update({k: v for k, v in env.items() if not _is_sensitive_key(k)})
 
     proc = await asyncio.create_subprocess_exec(
         *cmd,

@@ -73,6 +73,13 @@ They are redistributed here from the sources documented in SOURCES.md.
   LNCS proceedings template. No explicit open-source license stated.
 - splncs04.bst — Springer Verlag. No explicit license stated.
 
+## Fonts (ui/frontend/src/fonts/)
+
+### JetBrains Mono
+- JetBrainsMono-latin.woff2 — SIL Open Font License 1.1 (OFL-1.1).
+  Copyright 2020 The JetBrains Mono Project Authors.
+  License file: ui/frontend/src/fonts/LICENSE
+
 ## System packages (not vendored)
 
 The following standard LaTeX packages are required by some templates but

@@ -160,8 +160,9 @@ sandbox**:
   arbitrary commands through other interpreters.
 - **Environment scrubbing** — credential-shaped environment variables
   (`*_API_KEY`, `*_TOKEN`, `*_SECRET`, `*_PASSWORD`, and AWS keys) are
-  stripped from subprocess environments. In-process tools like
-  `web_search` and `web_fetch` retain access to their own API keys.
+  stripped from the agent's arbitrary `command` tool. Fixed workflow
+  tools (build, sync, cite) inherit the full environment because they
+  run hardcoded trusted scripts.
 - **SSRF protection** — `web_fetch` validates URLs against
   internal/private address ranges and manually follows redirects with
   per-hop validation.

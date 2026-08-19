@@ -24,6 +24,7 @@ sys.path.insert(0, UI_DIR)
 import backend.server as srv  # noqa: E402
 from backend.agent import (  # noqa: E402
     _check_command_allowed,
+    _is_sensitive_key,
     _load_paper_context,
     _scrub_env,
     create_agent,
@@ -497,6 +498,8 @@ class TestSafeGet:
         with pytest.raises(ValueError, match="internal address"):
             asyncio.run(_safe_get(mock_session, "https://example.com/go"))
 
+        mock_session.get.assert_awaited_once()
+
     def test_follows_safe_redirect(self) -> None:
         redirect_resp = MagicMock()
         redirect_resp.status = 301
@@ -579,6 +582,14 @@ class TestScrubEnv:
             env = _scrub_env()
         assert "AWS_SECRET_ACCESS_KEY" not in env
         assert env["PATH"] == "/bin"
+
+    def test_is_sensitive_key(self) -> None:
+        assert _is_sensitive_key("ANTHROPIC_API_KEY")
+        assert _is_sensitive_key("GH_TOKEN")
+        assert _is_sensitive_key("AWS_SECRET_ACCESS_KEY")
+        assert not _is_sensitive_key("S2_API_KEY")
+        assert not _is_sensitive_key("HOME")
+        assert not _is_sensitive_key("PATH")
 
 
 # ---------------------------------------------------------------------------
