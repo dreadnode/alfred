@@ -378,6 +378,14 @@ export default function PdfViewer({ sessionId }: PdfViewerProps = {}) {
               title="Reset zoom to 100%"
             >{Math.round(zoomLevel * 100)}%</span>
           )}
+          {pageCount > 0 && (
+            <a
+              href={`/api/pdf?session_id=${sessionId || ''}&download=true`}
+              style={{ cursor: 'pointer', fontSize: '14px', opacity: 0.7, userSelect: 'none', textDecoration: 'none' }}
+              title="Download PDF"
+              aria-label="Download PDF"
+            >&#x2B07;&#xFE0F;</a>
+          )}
           <span
             role="button" tabIndex={0}
             onClick={() => { const next = !darkMode; setDarkMode(next); localStorage.setItem('pdf-dark-mode', next ? '1' : '0') }}

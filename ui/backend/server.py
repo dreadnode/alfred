@@ -1456,18 +1456,26 @@ async def api_list_files(dir: str = "") -> dict[str, t.Any]:
 
 
 @app.get("/api/pdf", response_model=None)
-async def get_pdf(session_id: str = "") -> FileResponse | JSONResponse:
+async def get_pdf(session_id: str = "", download: bool = False) -> FileResponse | JSONResponse:
     """Serve the PDF for a session (custom or built)."""
     custom = _custom_pdfs.get(session_id) if session_id else None
     if custom and os.path.isfile(custom):
-        return FileResponse(custom, media_type="application/pdf")
+        return FileResponse(
+            custom,
+            media_type="application/pdf",
+            filename="paper.pdf" if download else None,
+        )
 
     if session_id:
         session = await app.state.svc.get_session(session_id)
         if session and session.get("paper_dir"):
             pdf_path = os.path.join(session["paper_dir"], "build", "main.pdf")
             if os.path.isfile(pdf_path):
-                return FileResponse(pdf_path, media_type="application/pdf")
+                return FileResponse(
+                    pdf_path,
+                    media_type="application/pdf",
+                    filename="paper.pdf" if download else None,
+                )
 
     return JSONResponse({"error": "PDF not found"}, status_code=404)
 

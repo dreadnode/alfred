@@ -24,3 +24,9 @@ The current template assets were retrieved on 2026-08-17 from:
 The stable `neurips` template intentionally duplicates the three files in
 `neurips2026`. A regression test keeps the alias byte-identical to the pinned
 version.
+
+Standard LaTeX packages (`natbib`, `fancyhdr`) that some conference kits
+bundle are not vendored here — they are available in TeX Live. The ACM
+`acmart.dtx` source is bundled alongside `acmart.cls` per LPPL
+distribution requirements. See `THIRD_PARTY_LICENSES` for the full
+license manifest.

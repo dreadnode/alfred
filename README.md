@@ -1,6 +1,6 @@
 # ALFRED
 
-![Version](https://img.shields.io/badge/version-0.5.0-008080) ![Python](https://img.shields.io/badge/python-3.10%2B-008080) ![Node](https://img.shields.io/badge/node-18%2B-008080) ![License](https://img.shields.io/badge/license-MIT-008080)
+![Version](https://img.shields.io/badge/version-0.5.0-008080) ![Python](https://img.shields.io/badge/python-3.10%2B-008080) ![Node](https://img.shields.io/badge/node-20%2B-008080) ![License](https://img.shields.io/badge/license-MIT-008080)
 
 **A**gentic **L**atex **f**or **R**esearch, **E**diting, and **D**rafting.
 
@@ -47,7 +47,7 @@ Reports are written to `capabilities/reports/`. Review records are saved to `rev
 ### Prerequisites
 
 - **Python 3.10+**
-- **Node.js 18+**
+- **Node.js 20+**
 - **TeX Live** (basic install works for most templates — includes `latexmk` and `biber`)
 - **[uv](https://docs.astral.sh/uv/)** (used by the launcher for venv setup)
 - Optional: `latexdiff` for track-changes PDFs (`brew install latexdiff` on macOS)
@@ -169,7 +169,7 @@ There are several great projects bringing AI to academic writing — each with a
 | **Approach** | Agent-first — you talk, it writes | Editor with inline AI | Desktop editor with AI agents | Chrome extension + web app | Chrome extension for Overleaf |
 | **Autonomy** | Full — writes sections, builds, searches, cites | Inline edits, agent-assisted citations | AI-assisted editing | Copilot suggestions | Multi-agent patches |
 | **LLM support** | Any (Claude, GPT, Gemini, Mistral, local, OpenRouter) | GPT only | Any (Claude, GPT, Gemini, DeepSeek, local) | Locked to their API | Configurable |
-| **Runs locally** | Yes — nothing leaves your machine | No (cloud) | Yes | No (cloud) | Cloud (self-host option) |
+| **Runs locally** | Yes — server is local; content is sent to configured LLM provider and optional search APIs | No (cloud) | Yes | No (cloud) | Cloud (self-host option) |
 | **Research workflows** | Lit review, claim verification, peer review, source analysis | Lit search, citations | No | Citation search (ArXiv) | Literature retrieval |
 | **PDF preview** | Live auto-reload | Yes | Yes | Via Overleaf | Via Overleaf |
 | **Conference templates** | 12 built-in formats | Yes | No | Yes | Via Overleaf |
