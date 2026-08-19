@@ -148,6 +148,34 @@ files can depend on packages outside a basic TeX installation.
 Upstream provenance and refresh links are recorded in
 [`templates/SOURCES.md`](templates/SOURCES.md).
 
+## Security
+
+ALFRED runs an LLM agent with access to your local filesystem and shell.
+These mitigations are in place, but they are **defense-in-depth, not a
+sandbox**:
+
+- **Command denylist** — network-exfiltration binaries (`curl`, `wget`,
+  `nc`, `ssh`, etc.) and env-exposure commands (`env`, `printenv`) are
+  blocked, including when wrapped in `bash -c`. The agent can still run
+  arbitrary commands through other interpreters.
+- **Environment scrubbing** — credential-shaped environment variables
+  (`*_API_KEY`, `*_TOKEN`, `*_SECRET`, `*_PASSWORD`, and AWS keys) are
+  stripped from subprocess environments. In-process tools like
+  `web_search` and `web_fetch` retain access to their own API keys.
+- **SSRF protection** — `web_fetch` and `web_search` validate URLs
+  against internal/private address ranges and manually follow redirects
+  with per-hop validation.
+- **Build isolation** — `latexmk` runs with `-norc` to prevent
+  `.latexmkrc` Perl code execution from untrusted paper directories.
+
+**Recommendations:**
+
+- Do not run ALFRED with highly privileged credentials or on sensitive
+  infrastructure against untrusted paper directories.
+- Use dedicated, low-privilege API keys where possible.
+- Review `paper.yaml` and any `.latexmkrc` files before opening papers
+  from untrusted sources.
+
 ## Development
 
 Requires [Task](https://taskfile.dev) for running dev commands.
