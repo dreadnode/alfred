@@ -26,6 +26,21 @@ from .tools.latex import _REPO_ROOT
 # Sandboxed command tool — denylist wrapping dreadnode's command tool
 # ---------------------------------------------------------------------------
 
+_SENSITIVE_SUFFIXES = ("_API_KEY", "_SECRET", "_TOKEN", "_PASSWORD", "_CREDENTIAL")
+_SENSITIVE_EXACT = frozenset({"AWS_ACCESS_KEY_ID", "AWS_SECRET_ACCESS_KEY", "DATABASE_URL"})
+_PASSTHROUGH_KEYS = frozenset({"S2_API_KEY"})
+
+
+def _scrub_env() -> dict[str, str]:
+    """Copy os.environ with credential-shaped variables removed."""
+    return {
+        k: v for k, v in os.environ.items()
+        if k in _PASSTHROUGH_KEYS
+        or (k not in _SENSITIVE_EXACT
+            and not any(k.upper().endswith(s) for s in _SENSITIVE_SUFFIXES))
+    }
+
+
 _DENIED_COMMANDS: frozenset[str] = frozenset({
     # Network exfiltration
     "curl", "wget",
@@ -84,7 +99,7 @@ async def command(
     """
     _check_command_allowed(cmd)
 
-    process_env = os.environ.copy()
+    process_env = _scrub_env()
     if env:
         process_env.update(env)
 
