@@ -1456,14 +1456,16 @@ async def api_list_files(dir: str = "") -> dict[str, t.Any]:
 
 
 @app.get("/api/pdf", response_model=None)
-async def get_pdf(session_id: str = "", download: bool = False) -> FileResponse | JSONResponse:
+async def get_pdf(
+    session_id: str = "", download: bool = False
+) -> FileResponse | JSONResponse:
     """Serve the PDF for a session (custom or built)."""
     session = (await app.state.svc.get_session(session_id)) if session_id else None
 
     dl_name: str | None = None
     if download:
         label = (session or {}).get("label", "").strip()
-        safe = re.sub(r'[^\w\s\-.]', '', label).strip() if label else ""
+        safe = re.sub(r"[^\w\s\-.]", "", label).strip() if label else ""
         dl_name = f"{safe}.pdf" if safe else "paper.pdf"
 
     custom = _custom_pdfs.get(session_id) if session_id else None

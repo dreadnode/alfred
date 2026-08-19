@@ -77,9 +77,7 @@ async def _check_url(url: str) -> None:
     for _, _, _, _, sockaddr in infos:
         ip = ipaddress.ip_address(sockaddr[0])
         if _is_internal(ip):
-            raise ValueError(
-                f"Blocked: {hostname} resolves to internal address {ip}"
-            )
+            raise ValueError(f"Blocked: {hostname} resolves to internal address {ip}")
 
 
 _MAX_REDIRECTS: int = 10

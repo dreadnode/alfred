@@ -23,7 +23,9 @@ sys.path.insert(0, UI_DIR)
 
 import backend.server as srv  # noqa: E402
 from backend.agent import (  # noqa: E402
+    _check_command_allowed,
     _load_paper_context,
+    _scrub_env,
     create_agent,
     extract_image_content,
 )
@@ -31,7 +33,6 @@ from backend.db import Database  # noqa: E402
 from backend.server import _format_event, app  # noqa: E402
 from backend.sessions import SessionService  # noqa: E402
 from backend.tools.subprocess import run_script  # noqa: E402
-from backend.agent import _check_command_allowed, _scrub_env  # noqa: E402
 from backend.tools.web import (  # noqa: E402
     _check_url,
     _is_internal,
@@ -442,9 +443,9 @@ class TestIsInternal:
     @pytest.mark.parametrize(
         "addr",
         [
-            "10.0.0.1",          # is_private (RFC 1918)
-            "169.254.169.254",   # is_link_local (AWS metadata)
-            "::1",               # IPv6 loopback
+            "10.0.0.1",  # is_private (RFC 1918)
+            "169.254.169.254",  # is_link_local (AWS metadata)
+            "::1",  # IPv6 loopback
         ],
     )
     def test_blocks_internal(self, addr: str) -> None:
@@ -508,7 +509,9 @@ class TestCommandDenylist:
 
 class TestScrubEnv:
     def test_strips_api_key(self) -> None:
-        with patch.dict(os.environ, {"ANTHROPIC_API_KEY": "sk-secret", "HOME": "/u"}, clear=True):
+        with patch.dict(
+            os.environ, {"ANTHROPIC_API_KEY": "sk-secret", "HOME": "/u"}, clear=True
+        ):
             env = _scrub_env()
         assert "ANTHROPIC_API_KEY" not in env
         assert env["HOME"] == "/u"
@@ -525,7 +528,9 @@ class TestScrubEnv:
         assert env["S2_API_KEY"] == "s2key"
 
     def test_strips_aws_exact(self) -> None:
-        with patch.dict(os.environ, {"AWS_SECRET_ACCESS_KEY": "x", "PATH": "/bin"}, clear=True):
+        with patch.dict(
+            os.environ, {"AWS_SECRET_ACCESS_KEY": "x", "PATH": "/bin"}, clear=True
+        ):
             env = _scrub_env()
         assert "AWS_SECRET_ACCESS_KEY" not in env
         assert env["PATH"] == "/bin"
