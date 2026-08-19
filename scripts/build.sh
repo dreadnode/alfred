@@ -21,7 +21,7 @@ fi
 echo "=== Building document ==="
 cd "$PROJECT_ROOT"
 mkdir -p build
-latexmk -pdf -interaction=nonstopmode -outdir=build main.tex
+latexmk -norc -pdf -interaction=nonstopmode -outdir=build main.tex
 
 EXIT_CODE=$?
 if [[ $EXIT_CODE -eq 0 ]]; then

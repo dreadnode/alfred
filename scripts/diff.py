@@ -146,7 +146,7 @@ def diff(project_root: str, rev: str = "HEAD") -> int:
             f.write(result.stdout)
 
         # Step 4: Copy supporting files needed for compilation
-        for item in ["bibliography.bib", ".latexmkrc", "styles", "figures", "data"]:
+        for item in ["bibliography.bib", "styles", "figures", "data"]:
             src = os.path.join(project_root, item)
             dst = os.path.join(diff_dir, item)
             if os.path.isdir(src):
@@ -170,6 +170,7 @@ def diff(project_root: str, rev: str = "HEAD") -> int:
         result = _run(
             [
                 "latexmk",
+                "-norc",
                 "-pdf",
                 "-interaction=nonstopmode",
                 "-outdir=build",
