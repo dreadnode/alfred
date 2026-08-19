@@ -45,7 +45,7 @@ echo ""
 
 # Check sync status (paper.yaml sections vs main.tex \input lines)
 echo "--- Checking sync status ---"
-YAML_SECTIONS=$(python3 -c "import yaml; m=yaml.safe_load(open('$PROJECT_ROOT/paper.yaml')); print('\n'.join(s['slug'] for s in m.get('sections',[])))" 2>/dev/null)
+YAML_SECTIONS=$(python3 -c "import sys,yaml; m=yaml.safe_load(open(sys.argv[1])); print('\n'.join(s['slug'] for s in m.get('sections',[])))" "$PROJECT_ROOT/paper.yaml" 2>/dev/null)
 TEX_SECTIONS=$(sed -n 's/.*\\input{section\/\([^}]*\)}/\1/p' "$PROJECT_ROOT/main.tex" 2>/dev/null)
 if [[ "$YAML_SECTIONS" != "$TEX_SECTIONS" ]]; then
   echo "  WARNING: paper.yaml and main.tex sections are out of sync"
