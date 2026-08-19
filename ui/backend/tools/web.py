@@ -5,10 +5,13 @@ Search fallback chain: Tavily → Brave → DuckDuckGo.
 
 import asyncio
 import html as html_mod
+import ipaddress
 import logging
 import os
 import re
+import socket
 import typing as t
+from urllib.parse import urlparse
 
 import aiohttp
 from dreadnode.agent.tools import tool
@@ -53,6 +56,46 @@ _TEXT_PREFIXES: tuple[str, ...] = (
 )
 
 
+def _is_internal(ip: ipaddress.IPv4Address | ipaddress.IPv6Address) -> bool:
+    if ip.is_private or ip.is_loopback or ip.is_link_local or ip.is_reserved:
+        return True
+    if isinstance(ip, ipaddress.IPv6Address) and ip.ipv4_mapped:
+        return _is_internal(ip.ipv4_mapped)
+    return False
+
+
+async def _check_url(url: str) -> None:
+    """Block requests to private/internal network addresses."""
+    parsed = urlparse(url)
+    if parsed.scheme not in ("http", "https"):
+        raise ValueError(f"Blocked URL scheme: {parsed.scheme!r}")
+    hostname = parsed.hostname
+    if not hostname:
+        raise ValueError("No hostname in URL")
+    loop = asyncio.get_running_loop()
+    infos = await loop.getaddrinfo(hostname, None, type=socket.SOCK_STREAM)
+    for _, _, _, _, sockaddr in infos:
+        ip = ipaddress.ip_address(sockaddr[0])
+        if _is_internal(ip):
+            raise ValueError(
+                f"Blocked: {hostname} resolves to internal address {ip}"
+            )
+
+
+async def _check_redirect(
+    _session: aiohttp.ClientSession,
+    _ctx: t.Any,
+    params: aiohttp.TraceRequestRedirectParams,
+) -> None:
+    await _check_url(str(params.url))
+
+
+def _safe_trace() -> aiohttp.TraceConfig:
+    trace = aiohttp.TraceConfig()
+    trace.on_request_redirect.append(_check_redirect)
+    return trace
+
+
 def _strip_html(raw_html: str) -> str:
     """Strip HTML tags, decode entities, and collapse whitespace.
 
@@ -82,9 +125,10 @@ async def web_fetch(
     Use this to read papers, blog posts, documentation, or any web resource.
     Rejects binary responses (PDFs, images, etc.).
     """
+    await _check_url(url)
     headers = {"User-Agent": _USER_AGENT}
     async with (
-        aiohttp.ClientSession(headers=headers) as session,
+        aiohttp.ClientSession(headers=headers, trace_configs=[_safe_trace()]) as session,
         session.get(url, timeout=aiohttp.ClientTimeout(total=30)) as resp,
     ):
         resp.raise_for_status()
@@ -188,7 +232,7 @@ async def _search_brave(query: str, max_results: int) -> str | None:
     }
     try:
         async with (
-            aiohttp.ClientSession(headers=headers) as session,
+            aiohttp.ClientSession(headers=headers, trace_configs=[_safe_trace()]) as session,
             session.get(
                 "https://api.search.brave.com/res/v1/web/search",
                 params=params,

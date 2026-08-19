@@ -381,10 +381,14 @@ export default function PdfViewer({ sessionId }: PdfViewerProps = {}) {
           {pageCount > 0 && (
             <a
               href={`/api/pdf?session_id=${sessionId || ''}&download=true`}
-              style={{ cursor: 'pointer', fontSize: '14px', opacity: 0.7, userSelect: 'none', textDecoration: 'none' }}
+              style={{ cursor: 'pointer', opacity: 0.7, userSelect: 'none', textDecoration: 'none', display: 'inline-flex', alignItems: 'center' }}
               title="Download PDF"
               aria-label="Download PDF"
-            >&#x2B07;&#xFE0F;</a>
+            >
+              <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ color: 'var(--dn-text)' }}>
+                <path d="M8 2v9M4 8l4 4 4-4M3 14h10" />
+              </svg>
+            </a>
           )}
           <span
             role="button" tabIndex={0}

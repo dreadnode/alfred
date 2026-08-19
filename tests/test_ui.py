@@ -31,7 +31,12 @@ from backend.db import Database  # noqa: E402
 from backend.server import _format_event, app  # noqa: E402
 from backend.sessions import SessionService  # noqa: E402
 from backend.tools.subprocess import run_script  # noqa: E402
-from backend.tools.web import _strip_html, web_fetch  # noqa: E402
+from backend.tools.web import (  # noqa: E402
+    _check_url,
+    _is_internal,
+    _strip_html,
+    web_fetch,
+)
 
 # ---------------------------------------------------------------------------
 # Shared test helpers
@@ -425,6 +430,53 @@ class TestRunScript:
         asyncio.run(_run())
         proc.kill.assert_called_once_with()
         proc.wait.assert_awaited_once_with()
+
+
+# ---------------------------------------------------------------------------
+# SSRF protection
+# ---------------------------------------------------------------------------
+
+
+class TestIsInternal:
+    @pytest.mark.parametrize(
+        "addr",
+        [
+            "10.0.0.1",          # is_private (RFC 1918)
+            "169.254.169.254",   # is_link_local (AWS metadata)
+            "::1",               # IPv6 loopback
+        ],
+    )
+    def test_blocks_internal(self, addr: str) -> None:
+        import ipaddress
+
+        assert _is_internal(ipaddress.ip_address(addr))
+
+    def test_blocks_ipv4_mapped_ipv6(self) -> None:
+        import ipaddress
+
+        assert _is_internal(ipaddress.ip_address("::ffff:127.0.0.1"))
+
+    def test_allows_public(self) -> None:
+        import ipaddress
+
+        assert not _is_internal(ipaddress.ip_address("8.8.8.8"))
+
+
+class TestCheckUrl:
+    def test_rejects_non_http_scheme(self) -> None:
+        with pytest.raises(ValueError, match="Blocked URL scheme"):
+            asyncio.run(_check_url("file:///etc/passwd"))
+
+    def test_rejects_no_hostname(self) -> None:
+        with pytest.raises(ValueError, match="No hostname"):
+            asyncio.run(_check_url("http:///path"))
+
+    def test_blocks_internal_via_dns(self) -> None:
+        with pytest.raises(ValueError, match="internal address"):
+            asyncio.run(_check_url("http://localhost/secret"))
+
+    def test_allows_public_url(self) -> None:
+        asyncio.run(_check_url("https://arxiv.org/abs/2301.00001"))
 
 
 # ---------------------------------------------------------------------------
