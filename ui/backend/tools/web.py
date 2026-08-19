@@ -187,14 +187,16 @@ async def _search_brave(query: str, max_results: int) -> str | None:
         "text_decorations": "false",
     }
     try:
-        async with aiohttp.ClientSession(headers=headers) as session:
-            async with session.get(
+        async with (
+            aiohttp.ClientSession(headers=headers) as session,
+            session.get(
                 "https://api.search.brave.com/res/v1/web/search",
                 params=params,
                 timeout=aiohttp.ClientTimeout(total=15),
-            ) as resp:
-                resp.raise_for_status()
-                data = await resp.json()
+            ) as resp,
+        ):
+            resp.raise_for_status()
+            data = await resp.json()
     except Exception as e:
         log.warning("Brave search failed, falling back to next backend: %s", e)
         return None
