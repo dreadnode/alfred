@@ -511,19 +511,18 @@ class TestCommandDenylist:
 # ---------------------------------------------------------------------------
 
 
-def _mock_aiohttp(content_type: str, body: bytes) -> t.Any:
+def _mock_aiohttp(content_type: str, body: bytes, status: int = 200) -> t.Any:
     """Create a mocked aiohttp ClientSession for web_fetch tests."""
     mock_resp = MagicMock()
     mock_resp.raise_for_status = MagicMock()
     mock_resp.content_type = content_type
     mock_resp.content.read = AsyncMock(return_value=body)
     mock_resp.get_encoding = MagicMock(return_value="utf-8")
-    mock_resp.__aenter__ = AsyncMock(return_value=mock_resp)
-    mock_resp.__aexit__ = AsyncMock(return_value=False)
+    mock_resp.status = status
+    mock_resp.release = MagicMock()
 
-    # session.get() must return an async context manager, not a coroutine
     mock_session = MagicMock()
-    mock_session.get.return_value = mock_resp
+    mock_session.get = AsyncMock(return_value=mock_resp)
     mock_session.__aenter__ = AsyncMock(return_value=mock_session)
     mock_session.__aexit__ = AsyncMock(return_value=False)
 

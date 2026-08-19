@@ -11,7 +11,7 @@ import os
 import re
 import socket
 import typing as t
-from urllib.parse import urlparse
+from urllib.parse import urljoin, urlparse
 
 import aiohttp
 from dreadnode.agent.tools import tool
@@ -82,18 +82,27 @@ async def _check_url(url: str) -> None:
             )
 
 
-async def _check_redirect(
-    _session: aiohttp.ClientSession,
-    _ctx: t.Any,
-    params: aiohttp.TraceRequestRedirectParams,
-) -> None:
-    await _check_url(str(params.url))
+_MAX_REDIRECTS: int = 10
 
 
-def _safe_trace() -> aiohttp.TraceConfig:
-    trace = aiohttp.TraceConfig()
-    trace.on_request_redirect.append(_check_redirect)
-    return trace
+async def _safe_get(
+    session: aiohttp.ClientSession,
+    url: str,
+    **kwargs: t.Any,
+) -> aiohttp.ClientResponse:
+    """GET with manual redirect following — validates each hop for SSRF."""
+    await _check_url(url)
+    for _ in range(_MAX_REDIRECTS):
+        resp = await session.get(url, allow_redirects=False, **kwargs)
+        if resp.status not in (301, 302, 303, 307, 308):
+            return resp
+        location = resp.headers.get("Location")
+        resp.release()
+        if not location:
+            raise ValueError("Redirect with no Location header")
+        url = urljoin(url, location)
+        await _check_url(url)
+    raise ValueError(f"Too many redirects (>{_MAX_REDIRECTS})")
 
 
 def _strip_html(raw_html: str) -> str:
@@ -125,12 +134,9 @@ async def web_fetch(
     Use this to read papers, blog posts, documentation, or any web resource.
     Rejects binary responses (PDFs, images, etc.).
     """
-    await _check_url(url)
     headers = {"User-Agent": _USER_AGENT}
-    async with (
-        aiohttp.ClientSession(headers=headers, trace_configs=[_safe_trace()]) as session,
-        session.get(url, timeout=aiohttp.ClientTimeout(total=30)) as resp,
-    ):
+    async with aiohttp.ClientSession(headers=headers) as session:
+        resp = await _safe_get(session, url, timeout=aiohttp.ClientTimeout(total=30))
         resp.raise_for_status()
 
         content_type = resp.content_type or ""
@@ -232,7 +238,7 @@ async def _search_brave(query: str, max_results: int) -> str | None:
     }
     try:
         async with (
-            aiohttp.ClientSession(headers=headers, trace_configs=[_safe_trace()]) as session,
+            aiohttp.ClientSession(headers=headers) as session,
             session.get(
                 "https://api.search.brave.com/res/v1/web/search",
                 params=params,

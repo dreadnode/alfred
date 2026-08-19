@@ -6,5 +6,3 @@ natbib_style: iclr2026_conference
 extra_files:
   - iclr2026_conference.sty
   - iclr2026_conference.bst
-  - fancyhdr.sty
-  - natbib.sty

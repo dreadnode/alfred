@@ -6,6 +6,5 @@ natbib_style: icml2026
 extra_files:
   - icml2026.sty
   - icml2026.bst
-  - fancyhdr.sty
   - algorithm.sty
   - algorithmic.sty
