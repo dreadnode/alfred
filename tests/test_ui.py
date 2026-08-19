@@ -36,6 +36,7 @@ from backend.tools.subprocess import run_script  # noqa: E402
 from backend.tools.web import (  # noqa: E402
     _check_url,
     _is_internal,
+    _safe_get,
     _strip_html,
     web_fetch,
 )
@@ -446,6 +447,8 @@ class TestIsInternal:
             "10.0.0.1",  # is_private (RFC 1918)
             "169.254.169.254",  # is_link_local (AWS metadata)
             "::1",  # IPv6 loopback
+            "100.100.100.100",  # CGNAT (100.64.0.0/10)
+            "224.0.0.1",  # multicast
         ],
     )
     def test_blocks_internal(self, addr: str) -> None:
@@ -479,6 +482,48 @@ class TestCheckUrl:
 
     def test_allows_public_url(self) -> None:
         asyncio.run(_check_url("https://arxiv.org/abs/2301.00001"))
+
+
+class TestSafeGet:
+    def test_blocks_redirect_to_internal(self) -> None:
+        redirect_resp = MagicMock()
+        redirect_resp.status = 302
+        redirect_resp.headers = {"Location": "http://169.254.169.254/metadata"}
+        redirect_resp.release = MagicMock()
+
+        mock_session = MagicMock()
+        mock_session.get = AsyncMock(return_value=redirect_resp)
+
+        with pytest.raises(ValueError, match="internal address"):
+            asyncio.run(_safe_get(mock_session, "https://example.com/go"))
+
+    def test_follows_safe_redirect(self) -> None:
+        redirect_resp = MagicMock()
+        redirect_resp.status = 301
+        redirect_resp.headers = {"Location": "https://example.com/final"}
+        redirect_resp.release = MagicMock()
+
+        final_resp = MagicMock()
+        final_resp.status = 200
+
+        mock_session = MagicMock()
+        mock_session.get = AsyncMock(side_effect=[redirect_resp, final_resp])
+
+        resp = asyncio.run(_safe_get(mock_session, "https://example.com/start"))
+        assert resp.status == 200
+        assert mock_session.get.call_count == 2
+
+    def test_rejects_too_many_redirects(self) -> None:
+        redirect_resp = MagicMock()
+        redirect_resp.status = 302
+        redirect_resp.headers = {"Location": "https://example.com/loop"}
+        redirect_resp.release = MagicMock()
+
+        mock_session = MagicMock()
+        mock_session.get = AsyncMock(return_value=redirect_resp)
+
+        with pytest.raises(ValueError, match="Too many redirects"):
+            asyncio.run(_safe_get(mock_session, "https://example.com/loop"))
 
 
 # ---------------------------------------------------------------------------

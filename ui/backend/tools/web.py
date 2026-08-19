@@ -57,11 +57,9 @@ _TEXT_PREFIXES: tuple[str, ...] = (
 
 
 def _is_internal(ip: ipaddress.IPv4Address | ipaddress.IPv6Address) -> bool:
-    if ip.is_private or ip.is_loopback or ip.is_link_local or ip.is_reserved:
-        return True
     if isinstance(ip, ipaddress.IPv6Address) and ip.ipv4_mapped:
         return _is_internal(ip.ipv4_mapped)
-    return False
+    return not ip.is_global or ip.is_multicast
 
 
 async def _check_url(url: str) -> None:

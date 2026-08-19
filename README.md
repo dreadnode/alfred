@@ -162,9 +162,9 @@ sandbox**:
   (`*_API_KEY`, `*_TOKEN`, `*_SECRET`, `*_PASSWORD`, and AWS keys) are
   stripped from subprocess environments. In-process tools like
   `web_search` and `web_fetch` retain access to their own API keys.
-- **SSRF protection** — `web_fetch` and `web_search` validate URLs
-  against internal/private address ranges and manually follow redirects
-  with per-hop validation.
+- **SSRF protection** — `web_fetch` validates URLs against
+  internal/private address ranges and manually follows redirects with
+  per-hop validation.
 - **Build isolation** — `latexmk` runs with `-norc` to prevent
   `.latexmkrc` Perl code execution from untrusted paper directories.
 
