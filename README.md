@@ -12,7 +12,7 @@
 
 The agent handles these automatically as part of the writing workflow — just tell it what you want.
 
-- **Conference templates** — 12 formats, including current NeurIPS, ICLR, ICML, CVPR, AAAI, LNCS, and NDSS kits
+- **Conference templates** — 14 formats, including current NeurIPS, ICLR, ICML, CVPR, AAAI, LNCS, and NDSS kits
 - **Citation management** — searches Semantic Scholar, fetches BibTeX, and adds citations to your bibliography
 - **Custom macros & styles** — the agent defines and manages LaTeX macros and style packages automatically
 - **Validation** — catches broken references, unmatched braces, and other LaTeX errors before building
@@ -195,14 +195,16 @@ There are several great projects bringing AI to academic writing — each with a
 
 |  | **ALFRED** | **OpenAI Prism** | **lmms-lab-writer** | **Underleaf** | **PaperDebugger** |
 |---|---|---|---|---|---|
-| **Approach** | Agent-first — you talk, it writes | Editor with inline AI | Desktop editor with AI agents | Chrome extension + web app | Chrome extension for Overleaf |
-| **Autonomy** | Full — writes sections, builds, searches, cites | Inline edits, agent-assisted citations | AI-assisted editing | Copilot suggestions | Multi-agent patches |
-| **LLM support** | Any (Claude, GPT, Gemini, Mistral, local, OpenRouter) | GPT only | Any (Claude, GPT, Gemini, DeepSeek, local) | Locked to their API | Configurable |
-| **Runs locally** | Yes — server is local; content is sent to configured LLM provider and optional search APIs | No (cloud) | Yes | No (cloud) | Cloud (self-host option) |
-| **Research workflows** | Lit review, claim verification, peer review, source analysis | Lit search, citations | No | Citation search (ArXiv) | Literature retrieval |
-| **PDF preview** | Live auto-reload | Yes | Yes | Via Overleaf | Via Overleaf |
-| **Conference templates** | 12 built-in formats | Yes | No | Yes | Via Overleaf |
-| **Web search** | Built-in (DuckDuckGo) | Built-in (literature) | No | No | No |
-| **PDF/image to LaTeX** | Yes (image to LaTeX) | Yes | No | Yes | No |
-| **Cost** | Free (bring your own API key) | Free | Free (bring your own API key) | Freemium (credit-based) | Free |
-| **Requires Overleaf** | No | No | No | No | Yes |
+| **Approach** | Agent-first — you talk, it writes | Cloud LaTeX editor with inline AI (built on acquired Crixet platform) | Desktop editor with embedded AI (OpenCode) | Chrome extension for Overleaf + standalone web app | Chrome extension for Overleaf with multi-agent backend |
+| **Autonomy** | Full — writes sections, builds, searches, cites | Inline edits on selection, AI-suggested citations, voice commands | AI-assisted editing (general-purpose agent) | 60+ one-shot tools (generate, convert, rewrite) | 4 specialized agents (reviewer, researcher, enhancer, scorer) propose diff patches |
+| **LLM support** | Any (Claude, GPT, Gemini, Mistral, local, OpenRouter) | GPT-5.2 only (locked to OpenAI) | Any via OpenCode (Claude, GPT, Gemini, DeepSeek, local) | Locked to their API (OpenAI, no model choice) | OpenAI via hosted backend (self-host can swap) |
+| **Runs locally** | Yes — server is local; content is sent to configured LLM provider and optional search APIs | No (cloud-only web app, requires ChatGPT account) | Yes — native desktop app (Tauri), fully offline capable | No (cloud SaaS, content routed through their servers) | No (Kubernetes backend); self-host option available |
+| **Research workflows** | Lit review, claim verification, peer review, source analysis | AI citation suggestions (arXiv), Zotero sync, BibTeX import | No | Citation search (arXiv) | Researcher agent (800k paper vector DB), reviewer agent, citation verify/generate |
+| **PDF preview** | Live auto-reload | Yes (real-time cloud compilation) | Yes, with SyncTeX (bidirectional source ↔ PDF) | Via Overleaf (or snippet preview in web app) | Via Overleaf |
+| **Conference templates** | 14 built-in formats | No gallery — AI generates templates from prompts on demand | No | Yes (NeurIPS, ICML, ACL, IEEE + reformatter) | No (uses Overleaf's templates) |
+| **Web search** | Built-in (Tavily / Brave / DuckDuckGo) | No (arXiv literature search only) | No | No | OpenReview + arXiv search |
+| **PDF/image to LaTeX** | Yes (image to LaTeX) | Yes (handwriting + diagram to LaTeX, voice input) | No | Yes — flagship feature (OCR-optimized, handwriting, PDF, Snip tool) | No |
+| **Git integration** | No | No | Yes — built-in staging, commits, diffs, GitHub publish | No | No |
+| **LaTeX distribution** | Requires TeX Live | Cloud compilation (no local install needed) | Auto-detects or installs TinyTeX, auto-installs missing packages | Via Overleaf (no local compilation) | Via Overleaf (no local compilation) |
+| **Cost** | Free (bring your own API key) | Free (requires ChatGPT account; Business/Enterprise not yet supported) | Free (bring your own API key) | Freemium — free 10 credits/mo, $5–10/mo for more | Free (hosted backend absorbs LLM costs) |
+| **Open source** | Yes (MIT) | No | Yes (MIT) | No (closed source) | Partial (AGPL-3.0, but XtraMCP research tools are closed) |
