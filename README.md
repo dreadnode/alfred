@@ -195,14 +195,16 @@ There are several great projects bringing AI to academic writing — each with a
 
 |  | **ALFRED** | **OpenAI Prism** | **lmms-lab-writer** | **Underleaf** | **PaperDebugger** |
 |---|---|---|---|---|---|
-| **Approach** | Agent-first — you talk, it writes | Editor with inline AI | Desktop editor with AI agents | Chrome extension + web app | Chrome extension for Overleaf |
-| **Autonomy** | Full — writes sections, builds, searches, cites | Inline edits, agent-assisted citations | AI-assisted editing | Copilot suggestions | Multi-agent patches |
-| **LLM support** | Any (Claude, GPT, Gemini, Mistral, local, OpenRouter) | GPT only | Any (Claude, GPT, Gemini, DeepSeek, local) | Locked to their API | Configurable |
-| **Runs locally** | Yes — server is local; content is sent to configured LLM provider and optional search APIs | No (cloud) | Yes | No (cloud) | Cloud (self-host option) |
+| **Approach** | Agent-first — you talk, it writes | Editor with inline AI | Desktop editor with embedded AI (OpenCode) | Chrome extension + web app | Chrome extension for Overleaf |
+| **Autonomy** | Full — writes sections, builds, searches, cites | Inline edits, agent-assisted citations | AI-assisted editing (general-purpose agent) | Copilot suggestions | Multi-agent patches |
+| **LLM support** | Any (Claude, GPT, Gemini, Mistral, local, OpenRouter) | GPT only | Any via OpenCode (Claude, GPT, Gemini, DeepSeek, local) | Locked to their API | Configurable |
+| **Runs locally** | Yes — server is local; content is sent to configured LLM provider and optional search APIs | No (cloud) | Yes — native desktop app (Tauri), fully offline capable | No (cloud) | Cloud (self-host option) |
 | **Research workflows** | Lit review, claim verification, peer review, source analysis | Lit search, citations | No | Citation search (ArXiv) | Literature retrieval |
-| **PDF preview** | Live auto-reload | Yes | Yes | Via Overleaf | Via Overleaf |
+| **PDF preview** | Live auto-reload | Yes | Yes, with SyncTeX (bidirectional source ↔ PDF) | Via Overleaf | Via Overleaf |
 | **Conference templates** | 14 built-in formats | Yes | No | Yes | Via Overleaf |
 | **Web search** | Built-in (Tavily / Brave / DuckDuckGo) | Built-in (literature) | No | No | No |
 | **PDF/image to LaTeX** | Yes (image to LaTeX) | Yes | No | Yes | No |
+| **Git integration** | No | No | Yes — built-in staging, commits, diffs, GitHub publish | No | No |
+| **LaTeX distribution** | Requires TeX Live | N/A | Auto-detects or installs TinyTeX, auto-installs missing packages | Via Overleaf | Via Overleaf |
 | **Cost** | Free (bring your own API key) | Free | Free (bring your own API key) | Freemium (credit-based) | Free |
 | **Requires Overleaf** | No | No | No | No | Yes |
