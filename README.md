@@ -195,16 +195,16 @@ There are several great projects bringing AI to academic writing — each with a
 
 |  | **ALFRED** | **OpenAI Prism** | **lmms-lab-writer** | **Underleaf** | **PaperDebugger** |
 |---|---|---|---|---|---|
-| **Approach** | Agent-first — you talk, it writes | Editor with inline AI | Desktop editor with embedded AI (OpenCode) | Chrome extension for Overleaf + standalone web app | Chrome extension for Overleaf |
-| **Autonomy** | Full — writes sections, builds, searches, cites | Inline edits, agent-assisted citations | AI-assisted editing (general-purpose agent) | 60+ one-shot tools (generate, convert, rewrite) | Multi-agent patches |
-| **LLM support** | Any (Claude, GPT, Gemini, Mistral, local, OpenRouter) | GPT only | Any via OpenCode (Claude, GPT, Gemini, DeepSeek, local) | Locked to their API (OpenAI, no model choice) | Configurable |
-| **Runs locally** | Yes — server is local; content is sent to configured LLM provider and optional search APIs | No (cloud) | Yes — native desktop app (Tauri), fully offline capable | No (cloud SaaS, content routed through their servers) | Cloud (self-host option) |
-| **Research workflows** | Lit review, claim verification, peer review, source analysis | Lit search, citations | No | Citation search (arXiv) | Literature retrieval |
+| **Approach** | Agent-first — you talk, it writes | Editor with inline AI | Desktop editor with embedded AI (OpenCode) | Chrome extension for Overleaf + standalone web app | Chrome extension for Overleaf with multi-agent backend |
+| **Autonomy** | Full — writes sections, builds, searches, cites | Inline edits, agent-assisted citations | AI-assisted editing (general-purpose agent) | 60+ one-shot tools (generate, convert, rewrite) | 4 specialized agents (reviewer, researcher, enhancer, scorer) propose diff patches |
+| **LLM support** | Any (Claude, GPT, Gemini, Mistral, local, OpenRouter) | GPT only | Any via OpenCode (Claude, GPT, Gemini, DeepSeek, local) | Locked to their API (OpenAI, no model choice) | OpenAI via hosted backend (self-host can swap) |
+| **Runs locally** | Yes — server is local; content is sent to configured LLM provider and optional search APIs | No (cloud) | Yes — native desktop app (Tauri), fully offline capable | No (cloud SaaS, content routed through their servers) | No (Kubernetes backend); self-host option available |
+| **Research workflows** | Lit review, claim verification, peer review, source analysis | Lit search, citations | No | Citation search (arXiv) | Researcher agent (800k paper vector DB), reviewer agent, citation verify/generate |
 | **PDF preview** | Live auto-reload | Yes | Yes, with SyncTeX (bidirectional source ↔ PDF) | Via Overleaf (or snippet preview in web app) | Via Overleaf |
-| **Conference templates** | 14 built-in formats | Yes | No | Yes (NeurIPS, ICML, ACL, IEEE + reformatter) | Via Overleaf |
-| **Web search** | Built-in (Tavily / Brave / DuckDuckGo) | Built-in (literature) | No | No | No |
+| **Conference templates** | 14 built-in formats | Yes | No | Yes (NeurIPS, ICML, ACL, IEEE + reformatter) | No (uses Overleaf's templates) |
+| **Web search** | Built-in (Tavily / Brave / DuckDuckGo) | Built-in (literature) | No | No | OpenReview + arXiv search |
 | **PDF/image to LaTeX** | Yes (image to LaTeX) | Yes | No | Yes — flagship feature (OCR-optimized, handwriting, PDF, Snip tool) | No |
 | **Git integration** | No | No | Yes — built-in staging, commits, diffs, GitHub publish | No | No |
-| **LaTeX distribution** | Requires TeX Live | N/A | Auto-detects or installs TinyTeX, auto-installs missing packages | Via Overleaf (no local compilation) | Via Overleaf |
-| **Cost** | Free (bring your own API key) | Free | Free (bring your own API key) | Freemium — free 10 credits/mo, $5–10/mo for more | Free |
-| **Open source** | Yes (MIT) | No | Yes (MIT) | No (closed source) | No |
+| **LaTeX distribution** | Requires TeX Live | N/A | Auto-detects or installs TinyTeX, auto-installs missing packages | Via Overleaf (no local compilation) | Via Overleaf (no local compilation) |
+| **Cost** | Free (bring your own API key) | Free | Free (bring your own API key) | Freemium — free 10 credits/mo, $5–10/mo for more | Free (hosted backend absorbs LLM costs) |
+| **Open source** | Yes (MIT) | No | Yes (MIT) | No (closed source) | Partial (AGPL-3.0, but XtraMCP research tools are closed) |
