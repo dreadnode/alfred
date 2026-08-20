@@ -12,7 +12,7 @@
 
 The agent handles these automatically as part of the writing workflow — just tell it what you want.
 
-- **Conference templates** — 12 formats, including current NeurIPS, ICLR, ICML, CVPR, AAAI, LNCS, and NDSS kits
+- **Conference templates** — 14 formats, including current NeurIPS, ICLR, ICML, CVPR, AAAI, LNCS, and NDSS kits
 - **Citation management** — searches Semantic Scholar, fetches BibTeX, and adds citations to your bibliography
 - **Custom macros & styles** — the agent defines and manages LaTeX macros and style packages automatically
 - **Validation** — catches broken references, unmatched braces, and other LaTeX errors before building
@@ -201,8 +201,8 @@ There are several great projects bringing AI to academic writing — each with a
 | **Runs locally** | Yes — server is local; content is sent to configured LLM provider and optional search APIs | No (cloud) | Yes | No (cloud) | Cloud (self-host option) |
 | **Research workflows** | Lit review, claim verification, peer review, source analysis | Lit search, citations | No | Citation search (ArXiv) | Literature retrieval |
 | **PDF preview** | Live auto-reload | Yes | Yes | Via Overleaf | Via Overleaf |
-| **Conference templates** | 12 built-in formats | Yes | No | Yes | Via Overleaf |
-| **Web search** | Built-in (DuckDuckGo) | Built-in (literature) | No | No | No |
+| **Conference templates** | 14 built-in formats | Yes | No | Yes | Via Overleaf |
+| **Web search** | Built-in (Tavily / Brave / DuckDuckGo) | Built-in (literature) | No | No | No |
 | **PDF/image to LaTeX** | Yes (image to LaTeX) | Yes | No | Yes | No |
 | **Cost** | Free (bring your own API key) | Free | Free (bring your own API key) | Freemium (credit-based) | Free |
 | **Requires Overleaf** | No | No | No | No | Yes |
