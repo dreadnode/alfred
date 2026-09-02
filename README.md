@@ -4,6 +4,8 @@
 
 **A**gentic **L**atex **f**or **R**esearch, **E**diting, and **D**rafting.
 
+[Tutorial](https://www.youtube.com/watch?v=ZP0NnyvoWcs)
+
 ![ALFRED web UI](docs/alfred-ss.png)
 
 ## Features
